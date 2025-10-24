@@ -28,6 +28,8 @@ import "react-toastify/dist/ReactToastify.css";
 export default function Allstudents() {
   const [students, setStudents] = useState([]);
   const [branches, setBranches] = useState([]);
+  const [courses, setCourses] = useState([]);
+  const [batches, setBatches] = useState([]);
   const [selectedBranch, setSelectedBranch] = useState("");
   const [search, setSearch] = useState("");
   const [viewMode, setViewMode] = useState("list");
@@ -42,8 +44,13 @@ export default function Allstudents() {
   const [photoPreview, setPhotoPreview] = useState("");
   const navigate = useNavigate();
   const [sortField, setSortField] = useState("created_at");
-  const [sortOrder, setSortOrder] = useState("desc"); // "asc" or "desc"
+  const [sortOrder, setSortOrder] = useState("desc");
   const [dateFilter, setDateFilter] = useState({ from: "", to: "" });
+
+  // New states for course selection in edit modal
+  const [selectedEditCourses, setSelectedEditCourses] = useState([]);
+  const [courseBatches, setCourseBatches] = useState({});
+  const [editTotalFee, setEditTotalFee] = useState(0);
 
   useEffect(() => {
     function handleClickOutside(event) {
@@ -85,9 +92,36 @@ export default function Allstudents() {
     }
   };
 
+  const fetchCourses = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      const res = await axios.get("/courses/index", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setCourses(res.data || []);
+    } catch (error) {
+      console.error("Error fetching courses:", error);
+    }
+  };
+
+  const fetchBatches = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      const res = await axios.get("/batches/show", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const batchData = Array.isArray(res.data) ? res.data : res.data.data || [];
+      setBatches(batchData);
+    } catch (error) {
+      console.error("Error fetching batches:", error);
+    }
+  };
+
   useEffect(() => {
     fetchStudents();
     fetchBranches();
+    fetchCourses();
+    fetchBatches();
   }, []);
 
   const fetchStudent = async (id) => {
@@ -120,27 +154,147 @@ export default function Allstudents() {
     if (studentData) {
       setSelectedStudent(studentData);
       setEditFormData(studentData);
-      setPhotoPreview(studentData.photo || "");
+      setPhotoPreview(studentData.photo_url || "");
+
+      // Initialize course selection for edit
+      const initialCourses = studentData.courses?.map(c => c.id) || [];
+      setSelectedEditCourses(initialCourses);
+
+      const initialBatches = {};
+      studentData.courses?.forEach(course => {
+        if (course.batch) {
+          initialBatches[course.id] = course.batch.id;
+        }
+      });
+      setCourseBatches(initialBatches);
+
+      // Calculate total fee
+      let calculatedFee = 0;
+      initialCourses.forEach(courseId => {
+        const course = courses.find(c => c.id == courseId);
+        if (course) {
+          const fee = parseFloat(course.discounted_price || course.actual_price || 0);
+          calculatedFee += fee;
+        }
+      });
+      setEditTotalFee(calculatedFee);
+
       setShowEditModal(true);
     }
     setIsLoading(false);
     setOpenMenuId(null);
   };
 
+  // Course selection handlers for edit modal
+  const handleEditCourseSelection = (courseId) => {
+    setSelectedEditCourses(prev => {
+      if (prev.includes(courseId)) {
+        // Remove course and its batch selection
+        const newCourseBatches = { ...courseBatches };
+        delete newCourseBatches[courseId];
+        setCourseBatches(newCourseBatches);
+        return prev.filter(id => id !== courseId);
+      } else {
+        // Add course
+        return [...prev, courseId];
+      }
+    });
+  };
+
+  const handleEditBatchSelection = (courseId, batchId) => {
+    setCourseBatches(prev => ({
+      ...prev,
+      [courseId]: batchId
+    }));
+  };
+
+  // Get batches for a specific course
+  const getBatchesForCourse = (courseId) => {
+    return batches.filter(batch => 
+      batch.course_id == courseId || 
+      (batch.courses && batch.courses.some(course => course.id == courseId))
+    );
+  };
+
+  // Format time for display
+  const formatTime = (timeString) => {
+    if (!timeString) return '';
+    try {
+      return new Date(`2000-01-01T${timeString}`).toLocaleTimeString('en-US', {
+        hour: 'numeric',
+        minute: '2-digit',
+        hour12: true
+      });
+    } catch {
+      return timeString;
+    }
+  };
+
+  // Calculate total fee when courses change
+  useEffect(() => {
+    if (selectedEditCourses.length > 0) {
+      let calculatedFee = 0;
+      selectedEditCourses.forEach(courseId => {
+        const course = courses.find(c => c.id == courseId);
+        if (course) {
+          const fee = parseFloat(course.discounted_price || course.actual_price || 0);
+          calculatedFee += fee;
+        }
+      });
+      setEditTotalFee(calculatedFee);
+    } else {
+      setEditTotalFee(0);
+    }
+  }, [selectedEditCourses, courses]);
+
   const handleUpdateStudent = async (e) => {
     e.preventDefault();
     setIsLoading(true);
     try {
       const token = localStorage.getItem("token");
-      await axios.put(`/students/update/${selectedStudent.id}`, editFormData, {
-        headers: { Authorization: `Bearer ${token}` },
+      const formData = new FormData();
+
+      // Append basic student information
+      formData.append("full_name", editFormData.full_name);
+      formData.append("dob", editFormData.dob);
+      formData.append("gender", editFormData.gender);
+      formData.append("contact_number", editFormData.contact_number);
+      formData.append("email", editFormData.email);
+      formData.append("address", editFormData.address);
+      formData.append("guardian_name", editFormData.guardian_name);
+      formData.append("guardian_contact", editFormData.guardian_contact);
+      formData.append("admission_date", editFormData.admission_date);
+      formData.append("branch_id", editFormData.branch_id);
+      formData.append("admission_number", editFormData.admission_number);
+
+      // Append course and batch data
+      selectedEditCourses.forEach(courseId => {
+        formData.append("courses[]", courseId);
+        formData.append(`batch_${courseId}`, courseBatches[courseId]);
       });
+
+      // Append fee information
+      formData.append("course_fee", editTotalFee);
+      formData.append("final_fee", editTotalFee);
+
+      // Append photo if changed
+      if (editPhoto) {
+        formData.append("photo", editPhoto);
+      }
+
+      await axios.put(`/students/update/${selectedStudent.id}`, formData, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "multipart/form-data",
+        },
+      });
+
       setShowEditModal(false);
       fetchStudents();
-      alert("Student updated successfully!");
+      toast.success("Student updated successfully!");
     } catch (error) {
       console.error("Error updating student:", error);
-      alert("Failed to update student.");
+      toast.error("Failed to update student.");
     }
     setIsLoading(false);
   };
@@ -186,81 +340,78 @@ export default function Allstudents() {
     setIsLoading(false);
   };
 
-const exportToExcel = () => {
-  const dataForExport = filteredStudents.map((student) => ({
-    "Admission No": student.admission_number,
-    "Full Name": student.full_name,
-    Email: student.email,
-    Contact: student.contact_number,
-    Gender: student.gender,
-    DOB: formatDate(student.dob),
-    "Admission Date": formatDate(student.admission_date),
-    "Guardian Name": student.guardian_name,
-    "Guardian Contact": student.guardian_contact,
-    Address: student.address,
-    Branch: student.branch?.branch_name,
-    "Courses": student.courses?.map(c => c.course_name).join(", ") || "N/A",
-    "Batches": student.courses?.map(c => c.batch?.batch_name).filter(Boolean).join(", ") || "N/A",
-    "Batch Timings": student.courses?.map(c => 
-      c.batch ? formatBatchTiming(c.batch.batch_start_time, c.batch.batch_end_time) : "N/A"
-    ).filter(timing => timing !== "N/A").join(" | ") || "N/A",
-  }));
+  const exportToExcel = () => {
+    const dataForExport = filteredStudents.map((student) => ({
+      "Admission No": student.admission_number,
+      "Full Name": student.full_name,
+      Email: student.email,
+      Contact: student.contact_number,
+      Gender: student.gender,
+      DOB: formatDate(student.dob),
+      "Admission Date": formatDate(student.admission_date),
+      "Guardian Name": student.guardian_name,
+      "Guardian Contact": student.guardian_contact,
+      Address: student.address,
+      Branch: student.branch?.branch_name,
+      "Courses": student.courses?.map(c => c.course_name).join(", ") || "N/A",
+      "Batches": student.courses?.map(c => c.batch?.batch_name).filter(Boolean).join(", ") || "N/A",
+      "Batch Timings": student.courses?.map(c => 
+        c.batch ? formatBatchTiming(c.batch.batch_start_time, c.batch.batch_end_time) : "N/A"
+      ).filter(timing => timing !== "N/A").join(" | ") || "N/A",
+    }));
 
-  const workbook = XLSX.utils.book_new();
-  const worksheet = XLSX.utils.json_to_sheet(dataForExport);
+    const workbook = XLSX.utils.book_new();
+    const worksheet = XLSX.utils.json_to_sheet(dataForExport);
 
-  const columnWidths = [
-    { wch: 15 },
-    { wch: 25 },
-    { wch: 30 },
-    { wch: 15 },
-    { wch: 10 },
-    { wch: 15 },
-    { wch: 15 },
-    { wch: 20 },
-    { wch: 15 },
-    { wch: 40 },
-    { wch: 35 },
-    { wch: 50 },
-    { wch: 50 },
-    { wch: 40 }, // Added for batch timings
-  ];
-  worksheet["!cols"] = columnWidths;
+    const columnWidths = [
+      { wch: 15 },
+      { wch: 25 },
+      { wch: 30 },
+      { wch: 15 },
+      { wch: 10 },
+      { wch: 15 },
+      { wch: 15 },
+      { wch: 20 },
+      { wch: 15 },
+      { wch: 40 },
+      { wch: 35 },
+      { wch: 50 },
+      { wch: 50 },
+      { wch: 40 },
+    ];
+    worksheet["!cols"] = columnWidths;
 
-  XLSX.utils.book_append_sheet(workbook, worksheet, "Students");
-  XLSX.writeFile(workbook, "students.xlsx");
-};
-// Utility function to format time in Indian standard format (12-hour with AM/PM)
-const formatTimeToIST = (timeString) => {
-  if (!timeString) return "N/A";
-  
-  try {
-    // Create a date object with the time string
-    const [hours, minutes] = timeString.split(':');
-    const date = new Date();
-    date.setHours(parseInt(hours), parseInt(minutes), 0);
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Students");
+    XLSX.writeFile(workbook, "students.xlsx");
+  };
+
+  const formatTimeToIST = (timeString) => {
+    if (!timeString) return "N/A";
     
-    // Format to 12-hour with AM/PM
-    return date.toLocaleTimeString('en-IN', {
-      hour: '2-digit',
-      minute: '2-digit',
-      hour12: true,
-      timeZone: 'Asia/Kolkata'
-    });
-  } catch (error) {
-    console.error('Error formatting time:', error);
-    return "N/A";
-  }
-};
+    try {
+      const [hours, minutes] = timeString.split(':');
+      const date = new Date();
+      date.setHours(parseInt(hours), parseInt(minutes), 0);
+      
+      return date.toLocaleTimeString('en-IN', {
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: true,
+        timeZone: 'Asia/Kolkata'
+      });
+    } catch (error) {
+      console.error('Error formatting time:', error);
+      return "N/A";
+    }
+  };
 
-// Utility function to format batch timing range
-const formatBatchTiming = (startTime, endTime) => {
-  if (!startTime && !endTime) return "Timing not set";
-  if (!startTime) return `Till ${formatTimeToIST(endTime)}`;
-  if (!endTime) return `From ${formatTimeToIST(startTime)}`;
-  
-  return `${formatTimeToIST(startTime)} - ${formatTimeToIST(endTime)}`;
-};
+  const formatBatchTiming = (startTime, endTime) => {
+    if (!startTime && !endTime) return "Timing not set";
+    if (!startTime) return `Till ${formatTimeToIST(endTime)}`;
+    if (!endTime) return `From ${formatTimeToIST(startTime)}`;
+    
+    return `${formatTimeToIST(startTime)} - ${formatTimeToIST(endTime)}`;
+  };
 
   const filteredStudents = students
     .filter(s =>
@@ -277,13 +428,11 @@ const formatBatchTiming = (startTime, endTime) => {
       return true;
     })
     .sort((a, b) => {
-      const valA = a[sortField] || ""; // fallback in case missing
+      const valA = a[sortField] || "";
       const valB = b[sortField] || "";
-      // Date strings comparison
       if (sortOrder === "asc") return new Date(valA) - new Date(valB);
       return new Date(valB) - new Date(valA);
     });
-
 
   const formatDate = (dateString) => {
     if (!dateString) return "N/A";
@@ -295,8 +444,6 @@ const formatBatchTiming = (startTime, endTime) => {
   };
 
   return (
-
-    // <SAStaffLayout>
     <div className="px-4 md:px-6 lg:px-8">
       <ToastContainer
         position="bottom-center"
@@ -310,6 +457,7 @@ const formatBatchTiming = (startTime, endTime) => {
         pauseOnHover
         theme="light"
       />
+      
       {/* Header */}
       <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-6 gap-4">
         <h1 className="text-2xl md:text-3xl font-nunito font-semibold">
@@ -317,7 +465,6 @@ const formatBatchTiming = (startTime, endTime) => {
         </h1>
 
         <div className="flex flex-col md:flex-row gap-4 w-full md:w-auto">
-          {/* Branch Dropdown */}
           <select
             value={selectedBranch}
             onChange={(e) => setSelectedBranch(e.target.value)}
@@ -331,7 +478,6 @@ const formatBatchTiming = (startTime, endTime) => {
             ))}
           </select>
 
-          {/* View Mode Toggle */}
           <div className="flex gap-2 bg-gray-200 p-1 rounded-full shrink-0">
             <button
               onClick={() => setViewMode("list")}
@@ -353,7 +499,6 @@ const formatBatchTiming = (startTime, endTime) => {
             </button>
           </div>
 
-          {/* Export Button */}
           <button
             onClick={exportToExcel}
             className="flex items-center gap-2 bg-green-600 text-white px-3 py-2 rounded-md hover:bg-green-700 transition-colors shrink-0 text-sm md:px-4 md:py-2 md:text-base"
@@ -364,7 +509,7 @@ const formatBatchTiming = (startTime, endTime) => {
         </div>
       </div>
 
-      {/* Search */}
+      {/* Search and Filters */}
       <div className="mb-4 max-w-md">
         <input
           type="text"
@@ -431,7 +576,6 @@ const formatBatchTiming = (startTime, endTime) => {
             {/* Table Header */}
             <div className="grid grid-cols-12 gap-4 bg-gray-100 p-4 rounded-t-lg font-semibold text-sm md:text-base">
               <div className="col-span-3 flex items-center">Student</div>
-              {/* Hide on small */}
               <div className="col-span-2 text-gray-600 truncate hidden sm:block">Email</div>
               <div className="col-span-2 text-gray-600 hidden md:flex items-center">Contact</div>
               <div className="col-span-2 text-gray-600 hidden md:flex items-center">Branch</div>
@@ -445,7 +589,6 @@ const formatBatchTiming = (startTime, endTime) => {
                   key={student.id}
                   className="bg-white shadow-sm hover:shadow-md transition rounded-xl p-4 grid grid-cols-12 gap-4 items-center text-sm md:text-base"
                 >
-                  {/* Student Info */}
                   <div className="col-span-3 flex items-center gap-4">
                     <img
                       src={student.photo_url || "https://rapidapi.com/hub/_next/image?url=https%3A%2F%2Frapidapi-prod-apis.s3.amazonaws.com%2F0499ccca-a115-4e70-b4f3-1c1587d6de2b.png&w=3840&q=75"}
@@ -460,22 +603,18 @@ const formatBatchTiming = (startTime, endTime) => {
                     </div>
                   </div>
 
-                  {/* Email - hide on mobile */}
                   <div className="col-span-2 text-gray-600 truncate hidden sm:block">
                     {student.email || "N/A"}
                   </div>
 
-                  {/* Contact - hide on small, show on md */}
                   <div className="col-span-2 text-gray-600 hidden md:block">
                     {student.contact_number || "N/A"}
                   </div>
 
-                  {/* Branch - hide on small, show on md */}
                   <div className="col-span-2 text-gray-600 hidden md:block">
                     {student.branch?.branch_name || "N/A"}
                   </div>
 
-                  {/* Actions */}
                   <div className="col-span-1 flex justify-center relative">
                     <button
                       onClick={() =>
@@ -538,7 +677,6 @@ const formatBatchTiming = (startTime, endTime) => {
                 />
               </div>
               <h3 className="text-lg font-semibold truncate w-full">{student.full_name}</h3>
-              {/* Mobile & small devices hide email & phone */}
               <p className="text-gray-500 truncate w-full hidden sm:block">{student.email}</p>
               <p className="text-gray-500 truncate w-full hidden md:block">{student.contact_number}</p>
               <div className="bg-gray-50 rounded-lg py-2 px-4 mt-4 w-full text-sm">
@@ -546,12 +684,10 @@ const formatBatchTiming = (startTime, endTime) => {
                   Admission No: {student.admission_number}
                 </p>
               </div>
-              {/* Hide branch on mobile */}
               <span className="mt-3 px-3 py-1 text-xs font-medium rounded-full bg-green-100 text-green-700 hidden md:inline-block w-fit truncate max-w-full">
                 Admission Date: {formatDate(student.admission_date)}
               </span>
 
-              {/* Card View Actions */}
               <div className="flex mt-4 space-x-3">
                 <button
                   onClick={() => handleViewStudent(student.id)}
@@ -678,37 +814,35 @@ const formatBatchTiming = (startTime, endTime) => {
                   </p>
                 </div>
 
-   <div className="bg-green-50 p-4 rounded-lg">
-  <h3 className="text-lg font-semibold mb-3 flex items-center">
-    <FaChalkboardTeacher className="mr-2 text-green-500" />
-    Courses ({selectedStudent.courses?.length || 0})
-  </h3>
-  {selectedStudent.courses && selectedStudent.courses.length > 0 ? (
-    <div className="space-y-3">
-      {selectedStudent.courses.map((course, index) => (
-        <div key={course.id} className="border-b border-green-200 pb-2 last:border-b-0">
-          <p className="text-gray-700 font-medium">{course.course_name}</p>
-          <div className="text-gray-600 text-sm space-y-1">
-            <p>Duration: {course.duration} months</p>
-            <p>Mode: {course.mode}</p>
-            <p>Level: {course.course_level}</p>
-            {course.batch && (
-              <div className="bg-white p-2 rounded border mt-1">
-                <p className="font-medium">Batch: {course.batch.batch_name}</p>
-                <p>Timing: {formatBatchTiming(course.batch.batch_start_time, course.batch.batch_end_time)}</p>
-                <p>Days: Mon - Sat</p>
-              </div>
-            )}
-          </div>
-        </div>
-      ))}
-    </div>
-  ) : (
-    <p className="text-gray-600">No courses enrolled</p>
-  )}
-</div>
-{/* In card view - show courses and timing */}
-
+                <div className="bg-green-50 p-4 rounded-lg">
+                  <h3 className="text-lg font-semibold mb-3 flex items-center">
+                    <FaChalkboardTeacher className="mr-2 text-green-500" />
+                    Courses ({selectedStudent.courses?.length || 0})
+                  </h3>
+                  {selectedStudent.courses && selectedStudent.courses.length > 0 ? (
+                    <div className="space-y-3">
+                      {selectedStudent.courses.map((course, index) => (
+                        <div key={course.id} className="border-b border-green-200 pb-2 last:border-b-0">
+                          <p className="text-gray-700 font-medium">{course.course_name}</p>
+                          <div className="text-gray-600 text-sm space-y-1">
+                            <p>Duration: {course.duration} months</p>
+                            <p>Mode: {course.mode}</p>
+                            <p>Level: {course.course_level}</p>
+                            {course.batch && (
+                              <div className="bg-white p-2 rounded border mt-1">
+                                <p className="font-medium">Batch: {course.batch.batch_name}</p>
+                                <p>Timing: {formatBatchTiming(course.batch.batch_start_time, course.batch.batch_end_time)}</p>
+                                <p>Days: Mon - Sat</p>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-gray-600">No courses enrolled</p>
+                  )}
+                </div>
               </div>
             </div>
           </div>
@@ -718,7 +852,7 @@ const formatBatchTiming = (startTime, endTime) => {
       {/* Edit Student Modal */}
       {showEditModal && selectedStudent && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+          <div className="bg-white rounded-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto">
             <div className="flex justify-between items-center p-6 border-b">
               <h2 className="text-2xl font-bold">Edit Student</h2>
               <button
@@ -735,123 +869,298 @@ const formatBatchTiming = (startTime, endTime) => {
             </div>
 
             <form onSubmit={handleUpdateStudent} className="p-6">
-              {/* Add photo upload section here if needed */}
+              {/* Basic Information */}
+              <div className="bg-white shadow-lg rounded-xl p-6 mb-6">
+                <h2 className="text-xl font-semibold mb-4 text-gray-800 border-b pb-2">Personal Information</h2>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                  <div>
+                    <label className="block text-sm font-medium mb-1">Full Name *</label>
+                    <input
+                      type="text"
+                      name="full_name"
+                      value={editFormData.full_name || ""}
+                      onChange={handleInputChange}
+                      className="w-full border rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-1">Email *</label>
+                    <input
+                      type="email"
+                      name="email"
+                      value={editFormData.email || ""}
+                      onChange={handleInputChange}
+                      className="w-full border rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-1">Contact Number *</label>
+                    <input
+                      type="tel"
+                      name="contact_number"
+                      value={editFormData.contact_number || ""}
+                      onChange={handleInputChange}
+                      className="w-full border rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
+                      pattern="[0-9]{10}"
+                      maxLength="10"
+                      required
+                    />
+                    {editFormData.contact_number && editFormData.contact_number.length !== 10 && (
+                      <p className="text-red-500 text-xs mt-1">Must be exactly 10 digits</p>
+                    )}
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-1">Date of Birth *</label>
+                    <input
+                      type="date"
+                      name="dob"
+                      value={editFormData.dob || ""}
+                      onChange={handleInputChange}
+                      className="w-full border rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-1">Gender *</label>
+                    <select
+                      name="gender"
+                      value={editFormData.gender || ""}
+                      onChange={handleInputChange}
+                      className="w-full border rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
+                      required
+                    >
+                      <option value="">Select Gender</option>
+                      <option value="Male">Male</option>
+                      <option value="Female">Female</option>
+                      <option value="Other">Other</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-1">Admission Number *</label>
+                    <input
+                      type="text"
+                      name="admission_number"
+                      value={editFormData.admission_number || ""}
+                      onChange={handleInputChange}
+                      className="w-full border rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-1">Student Photo</label>
+                    <input
+                      type="file"
+                      onChange={handlePhotoChange}
+                      className="w-full border rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
+                      accept="image/*"
+                    />
+                    {photoPreview && (
+                      <div className="mt-2">
+                        <img src={photoPreview} alt="Preview" className="w-20 h-20 rounded-full object-cover" />
+                      </div>
+                    )}
+                  </div>
+                </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                <div>
-                  <label className="block text-sm font-medium mb-1">Full Name *</label>
-                  <input
-                    type="text"
-                    name="full_name"
-                    value={editFormData.full_name || ""}
+                <div className="mb-4">
+                  <label className="block text-sm font-medium mb-1">Address</label>
+                  <textarea
+                    name="address"
+                    value={editFormData.address || ""}
                     onChange={handleInputChange}
                     className="w-full border rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
-                    required
+                    rows="3"
                   />
                 </div>
-                <div>
-                  <label className="block text-sm font-medium mb-1">Email *</label>
-                  <input
-                    type="email"
-                    name="email"
-                    value={editFormData.email || ""}
-                    onChange={handleInputChange}
-                    className="w-full border rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
-                    required
-                  />
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                  <div>
+                    <label className="block text-sm font-medium mb-1">Guardian Name</label>
+                    <input
+                      type="text"
+                      name="guardian_name"
+                      value={editFormData.guardian_name || ""}
+                      onChange={handleInputChange}
+                      className="w-full border rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-1">Guardian Contact</label>
+                    <input
+                      type="tel"
+                      name="guardian_contact"
+                      value={editFormData.guardian_contact || ""}
+                      onChange={handleInputChange}
+                      className="w-full border rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
+                      pattern="[0-9]{10}"
+                      maxLength="10"
+                    />
+                    {editFormData.guardian_contact && editFormData.guardian_contact.length !== 10 && (
+                      <p className="text-red-500 text-xs mt-1">Must be exactly 10 digits</p>
+                    )}
+                  </div>
                 </div>
-                <div>
-                  <label className="block text-sm font-medium mb-1">Contact Number *</label>
-                  <input
-                    type="tel"
-                    name="contact_number"
-                    value={editFormData.contact_number || ""}
-                    onChange={handleInputChange}
-                    className="w-full border rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
-                    pattern="[0-9]{10}"
-                    maxLength="10"
-                    required
-                  />
-                  {editFormData.contact_number && editFormData.contact_number.length !== 10 && (
-                    <p className="text-red-500 text-xs mt-1">Must be exactly 10 digits</p>
-                  )}
-                </div>
-                <div>
-                  <label className="block text-sm font-medium mb-1">Date of Birth *</label>
-                  <input
-                    type="date"
-                    name="dob"
-                    value={editFormData.dob || ""}
-                    onChange={handleInputChange}
-                    className="w-full border rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
-                    required
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium mb-1">Gender *</label>
-                  <select
-                    name="gender"
-                    value={editFormData.gender || ""}
-                    onChange={handleInputChange}
-                    className="w-full border rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
-                    required
-                  >
-                    <option value="">Select Gender</option>
-                    <option value="Male">Male</option>
-                    <option value="Female">Female</option>
-                    <option value="Other">Other</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium mb-1">Admission Number *</label>
-                  <input
-                    type="text"
-                    name="admission_number"
-                    value={editFormData.admission_number || ""}
-                    onChange={handleInputChange}
-                    className="w-full border rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
-                    required
-                  />
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium mb-1">Admission Date *</label>
+                    <input
+                      type="date"
+                      name="admission_date"
+                      value={editFormData.admission_date || ""}
+                      onChange={handleInputChange}
+                      className="w-full border rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-1">Select Branch *</label>
+                    <select
+                      name="branch_id"
+                      value={editFormData.branch_id || ""}
+                      onChange={handleInputChange}
+                      className="w-full border rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
+                      required
+                    >
+                      <option value="">-- Select Branch --</option>
+                      {branches.map((branch) => (
+                        <option key={branch.id} value={branch.id}>
+                          {branch.branch_name} - {branch.city}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
                 </div>
               </div>
 
-              <div className="mb-4">
-                <label className="block text-sm font-medium mb-1">Address</label>
-                <textarea
-                  name="address"
-                  value={editFormData.address || ""}
-                  onChange={handleInputChange}
-                  className="w-full border rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
-                  rows="3"
-                />
-              </div>
+              {/* Course Enrollment Section */}
+              <div className="bg-white shadow-lg rounded-xl p-6 mb-6">
+                <div className="flex items-center justify-between mb-6">
+                  <h2 className="text-xl font-semibold text-gray-800">Course Enrollment</h2>
+                  <span className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm font-medium">
+                    {selectedEditCourses.length} course(s) selected
+                  </span>
+                </div>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {courses.map((course) => (
+                    <div 
+                      key={course.id} 
+                      className={`border-2 rounded-xl p-4 transition-all duration-200 ${
+                        selectedEditCourses.includes(course.id) 
+                          ? 'border-blue-500 bg-blue-50 shadow-md' 
+                          : 'border-gray-200 hover:border-gray-300 hover:shadow-sm'
+                      }`}
+                    >
+                      <div className="flex items-start space-x-3">
+                        <input
+                          type="checkbox"
+                          id={`edit-course-${course.id}`}
+                          checked={selectedEditCourses.includes(course.id)}
+                          onChange={() => handleEditCourseSelection(course.id)}
+                          className="mt-1 w-5 h-5 text-blue-600 rounded focus:ring-blue-500 border-gray-300"
+                        />
+                        <div className="flex-1 min-w-0">
+                          <label 
+                            htmlFor={`edit-course-${course.id}`}
+                            className="font-semibold text-gray-900 cursor-pointer hover:text-blue-600 block text-sm"
+                          >
+                            {course.course_name}
+                          </label>
+                          
+                          <div className="mt-2 space-y-1">
+                            <p className="text-xs text-gray-600">
+                              <span className="font-medium">Code:</span> {course.course_code}
+                            </p>
+                            <p className="text-xs text-gray-600">
+                              <span className="font-medium">Duration:</span> {course.duration} months
+                            </p>
+                            <p className="text-xs text-gray-600">
+                              <span className="font-medium">Mode:</span> 
+                              <span className={`ml-1 px-2 py-0.5 rounded text-xs ${
+                                course.mode === 'Online' ? 'bg-green-100 text-green-800' :
+                                course.mode === 'Offline' ? 'bg-blue-100 text-blue-800' :
+                                'bg-purple-100 text-purple-800'
+                              }`}>
+                                {course.mode}
+                              </span>
+                            </p>
+                            <p className="text-xs text-gray-600">
+                              <span className="font-medium">Level:</span> {course.course_level}
+                            </p>
+                          </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                <div>
-                  <label className="block text-sm font-medium mb-1">Guardian Name</label>
-                  <input
-                    type="text"
-                    name="guardian_name"
-                    value={editFormData.guardian_name || ""}
-                    onChange={handleInputChange}
-                    className="w-full border rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
-                  />
+                          <div className="mt-3">
+                            <span className="text-lg font-bold text-green-600">
+                              ₹{course.discounted_price || course.actual_price || "0"}
+                            </span>
+                          </div>
+                          
+                          {/* Batch selection for selected courses */}
+                          {selectedEditCourses.includes(course.id) && (
+                            <div className="mt-4 pt-3 border-t border-gray-200">
+                              <label className="block text-sm font-semibold mb-2 text-gray-700">
+                                Select Batch *
+                              </label>
+                              <select
+                                value={courseBatches[course.id] || ""}
+                                onChange={(e) => handleEditBatchSelection(course.id, e.target.value)}
+                                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                required
+                              >
+                                <option value="">Choose a batch</option>
+                                {getBatchesForCourse(course.id).map((batch) => (
+                                  <option key={batch.id} value={batch.id}>
+                                    {batch.batch_name} 
+                                    {batch.batch_start_time && ` (${formatTime(batch.batch_start_time)})`}
+                                  </option>
+                                ))}
+                              </select>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
                 </div>
-                <div>
-                  <label className="block text-sm font-medium mb-1">Guardian Contact</label>
-                  <input
-                    type="tel"
-                    name="guardian_contact"
-                    value={editFormData.guardian_contact || ""}
-                    onChange={handleInputChange}
-                    className="w-full border rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
-                    pattern="[0-9]{10}"
-                    maxLength="10"
-                  />
-                  {editFormData.guardian_contact && editFormData.guardian_contact.length !== 10 && (
-                    <p className="text-red-500 text-xs mt-1">Must be exactly 10 digits</p>
-                  )}
-                </div>
+                
+                {/* Selected Courses Summary */}
+                {selectedEditCourses.length > 0 && (
+                  <div className="mt-6 p-6 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-200">
+                    <h3 className="font-bold text-lg mb-4 text-gray-800">Enrollment Summary</h3>
+                    <div className="space-y-3">
+                      {selectedEditCourses.map(courseId => {
+                        const course = courses.find(c => c.id == courseId);
+                        const batch = batches.find(b => b.id == courseBatches[courseId]);
+                        return course ? (
+                          <div key={courseId} className="flex justify-between items-center py-3 px-4 bg-white rounded-lg border border-gray-200">
+                            <div className="flex-1">
+                              <div className="font-semibold text-gray-800">{course.course_name}</div>
+                              {batch && (
+                                <div className="text-sm text-gray-600 mt-1">
+                                  <span className="font-medium">Batch:</span> {batch.batch_name}
+                                </div>
+                              )}
+                            </div>
+                            <div className="text-right">
+                              <div className="font-bold text-green-600">
+                                ₹{course.discounted_price || course.actual_price || "0"}
+                              </div>
+                            </div>
+                          </div>
+                        ) : null;
+                      })}
+                      <div className="border-t border-blue-200 pt-3 mt-2">
+                        <div className="flex justify-between items-center font-bold text-lg">
+                          <span className="text-gray-800">Total Fee:</span>
+                          <span className="text-blue-600">₹{editTotalFee}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
 
               <div className="flex justify-end space-x-3 pt-4">
@@ -919,6 +1228,5 @@ const formatBatchTiming = (startTime, endTime) => {
         </div>
       )}
     </div>
-    // </SAStaffLayout>
   );
 }

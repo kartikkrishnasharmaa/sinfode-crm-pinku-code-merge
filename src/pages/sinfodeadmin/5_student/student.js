@@ -599,7 +599,7 @@ export default function Student() {
         {/* Mobile sidebar toggle button */}
         <button
           onClick={() => setSidebarOpen(!sidebarOpen)}
-          className="md:hidden fixed top-20 left-4 z-50 bg-white p-3 rounded-full shadow-lg border border-gray-200"
+          className="md:hidden fixed top-20 left-4 bg-white p-3 rounded-full shadow-lg border border-gray-200"
           aria-label="Toggle sidebar"
         >
           {sidebarOpen ? "✕" : "☰"}
@@ -607,7 +607,7 @@ export default function Student() {
 
         {/* Sidebar */}
         <div
-          className={`fixed top-0 left-0 h-full w-64 bg-white shadow-xl p-6 space-y-2 transform transition-transform duration-300 ease-in-out z-40
+          className={`fixed top-0 left-0 h-full w-64 bg-white shadow-xl p-6 space-y-2 transform transition-transform duration-300 ease-in-out
             ${sidebarOpen ? "translate-x-0" : "-translate-x-full"}
             md:translate-x-0 md:static md:shadow-none`}
         >

@@ -87,7 +87,7 @@ function Exam() {
       setFilteredStudents(students);
       return;
     }
-    
+
     const filtered = students.filter(
       (s) => s.branch_id?.toString() === selectedBranch
     );
@@ -97,13 +97,13 @@ function Exam() {
   // Fetch exam marks for a specific student
   const fetchStudentExamMarks = async (studentId) => {
     if (!studentId) return;
-    
+
     try {
       const token = localStorage.getItem("token");
       const res = await axios.get(`/exam-marks/${studentId}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      
+
       if (res.data && res.data.length > 0) {
         // Transform API data to match our local format
         const transformedData = res.data.map(item => ({
@@ -120,7 +120,7 @@ function Exam() {
           obtainedMarks: item.marks_obtained,
           percentage: (item.marks_obtained / item.total_marks) * 100
         }));
-        
+
         setRecords(transformedData);
       } else {
         setRecords([]);
@@ -138,7 +138,7 @@ function Exam() {
       const res = await axios.get("/exam-marks", { // Adjust endpoint if needed
         headers: { Authorization: `Bearer ${token}` },
       });
-      
+
       if (res.data && res.data.length > 0) {
         // Transform API data to match our local format
         const transformedData = res.data.map(item => ({
@@ -155,7 +155,7 @@ function Exam() {
           obtainedMarks: item.marks_obtained,
           percentage: (item.marks_obtained / item.total_marks) * 100
         }));
-        
+
         setRecords(transformedData);
       }
     } catch (error) {
@@ -195,7 +195,7 @@ function Exam() {
   const handleStudentSelect = (e) => {
     const studentId = e.target.value;
     const student = filteredStudents.find(s => s.id.toString() === studentId);
-    
+
     if (student) {
       setFormData(prev => ({
         ...prev,
@@ -248,9 +248,12 @@ function Exam() {
         <div className="max-w-7xl mx-auto">
           <div className="flex items-center space-x-3">
             <div className="bg-white bg-opacity-20 p-2 rounded-lg">
-              <svg className="w-8 h-8" fill="currentColor" viewBox="0 0 24 24">
-                <path d="M12 2L2 7极10c0 5.55 3.84 9.74 9 11 5.16-1.26 9-5.45 9-11V7l-10-5z"/>
+              <svg className="w-8 h-8" viewBox="0 0 24 24" fill="currentColor" role="img" aria-label="Education (book)">
+                <title>Book</title>
+                <path d="M21 6v11a1 1 0 0 1-1 1c-2.5 0-5-1-7-1s-4.5 1-7 1a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1c2.5 0 5 1 7 1s4.5-1 7-1a1 1 0 0 1 1 1zM3 6c2.5 0 5 1 7 1s4.5-1 7-1" />
               </svg>
+
+
             </div>
             <div>
               <h1 className="text-3xl font-bold">Exam Marks Management</h1>
@@ -264,7 +267,7 @@ function Exam() {
         <div className="flex justify-between items-center mb-8">
           <div>
           </div>
-          <button 
+          <button
             onClick={() => setShowModal(true)}
             className="sf-button text-white px-6 py-3 rounded-lg font-medium flex items-center space-x-2 shadow-lg"
             style={{ background: '#0176d3', transition: 'all 0.2s ease' }}
@@ -277,31 +280,31 @@ function Exam() {
               e.target.style.transform = 'translateY(0)';
             }}
           >
-          
+
             <span>+ Add Marks</span>
           </button>
         </div>
 
-      
+
 
         {/* Data Table */}
-        <ExamTable 
-          records={records} 
-          editRecord={() => {}} // Remove edit functionality if not supported by API
-          deleteRecord={() => {}} // Remove delete functionality if not supported by API
+        <ExamTable
+          records={records}
+          editRecord={() => { }} // Remove edit functionality if not supported by API
+          deleteRecord={() => { }} // Remove delete functionality if not supported by API
           getGrade={getGrade}
         />
       </div>
 
       {/* Add Marks Modal */}
       {showModal && (
-        <ExamForm 
+        <ExamForm
           formData={formData}
           setFormData={setFormData}
           editingId={editingId}
           setEditingId={setEditingId}
           setShowModal={setShowModal}
-          handleSubmit={() => {}} // This will be handled internally in ExamForm
+          handleSubmit={() => { }} // This will be handled internally in ExamForm
           handleInputChange={handleInputChange}
           handleCourseChange={handleCourseChange}
           handleBranchChange={handleBranchChange}
