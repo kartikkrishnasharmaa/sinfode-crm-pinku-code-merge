@@ -31,6 +31,7 @@ const StudentFees = () => {
     number_of_installments: '',
     coupon_id: '',
     branch_discount_percent: '',
+    branch_discount_amount: '',
     branch_id: ''
   });
   const [selectedStudent, setSelectedStudent] = useState(null);
@@ -546,6 +547,7 @@ const StudentFees = () => {
       number_of_installments: '',
       coupon_id: '',
       branch_discount_percent: '',
+      branch_discount_amount: '',
     });
     setStudentSearch('');
     setSelectedStudent(null);
@@ -682,7 +684,8 @@ const StudentFees = () => {
         number_of_installments: formData.payment_mode === 'installments' ? parseInt(formData.number_of_installments) : 0,
         coupon_id: formData.coupon_id ? parseInt(formData.coupon_id) : null,
         branch_id: selectedStudent.branch_id,
-        branch_discount_percent: formData.branch_discount_percent ? parseFloat(formData.branch_discount_percent) : 0
+        branch_discount_percent: formData.branch_discount_percent ? parseFloat(formData.branch_discount_percent) : 0,
+        branch_discount_amount: formData.branch_discount_amount ? parseFloat(formData.branch_discount_amount) : 0,
 
       };
 
@@ -1088,7 +1091,7 @@ const StudentFees = () => {
                   </div>
                 </div>
                 <div className="sf-form-group">
-                  <label>Branch Intended Discount (Manual)</label>
+                  <label>Branch Intended Discount %</label>
                   <input
                     type="number"
                     name="branch_discount_percent"
@@ -1102,6 +1105,25 @@ const StudentFees = () => {
                     <div className="sf-branch-discount-info">
                       <small>
                         Discount Allowed range for this branch: {formatDiscountRange(branchesMap[selectedStudent.branch_id].discount_range) || '0-0'}%
+                      </small>
+                    </div>
+                  )}
+                </div>
+                {/* New Branch Discount Amount Field */}
+                <div className="sf-form-group">
+                  <label>Branch Intended Discount (Amount ₹)</label>
+                  <input
+                    type="number"
+                    name="branch_discount_amount"
+                    value={formData.branch_discount_amount}
+                    onChange={handleInputChange}
+                    min="0"
+                    placeholder="Enter discount amount in ₹"
+                  />
+                  {selectedStudent && selectedStudent.branch_id && branchesMap[selectedStudent.branch_id] && (
+                    <div className="sf-branch-discount-info">
+                      <small>
+                        Enter fixed discount amount in rupees
                       </small>
                     </div>
                   )}
