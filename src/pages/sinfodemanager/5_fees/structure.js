@@ -575,79 +575,88 @@ const StudentFees = () => {
           </div>
         </div>
 
-        {/* Horizontal Filters Section */}
-        <div className="sf-filters-horizontal">
-          <div className="sf-filters-header">
-            <h3>Filters</h3>
-            <button onClick={clearFilters} className="sf-clear-filters-btn">
-              <i className="fas fa-times"></i>
-              Clear All
-            </button>
-          </div>
-          
-          <div className="sf-filters-row">
-            <div className="sf-filter-group">
-              <label>Student Name</label>
-              <input
-                type="text"
-                placeholder="Search student..."
-                value={filters.studentName}
-                onChange={(e) => handleFilterChange('studentName', e.target.value)}
-                className="sf-filter-input"
-              />
-            </div>
+        {/* Filters Section */}
+        <div className="bg-white shadow-md rounded-lg p-6">
+  {/* Header */}
+  <div className="flex justify-between items-center mb-6">
+    <h3 className="text-xl font-semibold text-gray-800">Filters</h3>
+    <button
+      onClick={clearFilters}
+      className="flex items-center gap-2 text-sm text-red-500 hover:text-white hover:bg-red-500 border border-red-500 px-3 py-1 rounded transition-colors"
+    >
+      <i className="fas fa-times"></i> Clear All
+    </button>
+  </div>
 
-            <div className="sf-filter-group">
-              <label>Status</label>
-              <select
-                value={filters.status}
-                onChange={(e) => handleFilterChange('status', e.target.value)}
-                className="sf-filter-select"
-              >
-                <option value="">All Status</option>
-                <option value="paid">Paid</option>
-                <option value="partial">Partial</option>
-                <option value="unpaid">Unpaid</option>
-              </select>
-            </div>
+  {/* Filters Row */}
+  <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
+    {/* Student Name */}
+    <div className="flex flex-col">
+      <label className="text-gray-600 mb-1 font-medium">Student Name</label>
+      <input
+        type="text"
+        placeholder="Search student..."
+        value={filters.studentName}
+        onChange={(e) => handleFilterChange('studentName', e.target.value)}
+        className="border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
+      />
+    </div>
 
-            <div className="sf-filter-group">
-              <label>Course</label>
-              <select
-                value={filters.course}
-                onChange={(e) => handleFilterChange('course', e.target.value)}
-                className="sf-filter-select"
-              >
-                <option value="">All Courses</option>
-                {courses.map(course => (
-                  <option key={course.id} value={course.id}>
-                    {course.course_name}
-                  </option>
-                ))}
-              </select>
-            </div>
+    {/* Status */}
+    <div className="flex flex-col">
+      <label className="text-gray-600 mb-1 font-medium">Status</label>
+      <select
+        value={filters.status}
+        onChange={(e) => handleFilterChange('status', e.target.value)}
+        className="border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
+      >
+        <option value="">All Status</option>
+        <option value="paid">Paid</option>
+        <option value="partial">Partial</option>
+        <option value="unpaid">Unpaid</option>
+      </select>
+    </div>
 
-            <div className="sf-filter-group">
-              <label>From Date</label>
-              <input
-                type="date"
-                value={filters.dateFrom}
-                onChange={(e) => handleFilterChange('dateFrom', e.target.value)}
-                className="sf-filter-input"
-              />
-            </div>
+    {/* Course */}
+    <div className="flex flex-col">
+      <label className="text-gray-600 mb-1 font-medium">Course</label>
+      <select
+        value={filters.course}
+        onChange={(e) => handleFilterChange('course', e.target.value)}
+        className="border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
+      >
+        <option value="">All Courses</option>
+        {courses.map(course => (
+          <option key={course.id} value={course.id}>
+            {course.course_name}
+          </option>
+        ))}
+      </select>
+    </div>
 
-            <div className="sf-filter-group">
-              <label>To Date</label>
-              <input
-                type="date"
-                value={filters.dateTo}
-                onChange={(e) => handleFilterChange('dateTo', e.target.value)}
-                className="sf-filter-input"
-              />
-            </div>
-          </div>
-        </div>
+    {/* From Date */}
+    <div className="flex flex-col">
+      <label className="text-gray-600 mb-1 font-medium">From Date</label>
+      <input
+        type="date"
+        value={filters.dateFrom}
+        onChange={(e) => handleFilterChange('dateFrom', e.target.value)}
+        className="border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
+      />
+    </div>
+
+    {/* To Date */}
+    <div className="flex flex-col">
+      <label className="text-gray-600 mb-1 font-medium">To Date</label>
+      <input
+        type="date"
+        value={filters.dateTo}
+        onChange={(e) => handleFilterChange('dateTo', e.target.value)}
+        className="border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
+      />
+    </div>
+  </div>
+</div>
 
         {/* Student Fees Table */}
         <div className="sf-table-container">

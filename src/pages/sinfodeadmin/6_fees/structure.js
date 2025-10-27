@@ -21,7 +21,8 @@ const StudentFees = () => {
   const [sortOrder, setSortOrder] = useState("desc"); // "asc" or "desc"
   const [dateFilter, setDateFilter] = useState({ from: "", to: "" });
   const [branches, setBranches] = useState([]);
-
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [feeToDelete, setFeeToDelete] = useState(null);
   const [formData, setFormData] = useState({
     student_id: '',
     course_id: '',
@@ -478,47 +479,47 @@ const StudentFees = () => {
   };
 
   // Get status badge class
-  const getStatusClass = (status) => {
-    switch (status) {
-      case 'paid': return 'sf-badge-green';
-      case 'partial': return 'sf-badge-orange';
-      case 'unpaid': return 'sf-badge-red';
-      default: return 'sf-badge-gray';
-    }
-  };
+  // const getStatusClass = (status) => {
+  //   switch (status) {
+  //     case 'paid': return 'sf-badge-green';
+  //     case 'partial': return 'sf-badge-orange';
+  //     case 'unpaid': return 'sf-badge-red';
+  //     default: return 'sf-badge-gray';
+  //   }
+  // };
 
   // Get installment status based on payments and due date
-  const getInstallmentStatus = (installment, payments) => {
-    if (!payments || payments.length === 0) {
-      // Check if installment is overdue
-      const today = new Date();
-      const dueDate = new Date(installment.due_date);
-      if (dueDate < today) {
-        return 'overdue';
-      }
-      return 'pending';
-    }
+  // const getInstallmentStatus = (installment, payments) => {
+  //   if (!payments || payments.length === 0) {
+  //     // Check if installment is overdue
+  //     const today = new Date();
+  //     const dueDate = new Date(installment.due_date);
+  //     if (dueDate < today) {
+  //       return 'overdue';
+  //     }
+  //     return 'pending';
+  //   }
 
-    // Check if installment is fully paid
-    const paidAmount = payments
-      .filter(p => p.installment_number === installment.installment_number)
-      .reduce((sum, payment) => sum + parseFloat(payment.amount_paid), 0);
+  //   // Check if installment is fully paid
+  //   const paidAmount = payments
+  //     .filter(p => p.installment_number === installment.installment_number)
+  //     .reduce((sum, payment) => sum + parseFloat(payment.amount_paid), 0);
 
-    if (paidAmount >= parseFloat(installment.amount)) {
-      return 'paid';
-    } else if (paidAmount > 0) {
-      return 'partial';
-    }
+  //   if (paidAmount >= parseFloat(installment.amount)) {
+  //     return 'paid';
+  //   } else if (paidAmount > 0) {
+  //     return 'partial';
+  //   }
 
-    // Check if installment is overdue
-    const today = new Date();
-    const dueDate = new Date(installment.due_date);
-    if (dueDate < today) {
-      return 'overdue';
-    }
+  //   // Check if installment is overdue
+  //   const today = new Date();
+  //   const dueDate = new Date(installment.due_date);
+  //   if (dueDate < today) {
+  //     return 'overdue';
+  //   }
 
-    return 'pending';
-  };
+  //   return 'pending';
+  // };
 
   // Stats calculation
   const totalFees = useMemo(() =>
@@ -585,6 +586,47 @@ const StudentFees = () => {
     }
   };
 
+  // Delete fee function
+  const handleDelete = async (id) => {
+    try {
+      const token = localStorage.getItem("token");
+
+      await axios.delete(`/studentfee/${id}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      // Remove from state
+      setStudentFees(prevFees => prevFees.filter(fee => fee.id !== id));
+      setFilteredFees(prevFees => prevFees.filter(fee => fee.id !== id));
+
+      toast.success("Fee record deleted successfully!");
+      setShowDeleteModal(false);
+      setFeeToDelete(null);
+    } catch (error) {
+      console.error("Error deleting student fee:", error);
+      toast.error("Error deleting fee record. Please try again.");
+    }
+  };
+
+  // Open delete confirmation modal
+  const openDeleteModal = (fee) => {
+    setFeeToDelete(fee);
+    setShowDeleteModal(true);
+  };
+
+  // Close delete confirmation modal
+  const closeDeleteModal = () => {
+    setShowDeleteModal(false);
+    setFeeToDelete(null);
+  };
+
+  // Confirm and execute deletion
+  const confirmDelete = () => {
+    if (feeToDelete) {
+      handleDelete(feeToDelete.id);
+    }
+  };
+
   const closeViewModal = () => {
     setShowViewModal(false);
     setViewFee(null);
@@ -641,6 +683,7 @@ const StudentFees = () => {
         coupon_id: formData.coupon_id ? parseInt(formData.coupon_id) : null,
         branch_id: selectedStudent.branch_id,
         branch_discount_percent: formData.branch_discount_percent ? parseFloat(formData.branch_discount_percent) : 0
+
       };
 
       console.log('Sending fee structure data:', feeStructureData);
@@ -938,7 +981,7 @@ const StudentFees = () => {
                     </td>
 
                     <td>
-                      <span className={`sf-badge ${getStatusClass(fee.status)}`}>
+                      <span className={`sf-badge`}>
                         {fee.status}
                       </span>
                     </td>
@@ -946,6 +989,14 @@ const StudentFees = () => {
                       <div className="sf-actions">
                         <button onClick={() => handleView(fee.id)} className="sf-action-btn text-blue">
                           <i className="fas fa-eye"></i>
+                        </button>
+
+                        <button
+                          onClick={() => openDeleteModal(fee)}
+                          className="sf-action-btn text-red"
+                          title="Delete Fee"
+                        >
+                          <i className="fas fa-trash"></i>
                         </button>
                         {/* <button onClick={() => openPaymentModal(fee.id)} className="sf-action-btn text-green">
                           <i className="fas fa-money-bill"></i>
@@ -1045,7 +1096,6 @@ const StudentFees = () => {
                     onChange={handleInputChange}
                     min="0"
                     max="100"
-                    step="0.01"
                     placeholder="Enter discount percentage"
                   />
                   {selectedStudent && selectedStudent.branch_id && branchesMap[selectedStudent.branch_id] && (
@@ -1166,7 +1216,7 @@ const StudentFees = () => {
                     <p><strong>Paid Amount:</strong> ₹{parseFloat(viewFee.paid_amount || 0).toLocaleString()}</p>
                     <p><strong>Pending Amount:</strong> ₹{parseFloat(viewFee.pending_amount || 0).toLocaleString()}</p>
                     <p><strong>Status:</strong>
-                      <span className={`sf-badge ${getStatusClass(viewFee.status)}`}>
+                      <span className={`sf-badge`}>
                         {viewFee.status}
                       </span>
                     </p>
@@ -1189,15 +1239,15 @@ const StudentFees = () => {
                       </thead>
                       <tbody>
                         {installmentDetails.map((installment, index) => {
-                          const status = getInstallmentStatus(installment, viewFee.payments || []);
+
                           return (
                             <tr key={installment.id || index}>
                               <td>{installment.installment_number}</td>
                               <td>{installment.due_date ? new Date(installment.due_date).toLocaleDateString() : 'N/A'}</td>
                               <td>₹{parseFloat(installment.amount || 0).toLocaleString()}</td>
                               <td>
-                                <span className={`sf-badge ${getStatusClass(status)}`}>
-                                  {status}
+                                <span className={`sf-badge`}>
+                                  {installment.status}
                                 </span>
                               </td>
                             </tr>
@@ -1246,6 +1296,44 @@ const StudentFees = () => {
         </div>
       )}
 
+      {/* Simple Delete Confirmation Modal */}
+      {showDeleteModal && feeToDelete && (
+        <div className="sf-modal-backdrop">
+          <div className="sf-modal sf-delete-modal">
+            <div className="sf-modal-header">
+              <h3>Want to Delete this Fee Record ?</h3>
+              <button onClick={closeDeleteModal} className="sf-modal-close">
+                <i className="fas fa-times"></i>
+              </button>
+            </div>
+
+            <div className="sf-delete-content">
+              <div className="sf-delete-text">
+                <div className="sf-delete-details">
+                  <p><strong>Student:</strong> {getStudentName(feeToDelete.student_id)}</p>
+                  <p><strong>Course:</strong> {getCourseName(feeToDelete.course_id)}</p>
+                  <p><strong>Total Fee:</strong> ₹{parseFloat(feeToDelete.total_fee || 0).toLocaleString()}</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="sf-modal-actions">
+              <button
+                onClick={closeDeleteModal}
+                className="sf-cancel-btn"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmDelete}
+                className="sf-delete-btn"
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       {/* Payment Modal */}
       {showPaymentModal && (
         <div className="sf-modal-backdrop">

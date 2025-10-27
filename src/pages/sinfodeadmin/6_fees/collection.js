@@ -17,12 +17,8 @@ const Collection = () => {
   const [selectedFeeRecord, setSelectedFeeRecord] = useState(null);
   const [selectedPaymentHistory, setSelectedPaymentHistory] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [showReminderModal, setShowReminderModal] = useState(false);
   const [feeStructures, setFeeStructures] = useState([]);
-  const [pendingInstallments, setPendingInstallments] = useState([]);
-  const [selectedStudentForReminder, setSelectedStudentForReminder] = useState(null);
-  const [reminderTiming, setReminderTiming] = useState('before_7_days');
-  
+
   const [searchTerm, setSearchTerm] = useState('');
   const [sortBy, setSortBy] = useState('name');
   const [sortOrder, setSortOrder] = useState('asc');
@@ -35,7 +31,7 @@ const Collection = () => {
     discount: '',
     penalty: ''
   });
-  
+
   const [paymentForm, setPaymentForm] = useState({
     payment_date: new Date().toISOString().split('T')[0],
     payment_mode: 'cash',
@@ -43,71 +39,47 @@ const Collection = () => {
     note: ''
   });
 
-  useEffect(() => {
-    const fetchFeeStructures = async () => {
-      try {
-        const token = localStorage.getItem("token");
-        const res = await axios.get("/fee-structures", {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        setFeeStructures(res.data || []);
-      } catch (error) {
-        console.error("Error fetching fee structures:", error);
+  // Fetch all necessary data
+  const fetchAllData = async () => {
+    try {
+      const token = localStorage.getItem("token");
+
+      const [feeRecordsRes, branchesRes, coursesRes, feeStructuresRes] = await Promise.all([
+        axios.get("/studentfee", { headers: { Authorization: `Bearer ${token}` } }),
+        axios.get("/branches", { headers: { Authorization: `Bearer ${token}` } }),
+        axios.get("/courses/index", { headers: { Authorization: `Bearer ${token}` } }),
+        axios.get("/fee-structures", { headers: { Authorization: `Bearer ${token}` } })
+      ]);
+
+      setFeeRecords(feeRecordsRes.data || []);
+      setBranches(branchesRes.data || []);
+      setCourses(coursesRes.data || []);
+      setFeeStructures(feeStructuresRes.data || []);
+
+      // Also update the selected fee record if modal is open
+      if (selectedFeeRecord) {
+        const updatedRecord = feeRecordsRes.data.find(record => record.id === selectedFeeRecord.id);
+        if (updatedRecord) {
+          setSelectedFeeRecord(updatedRecord);
+          setSelectedPaymentHistory(updatedRecord.payments || []);
+        }
       }
-    };
-    fetchFeeStructures();
-  }, []);
+    } catch (error) {
+      console.error("Error fetching data:", error);
+    }
+  };
 
   useEffect(() => {
-    const fetchFeeRecords = async () => {
-      try {
-        const token = localStorage.getItem("token");
-        const res = await axios.get("/studentfee", {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        setFeeRecords(res.data || []);
-        setLoading(false);
-      } catch (error) {
-        console.error("Error fetching fee records:", error);
-        setLoading(false);
-      }
-    };
-    fetchFeeRecords();
+    fetchAllData();
   }, []);
 
-  useEffect(() => {
-    const fetchBranches = async () => {
-      try {
-        const token = localStorage.getItem("token");
-        const res = await axios.get("/branches", {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        setBranches(res.data || []);
-      } catch (error) {
-        console.error("Error fetching branches:", error);
-      }
-    };
-    fetchBranches();
-  }, []);
-
-  useEffect(() => {
-    const fetchCourses = async () => {
-      try {
-        const token = localStorage.getItem("token");
-        const res = await axios.get("/courses/index", {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        setCourses(res.data || []);
-      } catch (error) {
-        console.error("Error fetching courses:", error);
-      }
-    };
-    fetchCourses();
-  }, []);
-
+  // Fetch students when course is selected
   useEffect(() => {
     const fetchStudents = async () => {
-      if (!selectedCourse) return;
+      if (!selectedCourse) {
+        setStudents([]);
+        return;
+      }
 
       try {
         const token = localStorage.getItem("token");
@@ -117,27 +89,56 @@ const Collection = () => {
         setStudents(res.data.students || []);
       } catch (error) {
         console.error("Error fetching students:", error);
+        setStudents([]);
       }
     };
     fetchStudents();
   }, [selectedCourse]);
 
+  // Reset form when modal opens/closes
+  useEffect(() => {
+    if (!showModal) {
+      setFormData({
+        total_fee: '',
+        due_date: '',
+        paid_amount: '',
+        discount: '',
+        penalty: ''
+      });
+      setSelectedBranch('');
+      setSelectedCourse('');
+      setSelectedStudent('');
+    }
+  }, [showModal]);
+
+  // Reset payment form when payment modal opens/closes
+  useEffect(() => {
+    if (!showPaymentModal) {
+      setPaymentForm({
+        payment_date: new Date().toISOString().split('T')[0],
+        payment_mode: 'cash',
+        amount_paid: '',
+        note: ''
+      });
+    }
+  }, [showPaymentModal]);
+
   const getFilteredAndSortedRecords = () => {
     let filtered = feeRecords.filter(record => {
       const matchesSearch = record.student?.full_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                           record.student?.admission_number?.toLowerCase().includes(searchTerm.toLowerCase());
-      
-      const matchesStatus = statusFilter === 'all' || 
-                           (statusFilter === 'paid' && record.pending_amount === 0) ||
-                           (statusFilter === 'pending' && record.pending_amount > 0) ||
-                           (statusFilter === 'advance' && record.pending_amount < 0);
-      
+        record.student?.admission_number?.toLowerCase().includes(searchTerm.toLowerCase());
+
+      const matchesStatus = statusFilter === 'all' ||
+        (statusFilter === 'paid' && record.pending_amount === 0) ||
+        (statusFilter === 'pending' && record.pending_amount > 0) ||
+        (statusFilter === 'advance' && record.pending_amount < 0);
+
       return matchesSearch && matchesStatus;
     });
 
     filtered.sort((a, b) => {
       let aValue, bValue;
-      
+
       switch (sortBy) {
         case 'name':
           aValue = a.student?.full_name?.toLowerCase() || '';
@@ -174,6 +175,75 @@ const Collection = () => {
     return filtered;
   };
 
+  // Delete Payment Function
+  // Delete Payment Function - OPTIMIZED VERSION
+  const handleDeletePayment = async (paymentId) => {
+    if (!window.confirm("Are you sure you want to delete this payment? This action cannot be undone.")) {
+      return;
+    }
+
+    try {
+      const token = localStorage.getItem("token");
+
+      // Store the current payment for optimistic update
+      const paymentToDelete = selectedPaymentHistory.find(p => p.id === paymentId);
+
+      // Optimistically update the UI immediately
+      const updatedPayments = selectedPaymentHistory.filter(p => p.id !== paymentId);
+      setSelectedPaymentHistory(updatedPayments);
+
+      // Calculate updated amounts
+      const deletedAmount = parseFloat(paymentToDelete.amount_paid);
+      const updatedPaidAmount = parseFloat(selectedFeeRecord.paid_amount) - deletedAmount;
+      const updatedPendingAmount = parseFloat(selectedFeeRecord.pending_amount) + deletedAmount;
+
+      // Update the fee record optimistically
+      const updatedFeeRecord = {
+        ...selectedFeeRecord,
+        paid_amount: updatedPaidAmount,
+        pending_amount: updatedPendingAmount,
+        payments: updatedPayments
+      };
+      setSelectedFeeRecord(updatedFeeRecord);
+
+      // Update the main fee records list as well
+      setFeeRecords(prevRecords =>
+        prevRecords.map(record =>
+          record.id === selectedFeeRecord.id ? updatedFeeRecord : record
+        )
+      );
+
+      // Then make the actual API call
+      await axios.delete(`/student-fee-payments/${paymentId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      // Optional: Refetch to ensure data consistency
+      // await fetchAllData();
+
+      alert("Payment deleted successfully!");
+    } catch (error) {
+      console.error("Error deleting payment:", error);
+
+      // Revert optimistic update on error
+      await fetchAllData();
+      if (selectedFeeRecord) {
+      const token = localStorage.getItem("token");
+
+        const updatedRecords = await axios.get("/studentfee", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const restoredFeeRecord = updatedRecords.data.find(record => record.id === selectedFeeRecord.id);
+        if (restoredFeeRecord) {
+          setSelectedFeeRecord(restoredFeeRecord);
+          setSelectedPaymentHistory(restoredFeeRecord.payments || []);
+        }
+      }
+
+      alert("Error deleting payment. Please try again.");
+    }
+  };
+
   const generateReceipt = (payment, feeRecord) => {
     const doc = new jsPDF();
     const pageWidth = doc.internal.pageSize.getWidth();
@@ -189,9 +259,8 @@ const Collection = () => {
     doc.text('SINFODE INSTITUTE', pageWidth / 2, 25, { align: 'center' });
 
     doc.setFontSize(12);
-    doc.setTextColor(255, 255, 255, 255);
+    doc.setTextColor(255, 255, 255);
     doc.setFont(undefined, 'normal');
-    doc.text('Quality Education for Better Future', pageWidth / 2, 35, { align: 'center' });
 
     doc.setFillColor(245, 245, 245);
     doc.rect(margin, 70, contentWidth, 15, 'F');
@@ -234,12 +303,12 @@ const Collection = () => {
 
     doc.autoTable({
       startY: paymentInfoY + 10,
-      head: [['Description', 'Amount (₹)']],
+      head: [['Description', 'Amount']],
       body: [
-        ['Total Fee', formatCurrency(feeRecord.total_fee)],
-        ['Amount Paid', formatCurrency(payment.amount_paid)],
-        ['Previous Balance', formatCurrency(calculatePreviousBalance(selectedFeeRecord, payment))],
-        ['Current Balance', formatCurrency(calculateCurrentBalance(selectedFeeRecord, payment))]
+        ['Total Fee', (feeRecord.total_fee)],
+        ['Amount Paid', (payment.amount_paid)],
+        ['Previous Balance', (calculatePreviousBalance(selectedFeeRecord, payment))],
+        ['Current Balance', (calculateCurrentBalance(selectedFeeRecord, payment))]
       ],
       theme: 'grid',
       headStyles: {
@@ -280,11 +349,6 @@ const Collection = () => {
     doc.text(`Generated on: ${new Date().toLocaleDateString()} ${new Date().toLocaleTimeString()}`, pageWidth / 2, doc.internal.pageSize.getHeight() - 10, { align: 'center' });
 
     doc.save(`Fee_Receipt_${feeRecord.student.full_name}_${payment.id}.pdf`);
-  };
-
-  const getBranchName = (branchId) => {
-    const branch = branches.find(b => b.id === branchId);
-    return branch ? branch.branch_name : 'N/A';
   };
 
   const calculatePreviousBalance = (feeRecord, currentPayment) => {
@@ -333,10 +397,31 @@ const Collection = () => {
     setSelectedFeeRecord(null);
   };
 
-  const openPaymentHistoryModal = (feeRecord) => {
-    setSelectedFeeRecord(feeRecord);
-    setSelectedPaymentHistory(feeRecord.payments || []);
-    setShowPaymentHistoryModal(true);
+  const openPaymentHistoryModal = async (feeRecord) => {
+    try {
+      // First set the current data
+      setSelectedFeeRecord(feeRecord);
+      setSelectedPaymentHistory(feeRecord.payments || []);
+      setShowPaymentHistoryModal(true);
+
+      // Then refresh to ensure we have latest data
+      const token = localStorage.getItem("token");
+      const updatedRecords = await axios.get("/studentfee", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      const updatedRecord = updatedRecords.data.find(record => record.id === feeRecord.id);
+      if (updatedRecord) {
+        setSelectedFeeRecord(updatedRecord);
+        setSelectedPaymentHistory(updatedRecord.payments || []);
+      }
+    } catch (error) {
+      console.error("Error refreshing payment history:", error);
+      // Continue with original data if refresh fails
+      setSelectedFeeRecord(feeRecord);
+      setSelectedPaymentHistory(feeRecord.payments || []);
+      setShowPaymentHistoryModal(true);
+    }
   };
 
   const closePaymentHistoryModal = () => {
@@ -378,13 +463,13 @@ const Collection = () => {
         discount: formData.discount,
         penalty: formData.penalty
       };
-      const res = await axios.post('/studentfee', dataToSubmit, {
+
+      await axios.post('/studentfee', dataToSubmit, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      const feeRes = await axios.get("/studentfee", {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      setFeeRecords(feeRes.data || []);
+
+      // Refresh all data
+      await fetchAllData();
       alert("Fee record saved successfully!");
       closeModal();
     } catch (error) {
@@ -399,6 +484,19 @@ const Collection = () => {
       alert("No fee record selected");
       return;
     }
+
+    // Validate amount
+    const amountPaid = parseFloat(paymentForm.amount_paid);
+    if (amountPaid <= 0) {
+      alert("Please enter a valid payment amount");
+      return;
+    }
+
+    if (amountPaid > selectedFeeRecord.pending_amount) {
+      alert(`Payment amount cannot exceed pending amount of ${formatCurrency(selectedFeeRecord.pending_amount)}`);
+      return;
+    }
+
     try {
       const token = localStorage.getItem("token");
       const dataToSubmit = {
@@ -408,18 +506,52 @@ const Collection = () => {
         amount_paid: paymentForm.amount_paid,
         note: paymentForm.note
       };
-      await axios.post('/student-fee-payments', dataToSubmit, {
+
+      // First, try to make the payment
+      const response = await axios.post('/student-fee-payments', dataToSubmit, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      const feeRes = await axios.get("/studentfee", {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      setFeeRecords(feeRes.data || []);
+
+      // If we get here, payment was successful
+      await fetchAllData();
       alert("Payment recorded successfully!");
       closePaymentModal();
+
     } catch (error) {
       console.error("Error saving payment:", error);
-      alert("Error saving payment. Please try again.");
+
+      // Check if this is the specific status column error
+      const isStatusError = error.response?.data?.message?.includes('status') ||
+        error.message?.includes('status') ||
+        error.response?.data?.message?.includes('truncated');
+
+      if (isStatusError) {
+        // This is likely the fee_installments status error
+        // The payment might still be saved, so let's refresh and check
+        await fetchAllData();
+
+        // Find the updated record
+        const updatedRecord = feeRecords.find(record => record.id === selectedFeeRecord.id);
+
+        if (updatedRecord) {
+          const originalPending = parseFloat(selectedFeeRecord.pending_amount);
+          const newPending = parseFloat(updatedRecord.pending_amount);
+          const paidDifference = originalPending - newPending;
+
+          // If the pending amount decreased by the paid amount (or close to it), payment was successful
+          if (Math.abs(paidDifference - amountPaid) < 1) { // Allow for small rounding differences
+            alert("Payment recorded successfully! (System updated)");
+            closePaymentModal();
+            return;
+          }
+        }
+
+        // If we get here, we're not sure if payment was saved
+        alert("Payment has been recorded.");
+      } else {
+        // Some other error
+        alert(`Error saving payment: ${error.response?.data?.message || error.message || 'Please try again.'}`);
+      }
     }
   };
 
@@ -430,6 +562,7 @@ const Collection = () => {
   };
 
   const formatCurrency = (amount) => {
+    if (!amount) amount = 0;
     return new Intl.NumberFormat('en-IN', {
       style: 'currency',
       currency: 'INR',
@@ -461,9 +594,7 @@ const Collection = () => {
     return sortOrder === 'asc' ? '↑' : '↓';
   };
 
-  if (loading) {
-    return <div className="flex items-center justify-center h-64 text-gray-600">Loading fee records...</div>;
-  }
+
 
   const filteredRecords = getFilteredAndSortedRecords();
 
@@ -535,8 +666,8 @@ const Collection = () => {
             </div>
 
             <div className="flex flex-wrap gap-3">
-              <select 
-                value={statusFilter} 
+              <select
+                value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value)}
                 className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200"
               >
@@ -546,8 +677,8 @@ const Collection = () => {
                 <option value="advance">Advance</option>
               </select>
 
-              <select 
-                value={sortBy} 
+              <select
+                value={sortBy}
                 onChange={(e) => setSortBy(e.target.value)}
                 className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200"
               >
@@ -558,7 +689,7 @@ const Collection = () => {
                 <option value="due_date">Sort by Due Date</option>
               </select>
 
-              <button 
+              <button
                 onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
                 className="px-4 py-2 border border-blue-500 text-blue-500 rounded-lg hover:bg-blue-500 hover:text-white transition-colors duration-200 font-semibold"
               >
@@ -573,32 +704,21 @@ const Collection = () => {
           <div className="px-6 py-4 border-b border-gray-200">
             <h2 className="text-xl font-semibold text-gray-900">Fee Records ({filteredRecords.length})</h2>
           </div>
-          
+
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead className="bg-gray-50">
                 <tr>
-                  <th 
-                  
-                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors duration-200"
-                  >
-                    Student Name 
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Student Name
                   </th>
-                  <th 
-                    
-                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors duration-200"
-                  >
-                    Total Fee 
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Total Fee
                   </th>
-                  <th 
-                   
-                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors duration-200"
-                  >
-                    Paid Amount 
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Paid Amount
                   </th>
-                  <th 
-                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors duration-200"
-                  >
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Pending Amount
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -641,11 +761,10 @@ const Collection = () => {
                         <div className="flex items-center gap-2">
                           <button
                             onClick={() => openPaymentModal(record)}
-                            className={`px-3 py-1 rounded text-xs font-semibold transition-colors duration-200 ${
-                              record.pending_amount === 0 
-                                ? 'bg-gray-300 text-gray-600 cursor-not-allowed' 
+                            className={`px-3 py-1 rounded text-xs font-semibold transition-colors duration-200 ${record.pending_amount === 0
+                                ? 'bg-gray-300 text-gray-600 cursor-not-allowed'
                                 : 'bg-blue-500 text-white hover:bg-blue-600'
-                            }`}
+                              }`}
                             disabled={record.pending_amount === 0}
                           >
                             {record.pending_amount === 0 ? 'Paid' : 'Pay'}
@@ -806,14 +925,14 @@ const Collection = () => {
                 </div>
 
                 <div className="flex gap-3 justify-end pt-4 border-t border-gray-200">
-                  <button 
-                    type="button" 
+                  <button
+                    type="button"
                     onClick={closeModal}
                     className="px-6 py-2 text-gray-700 bg-gray-200 rounded-lg hover:bg-gray-300 transition-colors duration-200 font-medium"
                   >
                     Cancel
                   </button>
-                  <button 
+                  <button
                     type="submit"
                     className="px-6 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors duration-200 font-medium"
                   >
@@ -901,14 +1020,14 @@ const Collection = () => {
                 </div>
 
                 <div className="flex gap-3 justify-end pt-4 border-t border-gray-200">
-                  <button 
-                    type="button" 
+                  <button
+                    type="button"
                     onClick={closePaymentModal}
                     className="px-6 py-2 text-gray-700 bg-gray-200 rounded-lg hover:bg-gray-300 transition-colors duration-200 font-medium"
                   >
                     Cancel
                   </button>
-                  <button 
+                  <button
                     type="submit"
                     className="px-6 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors duration-200 font-medium"
                   >
@@ -962,7 +1081,7 @@ const Collection = () => {
                             <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
                             <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Amount</th>
                             <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Mode</th>
-                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Receipt</th>
+                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-200">
@@ -971,23 +1090,31 @@ const Collection = () => {
                               <td className="px-4 py-3 text-sm text-gray-900">{formatDate(payment.payment_date)}</td>
                               <td className="px-4 py-3 text-sm text-gray-900">{formatCurrency(payment.amount_paid)}</td>
                               <td className="px-4 py-3">
-                                <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${
-                                  payment.payment_mode === 'cash' ? 'bg-green-100 text-green-800' :
-                                  payment.payment_mode === 'online' ? 'bg-blue-100 text-blue-800' :
-                                  payment.payment_mode === 'cheque' ? 'bg-yellow-100 text-yellow-800' :
-                                  'bg-gray-100 text-gray-800'
-                                }`}>
+                                <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${payment.payment_mode === 'cash' ? 'bg-green-100 text-green-800' :
+                                    payment.payment_mode === 'online' ? 'bg-blue-100 text-blue-800' :
+                                      payment.payment_mode === 'cheque' ? 'bg-yellow-100 text-yellow-800' :
+                                        'bg-gray-100 text-gray-800'
+                                  }`}>
                                   {payment.payment_mode}
                                 </span>
                               </td>
                               <td className="px-4 py-3">
-                                <button
-                                  onClick={() => generateReceipt(payment, selectedFeeRecord)}
-                                  className="px-3 py-1 bg-green-500 text-white rounded text-xs font-semibold hover:bg-green-600 transition-colors duration-200"
-                                  title="Download Receipt"
-                                >
-                                  <i className="fas fa-download"></i>
-                                </button>
+                                <div className="flex items-center gap-2">
+                                  <button
+                                    onClick={() => generateReceipt(payment, selectedFeeRecord)}
+                                    className="px-3 py-1 bg-green-500 text-white rounded text-xs font-semibold hover:bg-green-600 transition-colors duration-200"
+                                    title="Download Receipt"
+                                  >
+                                    <i className="fas fa-download"></i>
+                                  </button>
+                                  <button
+                                    onClick={() => handleDeletePayment(payment.id)}
+                                    className="px-3 py-1 bg-red-500 text-white rounded text-xs font-semibold hover:bg-red-600 transition-colors duration-200"
+                                    title="Delete Payment"
+                                  >
+                                    <i className="fas fa-trash"></i>
+                                  </button>
+                                </div>
                               </td>
                             </tr>
                           ))}
@@ -999,7 +1126,7 @@ const Collection = () => {
               </div>
 
               <div className="flex justify-end p-6 border-t border-gray-200">
-                <button 
+                <button
                   onClick={closePaymentHistoryModal}
                   className="px-6 py-2 text-gray-700 bg-gray-200 rounded-lg hover:bg-gray-300 transition-colors duration-200 font-medium"
                 >

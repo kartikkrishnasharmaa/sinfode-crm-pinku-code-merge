@@ -15,7 +15,7 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  max-width: 1200px;
+  /* max-width: 1200px; */
   margin: 0 auto;
 }
 .sf-branch-discount-info {
@@ -81,10 +81,9 @@
   font-size: 0.9rem;
 }
 
-/* Main Content Styles */
 .sf-main {
   padding: 2rem;
-  max-width: 1200px;
+  max-width: 1400px;
   margin: 0 auto;
 }
 
@@ -96,6 +95,249 @@
   margin-bottom: 2rem;
 }
 
+/* Professional Delete Confirmation Modal Styles */
+.sf-delete-modal {
+  max-width: 400px;
+  width: 90%;
+  border-radius: 12px;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  border: 1px solid #e5e7eb;
+  animation: sf-modal-appear 0.2s ease-out;
+}
+
+@keyframes sf-modal-appear {
+  from {
+    opacity: 0;
+    transform: scale(0.95) translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.sf-delete-modal .sf-modal-header {
+  padding: 1.5rem 1.5rem 1rem;
+  border-bottom: 1px solid #f3f4f6;
+  background: #fafbfc;
+  border-radius: 12px 12px 0 0;
+}
+
+.sf-delete-modal .sf-modal-header h3 {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #1f2937;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.sf-delete-modal .sf-modal-header h3::before {
+  content: "🗑️";
+  font-size: 1.1rem;
+}
+
+.sf-delete-modal .sf-modal-close {
+  background: #f3f4f6;
+  border: none;
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #6b7280;
+  transition: all 0.2s;
+}
+
+.sf-delete-modal .sf-modal-close:hover {
+  background: #e5e7eb;
+  color: #374151;
+}
+
+.sf-delete-content {
+  padding: 1.5rem;
+  text-align: center;
+}
+
+.sf-delete-icon {
+  width: 64px;
+  height: 64px;
+  margin: 0 auto 1rem;
+  background: #fef2f2;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid #fee2e2;
+}
+
+.sf-delete-icon i {
+  font-size: 1.5rem;
+  color: #dc2626;
+}
+
+.sf-delete-text h4 {
+  color: #1f2937;
+  margin: 0 0 0.75rem 0;
+  font-size: 1.125rem;
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+.sf-delete-details {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 1rem;
+  margin: 1.25rem 0;
+  text-align: left;
+}
+
+.sf-delete-details p {
+  margin: 0.375rem 0;
+  color: #374151;
+  font-size: 0.875rem;
+  line-height: 1.4;
+}
+
+.sf-delete-details strong {
+  color: #1f2937;
+  font-weight: 600;
+}
+
+.sf-delete-warning {
+  color: #dc2626;
+  font-size: 0.875rem;
+  font-weight: 500;
+  background: #fef2f2;
+  padding: 0.5rem 0.75rem;
+  border-radius: 6px;
+  border: 1px solid #fecaca;
+  margin: 1rem 0 0 0;
+}
+
+.sf-modal-actions {
+  padding: 1rem 1.5rem 1.5rem;
+  display: flex;
+  gap: 0.75rem;
+  justify-content: flex-end;
+  border-top: 1px solid #f3f4f6;
+}
+
+.sf-cancel-btn {
+  background: white;
+  color: #374151;
+  border: 1px solid #d1d5db;
+  padding: 0.625rem 1.25rem;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 500;
+  font-size: 0.875rem;
+  transition: all 0.2s;
+  min-width: 80px;
+}
+
+.sf-cancel-btn:hover {
+  background: #f9fafb;
+  border-color: #9ca3af;
+  color: #1f2937;
+}
+
+.sf-delete-btn {
+  background: #dc2626;
+  color: white;
+  border: 1px solid #dc2626;
+  padding: 0.625rem 1.25rem;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 500;
+  font-size: 0.875rem;
+  transition: all 0.2s;
+  min-width: 80px;
+}
+
+.sf-delete-btn:hover {
+  background: #b91c1c;
+  border-color: #b91c1c;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 6px -1px rgba(220, 38, 38, 0.2);
+}
+
+/* Backdrop improvements */
+.sf-modal-backdrop {
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(4px);
+  animation: sf-backdrop-appear 0.2s ease-out;
+}
+
+@keyframes sf-backdrop-appear {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* Responsive design */
+@media (max-width: 480px) {
+  .sf-delete-modal {
+    width: 95%;
+    margin: 1rem;
+  }
+  
+  .sf-modal-actions {
+    flex-direction: column-reverse;
+  }
+  
+  .sf-cancel-btn,
+  .sf-delete-btn {
+    min-width: auto;
+    width: 100%;
+  }
+}
+
+/* Action button improvements in table */
+.sf-actions {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: center;
+}
+
+.sf-action-btn {
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-size: 0.875rem;
+}
+
+.sf-action-btn.text-blue {
+  background: #eff6ff;
+  color: #2563eb;
+}
+
+.sf-action-btn.text-blue:hover {
+  background: #dbeafe;
+  color: #1d4ed8;
+}
+
+.sf-action-btn.text-red {
+  background: #fef2f2;
+  color: #dc2626;
+}
+
+.sf-action-btn.text-red:hover {
+  background: #fee2e2;
+  color: #b91c1c;
+}
 .sf-stat-card {
   background: white;
   border-radius: 12px;
