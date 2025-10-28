@@ -4,7 +4,6 @@ import './StudentFees.css';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
-
 const StudentFees = () => {
   const [studentFees, setStudentFees] = useState([]);
   const [courses, setCourses] = useState([]);
@@ -18,14 +17,13 @@ const StudentFees = () => {
   const [viewFee, setViewFee] = useState(null);
   const [paymentAmount, setPaymentAmount] = useState('');
   const [sortField, setSortField] = useState("created_at");
-  const [sortOrder, setSortOrder] = useState("desc"); // "asc" or "desc"
+  const [sortOrder, setSortOrder] = useState("desc");
   const [dateFilter, setDateFilter] = useState({ from: "", to: "" });
   const [branches, setBranches] = useState([]);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [feeToDelete, setFeeToDelete] = useState(null);
   const [formData, setFormData] = useState({
     student_id: '',
-    course_id: '',
     fee_type: 'Tuition',
     payment_mode: 'one-time',
     number_of_installments: '',
@@ -35,7 +33,7 @@ const StudentFees = () => {
     branch_id: ''
   });
   const [selectedStudent, setSelectedStudent] = useState(null);
-  const [selectedCourse, setSelectedCourse] = useState(null);
+  const [selectedCourses, setSelectedCourses] = useState([]);
   const [finalFee, setFinalFee] = useState(0);
   const [selectedCoupon, setSelectedCoupon] = useState('');
   const [installmentDetails, setInstallmentDetails] = useState([]);
@@ -50,32 +48,6 @@ const StudentFees = () => {
   // Table search state
   const [tableSearch, setTableSearch] = useState('');
   const [filteredFees, setFilteredFees] = useState([]);
-
-  // Fee Structures table search state
-  const [feeStructureSearch, setFeeStructureSearch] = useState('');
-  const [filteredFeeStructures, setFilteredFeeStructures] = useState([]);
-  const filteredAndSortedFees = (tableSearch ? studentFees.filter(fee => {
-    const student = studentsMap[fee.student_id];
-    if (!student) return false;
-    return (
-      student.full_name.toLowerCase().includes(tableSearch.toLowerCase()) ||
-      student.admission_number.toLowerCase().includes(tableSearch.toLowerCase()) ||
-      getCourseName(fee.course_id).toLowerCase().includes(tableSearch.toLowerCase())
-    );
-  }) : studentFees)
-    .filter(fee => {
-      if (!dateFilter.from && !dateFilter.to) return true;
-      const createdDate = new Date(fee.created_at);
-      if (dateFilter.from && createdDate < new Date(dateFilter.from)) return false;
-      if (dateFilter.to && createdDate > new Date(dateFilter.to)) return false;
-      return true;
-    })
-    .sort((a, b) => {
-      const valA = a[sortField] || "";
-      const valB = b[sortField] || "";
-      if (sortOrder === "asc") return new Date(valA) - new Date(valB);
-      return new Date(valB) - new Date(valA);
-    });
 
   // Create maps for quick lookups
   const studentsMap = useMemo(() => {
@@ -94,7 +66,6 @@ const StudentFees = () => {
     return map;
   }, [courses]);
 
-  // Create branches map for quick lookup
   const branchesMap = useMemo(() => {
     const map = {};
     branches.forEach(branch => {
@@ -102,6 +73,32 @@ const StudentFees = () => {
     });
     return map;
   }, [branches]);
+
+  // Filter and sort fees
+  const filteredAndSortedFees = useMemo(() => {
+    return (tableSearch ? studentFees.filter(fee => {
+      const student = studentsMap[fee.student_id];
+      if (!student) return false;
+      return (
+        student.full_name.toLowerCase().includes(tableSearch.toLowerCase()) ||
+        student.admission_number.toLowerCase().includes(tableSearch.toLowerCase()) ||
+        getCourseName(fee.course_id).toLowerCase().includes(tableSearch.toLowerCase())
+      );
+    }) : studentFees)
+      .filter(fee => {
+        if (!dateFilter.from && !dateFilter.to) return true;
+        const createdDate = new Date(fee.created_at);
+        if (dateFilter.from && createdDate < new Date(dateFilter.from)) return false;
+        if (dateFilter.to && createdDate > new Date(dateFilter.to)) return false;
+        return true;
+      })
+      .sort((a, b) => {
+        const valA = a[sortField] || "";
+        const valB = b[sortField] || "";
+        if (sortOrder === "asc") return new Date(valA) - new Date(valB);
+        return new Date(valB) - new Date(valA);
+      });
+  }, [studentFees, tableSearch, studentsMap, dateFilter, sortField, sortOrder]);
 
   // Fetch all student fees
   const fetchStudentFees = async () => {
@@ -120,14 +117,10 @@ const StudentFees = () => {
   const fetchBranches = async () => {
     try {
       const token = localStorage.getItem("token");
-      if (!token) {
-        // toast.error("No token found! Please login again.");
-        return;
-      }
+      if (!token) return;
       const res = await axios.get("branches", {
         headers: { Authorization: `Bearer ${token}` },
       });
-      console.log("All Branches", res.data)
       const branchData = res.data.map((branch) => ({
         id: branch.id,
         branchName: branch.branch_name,
@@ -143,17 +136,11 @@ const StudentFees = () => {
         address: branch.address || "",
         branch_type: branch.branch_type || "Main",
       }));
-
       setBranches(branchData);
     } catch (error) {
       console.error("Error fetching branches:", error);
-      // toast.error("Failed to load branches");
     }
   };
-
-  useEffect(() => {
-    fetchBranches();
-  }, []);
 
   // Fetch all courses
   const fetchCourses = async () => {
@@ -167,22 +154,7 @@ const StudentFees = () => {
       console.error("Error fetching courses:", error);
     }
   };
-  // Helper function to format discount range for display
-  const formatDiscountRange = (discountRange) => {
-    if (!discountRange) return '0-0';
 
-    if (typeof discountRange === 'string') {
-      return discountRange;
-    } else if (Array.isArray(discountRange)) {
-      return discountRange.join('-');
-    } else if (typeof discountRange === 'object' && discountRange !== null) {
-      const min = discountRange.min || discountRange.min_discount || 0;
-      const max = discountRange.max || discountRange.max_discount || 0;
-      return `${min}-${max}`;
-    } else {
-      return `0-${discountRange}`;
-    }
-  };
   // Fetch all students
   const fetchStudents = async () => {
     try {
@@ -204,9 +176,7 @@ const StudentFees = () => {
       const res = await axios.get("/fee-structures", {
         headers: { Authorization: `Bearer ${token}` },
       });
-      console.log(res.data)
       setFeeStructures(res.data || []);
-      setFilteredFeeStructures(res.data || []);
     } catch (error) {
       console.error("Error fetching fee structures:", error);
     }
@@ -234,7 +204,8 @@ const StudentFees = () => {
           fetchCourses(),
           fetchStudents(),
           fetchFeeStructures(),
-          fetchCoupons()
+          fetchCoupons(),
+          fetchBranches()
         ]);
       } catch (error) {
         console.error("Error initializing data:", error);
@@ -242,7 +213,6 @@ const StudentFees = () => {
         setLoading(false);
       }
     };
-
     initData();
   }, []);
 
@@ -261,71 +231,67 @@ const StudentFees = () => {
     }
   }, [studentSearch, students]);
 
-  // Update filtered fees when table search changes
-  useEffect(() => {
-    if (tableSearch) {
-      const filtered = studentFees.filter(fee => {
-        const student = studentsMap[fee.student_id];
-        if (!student) return false;
+  // Calculate total fees from all courses - FIXED
+  const calculateTotalFees = () => {
+    if (selectedCourses.length === 0) return 0;
+    
+    const baseTotal = selectedCourses.reduce((total, course) => {
+      return total + parseFloat(course.discounted_price || 0);
+    }, 0);
+    
+    return baseTotal;
+  };
 
-        return (
-          student.full_name.toLowerCase().includes(tableSearch.toLowerCase()) ||
-          student.admission_number.toLowerCase().includes(tableSearch.toLowerCase()) ||
-          getCourseName(fee.course_id).toLowerCase().includes(tableSearch.toLowerCase())
-        );
-      });
-      setFilteredFees(filtered);
-    } else {
-      setFilteredFees(studentFees);
+  // Calculate discounted total - FIXED
+  const calculateDiscountedTotal = () => {
+    const baseTotal = calculateTotalFees();
+    
+    // Apply branch discount percentage if provided
+    if (formData.branch_discount_percent) {
+      const discountPercent = (formData.branch_discount_percent) / 100;
+      return baseTotal * (1 - discountPercent);
     }
-  }, [tableSearch, studentFees, studentsMap]);
-
-  // Update filtered fee structures when search changes
-  useEffect(() => {
-    if (feeStructureSearch) {
-      const filtered = feeStructures.filter(structure => {
-        const student = studentsMap[structure.student_id];
-        const course = coursesMap[structure.course_id];
-
-        return (
-          (student && student.full_name.toLowerCase().includes(feeStructureSearch.toLowerCase())) ||
-          (student && student.admission_number.toLowerCase().includes(feeStructureSearch.toLowerCase())) ||
-          (course && course.course_name.toLowerCase().includes(feeStructureSearch.toLowerCase()))
-        );
-      });
-      setFilteredFeeStructures(filtered);
-    } else {
-      setFilteredFeeStructures(feeStructures);
+    
+    // Apply branch discount amount if provided
+    if (formData.branch_discount_amount) {
+      const discountAmount = (formData.branch_discount_amount);
+      return Math.max(0, baseTotal - discountAmount);
     }
-  }, [feeStructureSearch, feeStructures, studentsMap, coursesMap]);
+    
+    return baseTotal;
+  };
 
-  // Update selected student when formData.student_id changes
+  // Update final fee when courses or discounts change
   useEffect(() => {
-    if (formData.student_id) {
-      const student = studentsMap[formData.student_id];
-      setSelectedStudent(student);
-      if (student && student.course_id) {
-        const course = coursesMap[student.course_id];
-        setSelectedCourse(course);
-        if (course) {
-          setFinalFee(course.discounted_price_price || 0);
-        }
-      }
-    } else {
-      setSelectedStudent(null);
-      setSelectedCourse(null);
-      setFinalFee(0);
-    }
-  }, [formData.student_id, studentsMap, coursesMap]);
+    setFinalFee(calculateDiscountedTotal());
+  }, [selectedCourses, formData.branch_discount_percent, formData.branch_discount_amount]);
 
-  // Handle student selection from dropdown
+  // Handle student selection from dropdown - FIXED
   const handleStudentSelect = (student) => {
     setFormData(prev => ({
       ...prev,
-      student_id: student.id
+      student_id: student.id,
+      branch_id: student.branch_id
     }));
     setStudentSearch(`${student.full_name} (${student.admission_number})`);
     setShowStudentDropdown(false);
+    setSelectedStudent(student);
+    
+    // Set selected courses from student's courses
+    // FIX: Handle both single course (course_id) and multiple courses (courses array)
+    if (student.courses && student.courses.length > 0) {
+      setSelectedCourses(student.courses);
+    } else if (student.course_id) {
+      // Handle legacy single course structure
+      const singleCourse = courses.find(c => c.id === student.course_id);
+      if (singleCourse) {
+        setSelectedCourses([singleCourse]);
+      } else {
+        setSelectedCourses([]);
+      }
+    } else {
+      setSelectedCourses([]);
+    }
 
     // Validate if branch discount is already entered for the selected student
     if (formData.branch_discount_percent) {
@@ -343,8 +309,6 @@ const StudentFees = () => {
     if (!branch || !branch.discount_range) return true;
 
     const branchDiscountRange = branch.discount_range;
-
-    // Handle different types of discount_range
     let minDiscount, maxDiscount;
 
     if (typeof branchDiscountRange === 'string') {
@@ -378,39 +342,32 @@ const StudentFees = () => {
   };
 
   const validateBranchDiscount = (discountPercent, branchId) => {
-    if (!branchId || !discountPercent) return true; // No validation needed if no branch or discount
+    if (!branchId || !discountPercent) return true;
 
     const branch = branchesMap[branchId];
-    if (!branch || !branch.discount_range) return true; // No validation if branch not found or no discount range
+    if (!branch || !branch.discount_range) return true;
 
     const branchDiscountRange = branch.discount_range;
-
-    // Handle different types of discount_range
     let minDiscount, maxDiscount;
 
     if (typeof branchDiscountRange === 'string') {
-      // If it's a string like "0-10" or "5-15"
       const rangeParts = branchDiscountRange.split('-').map(Number);
       minDiscount = rangeParts[0];
       maxDiscount = rangeParts[1];
     } else if (Array.isArray(branchDiscountRange)) {
-      // If it's an array like [0, 10] or [5, 15]
       minDiscount = Number(branchDiscountRange[0]);
       maxDiscount = Number(branchDiscountRange[1]);
     } else if (typeof branchDiscountRange === 'object' && branchDiscountRange !== null) {
-      // If it's an object like {min: 0, max: 10}
       minDiscount = Number(branchDiscountRange.min || branchDiscountRange.min_discount || 0);
       maxDiscount = Number(branchDiscountRange.max || branchDiscountRange.max_discount || 0);
     } else {
-      // If it's a number or other type, assume it's the max discount with min 0
       minDiscount = 0;
       maxDiscount = Number(branchDiscountRange);
     }
 
-    // Validate the numbers
     if (isNaN(minDiscount) || isNaN(maxDiscount)) {
       console.warn('Invalid discount range format:', branchDiscountRange);
-      return true; // Skip validation if range is invalid
+      return true;
     }
 
     const enteredDiscount = parseFloat(discountPercent);
@@ -427,11 +384,9 @@ const StudentFees = () => {
   const handleBranchDiscountChange = (e) => {
     const { name, value } = e.target;
 
-    // If there's a value and a selected student with branch, validate immediately
     if (value && selectedStudent && selectedStudent.branch_id) {
       const isValid = validateBranchDiscount(value, selectedStudent.branch_id);
       if (!isValid) {
-        // Clear the invalid input
         setFormData(prev => ({
           ...prev,
           [name]: ''
@@ -440,18 +395,16 @@ const StudentFees = () => {
       }
     }
 
-    // If validation passes or no branch selected, update normally
     setFormData(prev => ({
       ...prev,
       [name]: value
     }));
   };
 
-  // Check if student already has a fee structure for the selected course
-  const hasExistingFeeStructure = (studentId, courseId) => {
+  // Check if student already has a fee structure
+  const hasExistingFeeStructure = (studentId) => {
     return feeStructures.some(structure =>
-      structure.student_id === parseInt(studentId) &&
-      structure.course_id === parseInt(courseId)
+      structure.student_id === parseInt(studentId)
     );
   };
 
@@ -479,79 +432,37 @@ const StudentFees = () => {
     return course ? `${course.course_name} (${course.course_code})` : `Course ID: ${courseId}`;
   };
 
-  // Get status badge class
-  // const getStatusClass = (status) => {
-  //   switch (status) {
-  //     case 'paid': return 'sf-badge-green';
-  //     case 'partial': return 'sf-badge-orange';
-  //     case 'unpaid': return 'sf-badge-red';
-  //     default: return 'sf-badge-gray';
-  //   }
-  // };
+  // Format discount range for display
+  const formatDiscountRange = (discountRange) => {
+    if (!discountRange) return '0-0';
 
-  // Get installment status based on payments and due date
-  // const getInstallmentStatus = (installment, payments) => {
-  //   if (!payments || payments.length === 0) {
-  //     // Check if installment is overdue
-  //     const today = new Date();
-  //     const dueDate = new Date(installment.due_date);
-  //     if (dueDate < today) {
-  //       return 'overdue';
-  //     }
-  //     return 'pending';
-  //   }
-
-  //   // Check if installment is fully paid
-  //   const paidAmount = payments
-  //     .filter(p => p.installment_number === installment.installment_number)
-  //     .reduce((sum, payment) => sum + parseFloat(payment.amount_paid), 0);
-
-  //   if (paidAmount >= parseFloat(installment.amount)) {
-  //     return 'paid';
-  //   } else if (paidAmount > 0) {
-  //     return 'partial';
-  //   }
-
-  //   // Check if installment is overdue
-  //   const today = new Date();
-  //   const dueDate = new Date(installment.due_date);
-  //   if (dueDate < today) {
-  //     return 'overdue';
-  //   }
-
-  //   return 'pending';
-  // };
-
-  // Stats calculation
-  const totalFees = useMemo(() =>
-    studentFees.reduce((sum, fee) => sum + parseFloat(fee.total_fee || 0), 0),
-    [studentFees]
-  );
-
-  const totalPaid = useMemo(() =>
-    studentFees.reduce((sum, fee) => sum + parseFloat(fee.paid_amount || 0), 0),
-    [studentFees]
-  );
-
-  const totalPending = useMemo(() =>
-    studentFees.reduce((sum, fee) => sum + parseFloat(fee.pending_amount || 0), 0),
-    [studentFees]
-  );
+    if (typeof discountRange === 'string') {
+      return discountRange;
+    } else if (Array.isArray(discountRange)) {
+      return discountRange.join('-');
+    } else if (typeof discountRange === 'object' && discountRange !== null) {
+      const min = discountRange.min || discountRange.min_discount || 0;
+      const max = discountRange.max || discountRange.max_discount || 0;
+      return `${min}-${max}`;
+    } else {
+      return `0-${discountRange}`;
+    }
+  };
 
   const openModal = () => {
     setFormData({
       student_id: '',
-      course_id: '',
       fee_type: 'Tuition',
       payment_mode: 'one-time',
       number_of_installments: '',
       coupon_id: '',
       branch_discount_percent: '',
       branch_discount_amount: '',
+      branch_id: ''
     });
     setStudentSearch('');
     setSelectedStudent(null);
-    setSelectedCourse(null);
+    setSelectedCourses([]);
     setFinalFee(0);
     setSelectedCoupon('');
     setShowModal(true);
@@ -562,7 +473,7 @@ const StudentFees = () => {
     setCurrentEditId(null);
     setStudentSearch('');
     setSelectedStudent(null);
-    setSelectedCourse(null);
+    setSelectedCourses([]);
     setFinalFee(0);
     setSelectedCoupon('');
   };
@@ -570,18 +481,13 @@ const StudentFees = () => {
   const handleView = async (id) => {
     try {
       const token = localStorage.getItem("token");
-
-      // Fetch fee details
       const feeRes = await axios.get(`/studentfee/${id}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
       const feeData = feeRes.data;
       setViewFee(feeData);
-
-      // Set installment details directly from the API response
       setInstallmentDetails(feeData.installments || []);
-
       setShowViewModal(true);
     } catch (error) {
       console.error("Error fetching student fee details:", error);
@@ -592,12 +498,10 @@ const StudentFees = () => {
   const handleDelete = async (id) => {
     try {
       const token = localStorage.getItem("token");
-
       await axios.delete(`/studentfee/${id}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
-      // Remove from state
       setStudentFees(prevFees => prevFees.filter(fee => fee.id !== id));
       setFilteredFees(prevFees => prevFees.filter(fee => fee.id !== id));
 
@@ -648,11 +552,12 @@ const StudentFees = () => {
     setPaymentAmount('');
   };
 
+  // FIXED: Create only one fee structure per student
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (!selectedStudent || !selectedStudent.course_id) {
-      alert("Selected student doesn't have a course assigned");
+    if (selectedCourses.length === 0) {
+      alert("Selected student doesn't have any courses assigned");
       return;
     }
 
@@ -660,36 +565,43 @@ const StudentFees = () => {
     if (formData.branch_discount_percent && selectedStudent.branch_id) {
       const isValidDiscount = validateBranchDiscount(formData.branch_discount_percent, selectedStudent.branch_id);
       if (!isValidDiscount) {
-        return; // Stop submission if discount is invalid
+        return;
       }
     }
 
-    // Check if student already has a fee structure for this course
-    if (hasExistingFeeStructure(formData.student_id, selectedStudent.course_id)) {
-      if (!window.confirm("This student already has a fee structure for this course. Do you want to proceed anyway?")) {
+    // Check if student already has a fee structure
+    if (hasExistingFeeStructure(formData.student_id)) {
+      if (!window.confirm("This student already has a fee structure. Do you want to proceed anyway?")) {
         return;
       }
     }
 
     try {
       const token = localStorage.getItem("token");
-
-      // First create the fee structure
+      
+      // Create ONE fee structure for the student (not per course)
       const feeStructureData = {
         student_id: parseInt(formData.student_id),
-        course_id: parseInt(selectedStudent.course_id),
+        // For multiple courses, we can send the first course ID or leave it null if API supports
+        course_id: selectedCourses.length > 0 ? parseInt(selectedCourses[0].id) : null,
         fee_type: formData.fee_type,
-        amount: finalFee > 0 ? finalFee : parseFloat(selectedCourse?.discounted_price_price || 0),
+        amount: finalFee, // Total amount for all courses after discount
         payment_mode: formData.payment_mode,
         number_of_installments: formData.payment_mode === 'installments' ? parseInt(formData.number_of_installments) : 0,
         coupon_id: formData.coupon_id ? parseInt(formData.coupon_id) : null,
         branch_id: selectedStudent.branch_id,
-        branch_discount_percent: formData.branch_discount_percent ? parseFloat(formData.branch_discount_percent) : 0,
-        branch_discount_amount: formData.branch_discount_amount ? parseFloat(formData.branch_discount_amount) : 0,
-
+        branch_discount_percent: formData.branch_discount_percent ? formData.branch_discount_percent : 0,
+        branch_discount_amount: formData.branch_discount_amount ? formData.branch_discount_amount : 0,
+        // Include information about all courses
+        // courses: selectedCourses.map(course => ({
+        //   course_id: course.id,
+        //   course_name: course.course_name,
+        //   original_price: course.discounted_price,
+        //   batch_id: course.batch?.id
+        // }))
       };
 
-      console.log('Sending fee structure data:', feeStructureData);
+      console.log('Creating fee structure:', feeStructureData);
 
       // Create fee structure
       const structureRes = await axios.post('/fee-structures', feeStructureData, {
@@ -698,14 +610,15 @@ const StudentFees = () => {
 
       console.log('Fee structure created:', structureRes.data);
 
-      // Then generate the student fee based on the structure
+      // Create student fee record
       const feeData = {
         student_id: parseInt(formData.student_id),
-        course_id: parseInt(selectedStudent.course_id),
-        fee_structure_id: structureRes.data.id
+        course_id: selectedCourses.length > 0 ? parseInt(selectedCourses[0].id) : null, // Primary course
+        fee_structure_id: structureRes.data.id,
+        // total_fee: finalFee
       };
 
-      console.log('Sending student fee data:', feeData);
+      console.log('Creating student fee:', feeData);
 
       const feeRes = await axios.post('/studentfee', feeData, {
         headers: { Authorization: `Bearer ${token}` },
@@ -713,30 +626,27 @@ const StudentFees = () => {
 
       console.log('Student fee created:', feeRes.data);
 
-      // Update state with the new fee
+      // Update state
       setTimeout(async () => {
-        await fetchStudentFees(); // Refresh the fees list
-        await fetchFeeStructures(); // Refresh fee structures
+        await fetchStudentFees();
+        await fetchFeeStructures();
         setFeeStructures(prevStructures => [...prevStructures, structureRes.data]);
       }, 500);
 
       closeModal();
+      toast.success(`Fee generated successfully for ${selectedCourses.length} course(s)!`);
+      
     } catch (error) {
       console.error("Error creating fee structure and student fee:", error);
-
-      // More detailed error message
+      
       if (error.response) {
-        // The request was made and the server responded with a status code
-        // that falls out of the range of 2xx
         console.error('Error response data:', error.response.data);
         console.error('Error response status:', error.response.status);
         alert(`Error creating fee structure: ${error.response.data.message || 'Please try again.'}`);
       } else if (error.request) {
-        // The request was made but no response was received
         console.error('Error request:', error.request);
         alert('Network error. Please check your connection and try again.');
       } else {
-        // Something happened in setting up the request that triggered an Error
         console.error('Error message:', error.message);
         alert('Error creating fee structure. Please try again.');
       }
@@ -745,7 +655,6 @@ const StudentFees = () => {
 
   const handlePaymentSubmit = async (e) => {
     e.preventDefault();
-
     try {
       const token = localStorage.getItem("token");
       const paymentData = {
@@ -756,7 +665,6 @@ const StudentFees = () => {
         headers: { Authorization: `Bearer ${token}` },
       });
 
-      // Update the specific fee in the state
       setStudentFees(prevFees => prevFees.map(f => f.id === currentEditId ? res.data : f));
       setFilteredFees(prevFees => prevFees.map(f => f.id === currentEditId ? res.data : f));
 
@@ -770,7 +678,6 @@ const StudentFees = () => {
   const handleInputChange = (e) => {
     const { name, value } = e.target;
 
-    // Special handling for branch discount field
     if (name === 'branch_discount_percent') {
       handleBranchDiscountChange(e);
     } else {
@@ -783,10 +690,25 @@ const StudentFees = () => {
 
   const handleApplyCoupon = () => {
     if (!selectedCoupon) return;
-    setFormData(prev => ({ ...prev, couponid: selectedCoupon }));
-    toast.success("Coupon applied !"); // Just show success message
-    // Math calculation hata do, koi discount calculation nahi hogi
+    setFormData(prev => ({ ...prev, coupon_id: selectedCoupon }));
+    toast.success("Coupon applied!");
   };
+
+  // Stats calculation
+  const totalFees = useMemo(() =>
+    studentFees.reduce((sum, fee) => sum + parseFloat(fee.total_fee || 0), 0),
+    [studentFees]
+  );
+
+  const totalPaid = useMemo(() =>
+    studentFees.reduce((sum, fee) => sum + parseFloat(fee.paid_amount || 0), 0),
+    [studentFees]
+  );
+
+  const totalPending = useMemo(() =>
+    studentFees.reduce((sum, fee) => sum + parseFloat(fee.pending_amount || 0), 0),
+    [studentFees]
+  );
 
   if (loading) {
     return (
@@ -848,7 +770,7 @@ const StudentFees = () => {
                 <div className="w-full bg-green-200 rounded-full h-2">
                   <div
                     className="bg-green-500 h-2 rounded-full"
-                    style={{ width: `${(totalPaid / totalFees) * 100}%` }}
+                    style={{ width: `${totalFees > 0 ? (totalPaid / totalFees) * 100 : 0}%` }}
                   ></div>
                 </div>
               </div>
@@ -867,7 +789,7 @@ const StudentFees = () => {
                 <div className="w-full bg-red-200 rounded-full h-2">
                   <div
                     className="bg-red-500 h-2 rounded-full"
-                    style={{ width: `${(totalPending / totalFees) * 100}%` }}
+                    style={{ width: `${totalFees > 0 ? (totalPending / totalFees) * 100 : 0}%` }}
                   ></div>
                 </div>
               </div>
@@ -877,6 +799,8 @@ const StudentFees = () => {
             </div>
           </div>
         </div>
+
+        {/* Filters */}
         <div className="flex flex-wrap items-center gap-3 mb-4 bg-white p-4 rounded-xl shadow-sm border border-gray-200">
           <select
             value={sortField}
@@ -920,7 +844,6 @@ const StudentFees = () => {
             Reset Dates
           </button>
         </div>
-
 
         {/* Student Fees Table */}
         <div className="sf-table-container">
@@ -982,7 +905,6 @@ const StudentFees = () => {
                     <td className="sf-amount">
                       ₹{parseFloat(fee.pending_amount || 0).toLocaleString()}
                     </td>
-
                     <td>
                       <span className={`sf-badge`}>
                         {fee.status}
@@ -993,7 +915,6 @@ const StudentFees = () => {
                         <button onClick={() => handleView(fee.id)} className="sf-action-btn text-blue">
                           <i className="fas fa-eye"></i>
                         </button>
-
                         <button
                           onClick={() => openDeleteModal(fee)}
                           className="sf-action-btn text-red"
@@ -1001,9 +922,6 @@ const StudentFees = () => {
                         >
                           <i className="fas fa-trash"></i>
                         </button>
-                        {/* <button onClick={() => openPaymentModal(fee.id)} className="sf-action-btn text-green">
-                          <i className="fas fa-money-bill"></i>
-                        </button> */}
                       </div>
                     </td>
                   </tr>
@@ -1020,8 +938,6 @@ const StudentFees = () => {
             </table>
           </div>
         </div>
-
-
       </main>
 
       {/* Generate Fee Modal */}
@@ -1060,9 +976,9 @@ const StudentFees = () => {
                               <div className="sf-student-dropdown-name">{student.full_name}</div>
                               <div className="sf-student-dropdown-details">
                                 {student.branch_id && branchesMap[student.branch_id] && (
-                                  <span> Branch: {branchesMap[student.branch_id].branchName}
-                                  </span>
+                                  <span> Branch: {branchesMap[student.branch_id].branchName}</span>
                                 )}
+                                <span> • Courses: {student.courses ? student.courses.length : (student.course_id ? 1 : 0)}</span>
                               </div>
                             </div>
                           </div>
@@ -1073,23 +989,47 @@ const StudentFees = () => {
                 </div>
 
                 <div className="sf-form-group">
-                  <label>Course</label>
-                  <div className="sf-course-display">
-                    {selectedStudent && selectedStudent.course_id ? (
-                      <div className="sf-course-info-display">
-                        {getCourseDetails(selectedStudent.course_id)}
-                        {selectedCourse && (
-                          <div className="sf-course-price-info">
-                            <p>Course Price: ₹{parseFloat(selectedCourse.discounted_price || 0).toLocaleString()}</p>
+                  <label>Selected Courses & Total Fees</label>
+                  <div className="sf-courses-display">
+                    {selectedCourses.length > 0 ? (
+                      <div className="sf-courses-list">
+                        {selectedCourses.map((course, index) => (
+                          <div key={course.id} className="sf-course-item">
+                            <div className="sf-course-info">
+                              <div className="sf-course-name">{course.course_name}</div>
+                              <div className="sf-course-details">
+                                <span>Code: {course.course_code}</span>
+                                <span>Batch: {course.batch?.batch_name || 'N/A'}</span>
+                                <span className="sf-course-price">
+                                  ₹{parseFloat(course.discounted_price || 0).toLocaleString()}
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                        <div className="sf-total-fees">
+                          <div className="sf-total-label">Base Total:</div>
+                          <div className="sf-total-amount">
+                            ₹{calculateTotalFees().toLocaleString()}
+                          </div>
+                        </div>
+                        {(formData.branch_discount_percent || formData.branch_discount_amount) && (
+                          <div className="sf-total-fees discounted">
+                            <div className="sf-total-label">Final Total (After Discount):</div>
+                            <div className="sf-total-amount final">
+                              ₹{finalFee}
+                            </div>
                           </div>
                         )}
                       </div>
                     ) : (
-                      <div>
+                      <div className="sf-no-courses">
+                        No courses assigned to this student
                       </div>
                     )}
                   </div>
                 </div>
+
                 <div className="sf-form-group">
                   <label>Branch Intended Discount %</label>
                   <input
@@ -1109,7 +1049,7 @@ const StudentFees = () => {
                     </div>
                   )}
                 </div>
-                {/* New Branch Discount Amount Field */}
+
                 <div className="sf-form-group">
                   <label>Branch Intended Discount (Amount ₹)</label>
                   <input
@@ -1128,6 +1068,7 @@ const StudentFees = () => {
                     </div>
                   )}
                 </div>
+
                 <div className="sf-form-group">
                   <label>Fee Type</label>
                   <select
@@ -1171,21 +1112,26 @@ const StudentFees = () => {
                   </div>
                 )}
 
-                <div className="sf-form-group labelApply Coupon">
+                <div className="sf-form-group">
+                  <label>Apply Coupon</label>
                   <div className="sf-coupon-section">
-                    <select value={selectedCoupon}
+                    <select 
+                      value={selectedCoupon}
                       onChange={e => setSelectedCoupon(e.target.value)}
-                      className="sf-coupon-select">
+                      className="sf-coupon-select"
+                    >
                       <option value="">-- Select Coupon --</option>
-                      {coupons
-                        .filter(c => !selectedStudent?.courseid || c.courseid === selectedStudent.courseid)
-                        .map(coupon => (
-                          <option key={coupon.id} value={coupon.id}>
-                            {coupon.code} {coupon.discounttype} - {coupon.discountvalue}
-                          </option>
-                        ))}
+                      {coupons.map(coupon => (
+                        <option key={coupon.id} value={coupon.id}>
+                          {coupon.code} {coupon.discounttype} - {coupon.discountvalue}
+                        </option>
+                      ))}
                     </select>
-                    <button type="button" onClick={handleApplyCoupon} className="classNamesf-apply-coupon-btn">
+                    <button 
+                      type="button" 
+                      onClick={handleApplyCoupon} 
+                      className="sf-apply-coupon-btn"
+                    >
                       Apply
                     </button>
                   </div>
@@ -1199,7 +1145,7 @@ const StudentFees = () => {
                 <button
                   type="submit"
                   className="sf-save-btn"
-                  disabled={!selectedStudent || !selectedStudent.course_id}
+                  disabled={!selectedStudent || selectedCourses.length === 0}
                 >
                   <i className="fas fa-save"></i>
                   Generate Fee
@@ -1227,13 +1173,12 @@ const StudentFees = () => {
                   <div className="sf-info-box">
                     <p className="sf-info-title"><strong>Name:</strong> {getStudentName(viewFee.student_id)}</p>
                     <p><strong>Admission No:</strong> {getStudentAdmissionNumber(viewFee.student_id)}</p>
-                    <p><strong>Current Course:</strong> {getCourseDetails(viewFee.course_id)}</p>
+                    <p><strong>Course:</strong> {getCourseDetails(viewFee.course_id)}</p>
                   </div>
                 </div>
                 <div>
                   <h4>Fee Information</h4>
                   <div className="sf-info-box">
-                    <p><strong>Course:</strong> {getCourseDetails(viewFee.course_id)}</p>
                     <p><strong>Total Fee:</strong> ₹{parseFloat(viewFee.total_fee || 0).toLocaleString()}</p>
                     <p><strong>Paid Amount:</strong> ₹{parseFloat(viewFee.paid_amount || 0).toLocaleString()}</p>
                     <p><strong>Pending Amount:</strong> ₹{parseFloat(viewFee.pending_amount || 0).toLocaleString()}</p>
@@ -1245,6 +1190,7 @@ const StudentFees = () => {
                   </div>
                 </div>
               </div>
+
               {/* Installment Details */}
               {installmentDetails.length > 0 && (
                 <div className="installment-section">
@@ -1260,21 +1206,18 @@ const StudentFees = () => {
                         </tr>
                       </thead>
                       <tbody>
-                        {installmentDetails.map((installment, index) => {
-
-                          return (
-                            <tr key={installment.id || index}>
-                              <td>{installment.installment_number}</td>
-                              <td>{installment.due_date ? new Date(installment.due_date).toLocaleDateString() : 'N/A'}</td>
-                              <td>₹{parseFloat(installment.amount || 0).toLocaleString()}</td>
-                              <td>
-                                <span className={`sf-badge`}>
-                                  {installment.status}
-                                </span>
-                              </td>
-                            </tr>
-                          );
-                        })}
+                        {installmentDetails.map((installment, index) => (
+                          <tr key={installment.id || index}>
+                            <td>{installment.installment_number}</td>
+                            <td>{installment.due_date ? new Date(installment.due_date).toLocaleDateString() : 'N/A'}</td>
+                            <td>₹{parseFloat(installment.amount || 0).toLocaleString()}</td>
+                            <td>
+                              <span className={`sf-badge`}>
+                                {installment.status}
+                              </span>
+                            </td>
+                          </tr>
+                        ))}
                       </tbody>
                     </table>
                   </div>
@@ -1294,7 +1237,6 @@ const StudentFees = () => {
                             <th>Amount Paid</th>
                             <th>Payment Date</th>
                             <th>Payment Mode</th>
-                            {/* <th>Installment</th> */}
                           </tr>
                         </thead>
                         <tbody>
@@ -1304,7 +1246,6 @@ const StudentFees = () => {
                               <td>₹{parseFloat(payment.amount_paid || 0).toLocaleString()}</td>
                               <td>{new Date(payment.payment_date).toLocaleDateString()}</td>
                               <td>{payment.payment_mode || 'N/A'}</td>
-
                             </tr>
                           ))}
                         </tbody>
@@ -1318,7 +1259,7 @@ const StudentFees = () => {
         </div>
       )}
 
-      {/* Simple Delete Confirmation Modal */}
+      {/* Delete Confirmation Modal */}
       {showDeleteModal && feeToDelete && (
         <div className="sf-modal-backdrop">
           <div className="sf-modal sf-delete-modal">
@@ -1356,6 +1297,7 @@ const StudentFees = () => {
           </div>
         </div>
       )}
+
       {/* Payment Modal */}
       {showPaymentModal && (
         <div className="sf-modal-backdrop">
