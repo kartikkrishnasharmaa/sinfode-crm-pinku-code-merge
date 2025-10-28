@@ -114,86 +114,95 @@ function AddStudent() {
     }));
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setLoading(true);
+const handleSubmit = async (e) => {
+  e.preventDefault();
+  setLoading(true);
+  
+  // Validation
+  if (selectedCourses.length === 0) {
+    toast.error("❌ Please select at least one course");
+    setLoading(false);
+    return;
+  }
+
+  // Check if all selected courses have batches assigned
+  const missingBatches = selectedCourses.filter(courseId => !courseBatches[courseId]);
+  if (missingBatches.length > 0) {
+    toast.error("❌ Please select batches for all selected courses");
+    setLoading(false);
+    return;
+  }
+
+  try {
+    const token = localStorage.getItem("token");
+    const formData = new FormData();
+
+    // Basic student info
+    formData.append("full_name", fullName);
+    formData.append("dob", dob);
+    formData.append("gender", gender);
+    formData.append("contact_number", contactNumber);
+    formData.append("email", email);
+    formData.append("address", address);
+    if (photo) formData.append("photo", photo);
+    formData.append("guardian_name", guardianName);
+    formData.append("guardian_contact", guardianContact);
+    formData.append("admission_date", admissionDate);
+    formData.append("branch_id", branch_id);
+
+    // Course and batch data - FIXED: Use course_ids[] and batch_ids[] arrays
+    selectedCourses.forEach(courseId => {
+      formData.append("course_ids[]", courseId);
+    });
+
+    // Add batch_ids in the same order as course_ids
+    selectedCourses.forEach(courseId => {
+      formData.append("batch_ids[]", courseBatches[courseId]);
+    });
+
+    formData.append("course_fee", courseFee);
+    formData.append("final_fee", finalFee);
+
+    console.log("Submitting student data:", {
+      fullName,
+      courses: selectedCourses,
+      batches: courseBatches,
+      totalFee: finalFee
+    });
+
+    // Log FormData contents for debugging
+    for (let [key, value] of formData.entries()) {
+      console.log(`${key}:`, value);
+    }
+
+    const response = await axios.post("/students/create", formData, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "multipart/form-data",
+      },
+    });
+
+    console.log("✅ Student created successfully:", response.data);
+    toast.success("✅ Student created successfully!");
     
-    // Validation
-    if (selectedCourses.length === 0) {
-      toast.error("❌ Please select at least one course");
-      setLoading(false);
-      return;
+    // Reset form
+    resetForm();
+    
+  } catch (error) {
+    console.error("Error creating student:", error);
+    if (error.response?.data?.message) {
+      toast.error(`❌ ${error.response.data.message}`);
+    } else if (error.response?.data?.errors) {
+      Object.values(error.response.data.errors).flat().forEach((msg) => 
+        toast.error(`❌ ${msg}`)
+      );
+    } else {
+      toast.error("❌ Failed to create student");
     }
-
-    // Check if all selected courses have batches assigned
-    const missingBatches = selectedCourses.filter(courseId => !courseBatches[courseId]);
-    if (missingBatches.length > 0) {
-      toast.error("❌ Please select batches for all selected courses");
-      setLoading(false);
-      return;
-    }
-
-    try {
-      const token = localStorage.getItem("token");
-      const formData = new FormData();
-
-      // Basic student info (matching API structure)
-      formData.append("full_name", fullName);
-      formData.append("dob", dob);
-      formData.append("gender", gender);
-      formData.append("contact_number", contactNumber);
-      formData.append("email", email);
-      formData.append("address", address);
-      if (photo) formData.append("photo", photo);
-      formData.append("guardian_name", guardianName);
-      formData.append("guardian_contact", guardianContact);
-      formData.append("admission_date", admissionDate);
-      formData.append("branch_id", branch_id);
-
-      // Course and batch data - matching the API pivot structure
-      selectedCourses.forEach(courseId => {
-        formData.append("courses[]", courseId);
-        formData.append(`batch_${courseId}`, courseBatches[courseId]);
-      });
-
-      formData.append("course_fee", courseFee);
-      formData.append("final_fee", finalFee);
-
-      console.log("Submitting student data:", {
-        fullName,
-        courses: selectedCourses,
-        batches: courseBatches,
-        totalFee: finalFee
-      });
-
-      const response = await axios.post("/students/create", formData, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "multipart/form-data",
-        },
-      });
-
-      console.log("✅ Student created successfully:", response.data);
-      toast.success("✅ Student created successfully!");
-      
-      // Reset form
-      resetForm();
-      
-    } catch (error) {
-      console.error("Error creating student:", error);
-      if (error.response?.data?.message) {
-        toast.error(`❌ ${error.response.data.message}`);
-      } else if (error.response?.data?.errors) {
-        Object.values(error.response.data.errors).flat().forEach((msg) => 
-          toast.error(`❌ ${msg}`)
-        );
-      } else {
-        toast.error("❌ Failed to create student");
-      }
-    } finally {
-      setLoading(false);
-    }
-  };
+  } finally {
+    setLoading(false);
+  }
+};
 
   const resetForm = () => {
     setFullName("");

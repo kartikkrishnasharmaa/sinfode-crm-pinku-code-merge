@@ -3,6 +3,9 @@ import { useState, useEffect } from "react";
 import axios from "../../../api/axiosConfig";
 import { FaEdit, FaToggleOn, FaToggleOff, FaTimes, FaUser, FaUsers, FaPercent, FaMoneyBillWave } from "react-icons/fa";
 import { HiDotsVertical, HiLocationMarker, HiPhone, HiMail, HiCalendar, HiOfficeBuilding } from "react-icons/hi";
+// Import Toastify
+import { toast, ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 export default function Branch() {
   const [branches, setBranches] = useState([]);
@@ -69,17 +72,14 @@ export default function Branch() {
 
   const handleDiscountClick = (branch) => {
     setEditingBranchId(branch.id);
-    
     // Determine current type based on what's set in the branch
     let currentType = "percentage";
     let currentRange = branch.discount_range || "";
     let currentAmount = branch.discount_amount || "";
-    
     // If amount is set and range is not, default to amount type
     if (branch.discount_amount && !branch.discount_range) {
       currentType = "amount";
     }
-    
     setDiscountData({
       type: currentType,
       requested_range: currentRange,
@@ -122,7 +122,6 @@ export default function Branch() {
       const token = localStorage.getItem("token");
       const user = JSON.parse(localStorage.getItem("user"));
       let res;
-
       if (user.role === "admin") {
         res = await axios.get("branches", {
           headers: { Authorization: `Bearer ${token}` },
@@ -132,10 +131,8 @@ export default function Branch() {
           headers: { Authorization: `Bearer ${token}` },
         });
       }
-
       // Handle the different response structure
       let branchData = [];
-
       if (res.data.branch) {
         // Single branch response (for branch manager)
         branchData = [res.data.branch];
@@ -148,11 +145,10 @@ export default function Branch() {
       } else {
         branchData = [res.data];
       }
-
       setBranches(branchData);
     } catch (error) {
       console.error("Error fetching branches:", error);
-      alert("Failed to load branches");
+      toast.error("Failed to load branches");
     }
   };
 
@@ -164,22 +160,20 @@ export default function Branch() {
     try {
       const token = localStorage.getItem("token");
       const newStatus = currentStatus === "Active" ? "Inactive" : "Active";
-
       await axios.patch(
         `branches/${id}/status`,
         { status: newStatus },
         { headers: { Authorization: `Bearer ${token}` } }
       );
-
       setBranches(
         branches.map((branch) =>
           branch.id === id ? { ...branch, status: newStatus } : branch
         )
       );
-      alert(`Branch status changed to ${newStatus}`);
+      toast.success(`Branch status changed to ${newStatus}`);
     } catch (error) {
       console.error("Error updating status:", error);
-      alert("Failed to update status");
+      toast.error("Failed to update status");
     }
   };
 
@@ -200,10 +194,9 @@ export default function Branch() {
 
   const handleDiscountChange = (e) => {
     const { name, value } = e.target;
-    
     if (name === "type") {
-      setDiscountData({ 
-        ...discountData, 
+      setDiscountData({
+        ...discountData,
         type: value,
         requested_range: "",
         requested_amount: ""
@@ -226,26 +219,24 @@ export default function Branch() {
     setLoading(true);
     try {
       const token = localStorage.getItem("token");
-
       if (editingBranchId) {
         await axios.put(`branches/${editingBranchId}`, formData, {
           headers: { Authorization: `Bearer ${token}` },
         });
-        alert("Branch updated successfully!");
+        toast.success("Branch updated successfully!");
       } else {
         await axios.post("branches", formData, {
           headers: { Authorization: `Bearer ${token}` },
         });
-        alert("Branch created successfully!");
+        toast.success("Branch created successfully!");
       }
-
       fetchBranches();
       setIsModalOpen(false);
       setEditingBranchId(null);
       resetForm();
     } catch (error) {
       console.error(error);
-      alert(
+      toast.error(
         editingBranchId ? "Error updating branch" : "Error creating branch"
       );
     } finally {
@@ -258,41 +249,33 @@ export default function Branch() {
     setDiscountLoading(true);
     try {
       const token = localStorage.getItem("token");
-
       // Prepare request data based on type
       const requestData = {
         type: discountData.type
       };
-
       if (discountData.type === "percentage") {
         if (!discountData.requested_range || discountData.requested_range === "") {
-          alert("Please enter discount percentage");
+          toast.error("Please enter discount percentage");
           setDiscountLoading(false);
           return;
         }
         requestData.requested_range = discountData.requested_range;
       } else {
         if (!discountData.requested_amount || discountData.requested_amount === "") {
-          alert("Please enter discount amount");
+          toast.error("Please enter discount amount");
           setDiscountLoading(false);
           return;
         }
         requestData.requested_amount = discountData.requested_amount;
       }
-
-      console.log("Sending discount request:", requestData); // Debug log
-
       // Use the correct endpoint and request body
       const response = await axios.post(
         `branches/${editingBranchId}/discount-requests`,
         requestData,
         { headers: { Authorization: `Bearer ${token}` } }
       );
-
-      console.log("Discount request response:", response.data); // Debug log
-
       // Show success message from API response
-      alert("Discount increase request sent to admin");
+      toast.success("Discount increase request sent to admin");
       setIsDiscountModalOpen(false);
       setEditingBranchId(null);
       setDiscountData({
@@ -300,16 +283,14 @@ export default function Branch() {
         requested_range: "",
         requested_amount: ""
       });
-      
-      // Refresh branches to show updated data
       fetchBranches();
     } catch (error) {
       console.error("Error requesting discount:", error);
       if (error.response) {
         console.error("Error response:", error.response.data);
-        alert(`Failed to request discount: ${error.response.data.message || 'Unknown error'}`);
+        toast.error(`Failed to request discount: ${error.response.data.message || 'Unknown error'}`);
       } else {
-        alert("Failed to request discount");
+        toast.error("Failed to request discount");
       }
     } finally {
       setDiscountLoading(false);
@@ -321,14 +302,12 @@ export default function Branch() {
     setFeesLoading(true);
     try {
       const token = localStorage.getItem("token");
-
       await axios.post(
         `branches/${editingBranchId}/fees`,
         feesData,
         { headers: { Authorization: `Bearer ${token}` } }
       );
-
-      alert("Fees updated successfully!");
+      toast.success("Fees updated successfully!");
       setIsFeesModalOpen(false);
       setEditingBranchId(null);
       setFeesData({
@@ -340,7 +319,7 @@ export default function Branch() {
       fetchBranches();
     } catch (error) {
       console.error("Error updating fees:", error);
-      alert("Failed to update fees");
+      toast.error("Failed to update fees");
     } finally {
       setFeesLoading(false);
     }
@@ -412,9 +391,10 @@ export default function Branch() {
     }
     return null;
   };
-
   return (
     <ManagerLayout>
+      <ToastContainer position="top-right" autoClose={3000} hideProgressBar />
+
       <div className="p-6">
         {/* Header */}
         <div className="flex justify-between items-center mb-6">
@@ -445,8 +425,8 @@ export default function Branch() {
                           {branch.branch_code}
                         </span>
                         <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${branch.status === "Active"
-                            ? "bg-green-100 text-green-800"
-                            : "bg-red-100 text-red-800"
+                          ? "bg-green-100 text-green-800"
+                          : "bg-red-100 text-red-800"
                           }`}>
                           {branch.status}
                         </span>
@@ -577,231 +557,6 @@ export default function Branch() {
           )}
         </div>
 
-        {/* Create/Edit Branch Modal */}
-        {isModalOpen && (
-          <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50 p-4">
-            <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-              <div className="flex items-center justify-between p-6 border-b border-gray-200">
-                <h2 className="text-xl font-semibold text-gray-800">
-                  {editingBranchId ? "Update Branch" : "Create New Branch"}
-                </h2>
-                <button
-                  onClick={() => {
-                    setIsModalOpen(false);
-                    setEditingBranchId(null);
-                    resetForm();
-                  }}
-                  className="text-gray-400 hover:text-gray-600 transition-colors"
-                >
-                  <FaTimes size={20} />
-                </button>
-              </div>
-
-              <form onSubmit={handleSubmit} className="p-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Branch Name</label>
-                    <input
-                      name="branch_name"
-                      value={formData.branch_name}
-                      onChange={handleChange}
-                      className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      required
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Branch Type</label>
-                    <select
-                      name="branch_type"
-                      value={formData.branch_type}
-                      onChange={handleChange}
-                      className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    >
-                      <option value="Main">Main</option>
-                      <option value="Franchise">Franchise</option>
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Address</label>
-                    <input
-                      name="address"
-                      value={formData.address}
-                      onChange={handleChange}
-                      className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      required
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">City</label>
-                    <input
-                      name="city"
-                      value={formData.city}
-                      onChange={handleChange}
-                      className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      required
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">State</label>
-                    <input
-                      name="state"
-                      value={formData.state}
-                      onChange={handleChange}
-                      className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      required
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Pin Code</label>
-                    <input
-                      name="pin_code"
-                      value={formData.pin_code}
-                      onChange={handleChange}
-                      className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      required
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Contact Number</label>
-                    <input
-                      name="contact_number"
-                      value={formData.contact_number}
-                      onChange={handleChange}
-                      className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      required
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
-                    <input
-                      name="email"
-                      type="email"
-                      value={formData.email}
-                      onChange={handleChange}
-                      className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      required
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Opening Date</label>
-                    <input
-                      name="opening_date"
-                      type="date"
-                      value={formData.opening_date}
-                      onChange={handleChange}
-                      className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      required
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
-                    <select
-                      name="status"
-                      value={formData.status}
-                      onChange={handleChange}
-                      className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    >
-                      <option value="Active">Active</option>
-                      <option value="Inactive">Inactive</option>
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Discount Percentage (%)</label>
-                    <input
-                      name="discount_range"
-                      type="number"
-                      min="0"
-                      max="100"
-                      value={formData.discount_range}
-                      onChange={handleChange}
-                      className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      placeholder="0-100"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Discount Amount (₹)</label>
-                    <input
-                      name="discount_amount"
-                      type="number"
-                      min="0"
-                      value={formData.discount_amount}
-                      onChange={handleChange}
-                      className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      placeholder="Amount in rupees"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Manager Name</label>
-                    <input
-                      name="manager_name"
-                      value={formData.manager_name}
-                      onChange={handleChange}
-                      className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      required
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Manager Email</label>
-                    <input
-                      name="manager_email"
-                      type="email"
-                      value={formData.manager_email}
-                      onChange={handleChange}
-                      className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      required
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Manager Password</label>
-                    <input
-                      name="manager_password"
-                      type="password"
-                      value={formData.manager_password}
-                      onChange={handleChange}
-                      className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      required={!editingBranchId}
-                    />
-                  </div>
-                </div>
-
-                <div className="flex justify-end space-x-3 pt-4 border-t border-gray-200">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setIsModalOpen(false);
-                      setEditingBranchId(null);
-                      resetForm();
-                    }}
-                    className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="submit"
-                    disabled={loading}
-                    className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-75"
-                  >
-                    {loading ? "Saving..." : (editingBranchId ? "Update Branch" : "Create Branch")}
-                  </button>
-                </div>
-              </form>
-            </div>
-          </div>
-        )}
 
         {/* Discount Modal */}
         {isDiscountModalOpen && (
@@ -881,8 +636,8 @@ export default function Branch() {
                     </div>
                   </div>
                   <p className="mt-1 text-xs text-gray-500">
-                    {discountData.type === "percentage" 
-                      ? "Enter a value between 0 and 100 percent" 
+                    {discountData.type === "percentage"
+                      ? "Enter a value between 0 and 100 percent"
                       : "Enter the discount amount in Indian Rupees"}
                   </p>
                 </div>

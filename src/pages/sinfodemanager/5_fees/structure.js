@@ -18,12 +18,12 @@ const StudentFees = () => {
   const [paymentAmount, setPaymentAmount] = useState('');
   const [formData, setFormData] = useState({
     student_id: '',
-    course_id: '',
     fee_type: 'Tuition',
     payment_mode: 'one-time',
     number_of_installments: '',
     coupon_id: '',
     branch_discount_percent: '',
+    branch_discount_amount: '',
     branch_id: ''
   });
   const [selectedStudent, setSelectedStudent] = useState(null);
@@ -158,7 +158,7 @@ const StudentFees = () => {
 
   useEffect(() => {
     refreshData();
-    const intervalId = setInterval(refreshData, 5000); // Reduced to 5 seconds
+    const intervalId = setInterval(refreshData, 5000);
     return () => clearInterval(intervalId);
   }, []);
 
@@ -182,19 +182,54 @@ const StudentFees = () => {
     if (formData.student_id) {
       const student = students.find(s => s.id === parseInt(formData.student_id));
       setSelectedStudent(student);
-      if (student && student.course_id) {
-        const course = courses.find(c => c.id === parseInt(student.course_id));
-        setSelectedCourse(course);
-        if (course) {
-          setFinalFee(course.discounted_price || 0);
-        }
+      
+      // Auto-select the first course if available
+      if (student && student.courses && student.courses.length > 0) {
+        const firstCourse = student.courses[0];
+        setSelectedCourse(firstCourse);
+        setFinalFee(firstCourse.discounted_price || 0);
+      } else {
+        setSelectedCourse(null);
+        setFinalFee(0);
       }
     } else {
       setSelectedStudent(null);
       setSelectedCourse(null);
       setFinalFee(0);
     }
-  }, [formData.student_id, students, courses]);
+  }, [formData.student_id, students]);
+
+  // Calculate final fee when discounts change
+  useEffect(() => {
+    if (selectedCourse) {
+      let calculatedFee = parseFloat(selectedCourse.discounted_price || 0);
+      
+      // Apply coupon discount first
+      if (selectedCoupon) {
+        const coupon = coupons.find(c => c.id == selectedCoupon);
+        if (coupon) {
+          if (coupon.discount_type === "percentage") {
+            calculatedFee = calculatedFee - (calculatedFee * parseFloat(coupon.discount_value)) / 100;
+          } else if (coupon.discount_type === "fixed") {
+            calculatedFee = calculatedFee - parseFloat(coupon.discount_value);
+          }
+        }
+      }
+
+      // Apply branch percentage discount
+      if (formData.branch_discount_percent) {
+        calculatedFee = calculatedFee - (calculatedFee * parseFloat(formData.branch_discount_percent)) / 100;
+      }
+
+      // Apply branch amount discount
+      if (formData.branch_discount_amount) {
+        calculatedFee = calculatedFee - parseFloat(formData.branch_discount_amount);
+      }
+
+      if (calculatedFee < 0) calculatedFee = 0;
+      setFinalFee(calculatedFee);
+    }
+  }, [selectedCourse, selectedCoupon, formData.branch_discount_percent, formData.branch_discount_amount, coupons]);
 
   // Filter and sort student fees
   const getFilteredAndSortedFees = () => {
@@ -311,6 +346,15 @@ const StudentFees = () => {
       newFee = newFee - parseFloat(coupon.discount_value);
     }
 
+    // Apply branch discounts after coupon
+    if (formData.branch_discount_percent) {
+      newFee = newFee - (newFee * parseFloat(formData.branch_discount_percent)) / 100;
+    }
+
+    if (formData.branch_discount_amount) {
+      newFee = newFee - parseFloat(formData.branch_discount_amount);
+    }
+
     if (newFee < 0) newFee = 0;
     setFinalFee(newFee);
 
@@ -373,12 +417,12 @@ const StudentFees = () => {
   const openModal = () => {
     setFormData({
       student_id: '',
-      course_id: '',
       fee_type: 'Tuition',
       payment_mode: 'one-time',
       number_of_installments: '',
       coupon_id: '',
       branch_discount_percent: '',
+      branch_discount_amount: '',
     }); 
     setStudentSearch('');
     setSelectedStudent(null);
@@ -425,8 +469,13 @@ const StudentFees = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (!selectedStudent || !selectedStudent.course_id) {
-      toast.error("Selected student doesn't have a course assigned");
+    if (!selectedStudent) {
+      toast.error("Please select a student");
+      return;
+    }
+
+    if (!selectedCourse) {
+      toast.error("Student is not enrolled in any course");
       return;
     }
 
@@ -441,7 +490,7 @@ const StudentFees = () => {
     }
 
     // Check if student already has a fee structure for this course
-    if (hasExistingFeeStructure(formData.student_id, selectedStudent.course_id)) {
+    if (hasExistingFeeStructure(formData.student_id, selectedCourse.id)) {
       if (!window.confirm("This student already has a fee structure for this course. Do you want to proceed anyway?")) {
         return;
       }
@@ -452,14 +501,15 @@ const StudentFees = () => {
 
       const feeStructureData = {
         student_id: parseInt(formData.student_id),
-        course_id: parseInt(selectedStudent.course_id),
+        course_id: parseInt(selectedCourse.id),
         fee_type: formData.fee_type,
         amount: finalFee > 0 ? finalFee : parseFloat(selectedCourse?.discounted_price || 0),
         payment_mode: formData.payment_mode,
         number_of_installments: formData.payment_mode === 'installments' ? parseInt(formData.number_of_installments) : 0,
         coupon_id: formData.coupon_id ? parseInt(formData.coupon_id) : null,
         branch_id: selectedStudent.branch_id,
-        branch_discount_percent: formData.branch_discount_percent ? parseFloat(formData.branch_discount_percent) : 0
+        branch_discount_percent: formData.branch_discount_percent ? parseFloat(formData.branch_discount_percent) : 0,
+        branch_discount_amount: formData.branch_discount_amount ? parseFloat(formData.branch_discount_amount) : 0
       };
 
       const structureRes = await axios.post('/fee-structures', feeStructureData, {
@@ -468,7 +518,7 @@ const StudentFees = () => {
 
       const feeData = {
         student_id: parseInt(formData.student_id),
-        course_id: parseInt(selectedStudent.course_id),
+        course_id: parseInt(selectedCourse.id),
         fee_structure_id: structureRes.data.id
       };
 
@@ -577,86 +627,86 @@ const StudentFees = () => {
 
         {/* Filters Section */}
         <div className="bg-white shadow-md rounded-lg p-6">
-  {/* Header */}
-  <div className="flex justify-between items-center mb-6">
-    <h3 className="text-xl font-semibold text-gray-800">Filters</h3>
-    <button
-      onClick={clearFilters}
-      className="flex items-center gap-2 text-sm text-red-500 hover:text-white hover:bg-red-500 border border-red-500 px-3 py-1 rounded transition-colors"
-    >
-      <i className="fas fa-times"></i> Clear All
-    </button>
-  </div>
+          {/* Header */}
+          <div className="flex justify-between items-center mb-6">
+            <h3 className="text-xl font-semibold text-gray-800">Filters</h3>
+            <button
+              onClick={clearFilters}
+              className="flex items-center gap-2 text-sm text-red-500 hover:text-white hover:bg-red-500 border border-red-500 px-3 py-1 rounded transition-colors"
+            >
+              <i className="fas fa-times"></i> Clear All
+            </button>
+          </div>
 
-  {/* Filters Row */}
-  <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
-    {/* Student Name */}
-    <div className="flex flex-col">
-      <label className="text-gray-600 mb-1 font-medium">Student Name</label>
-      <input
-        type="text"
-        placeholder="Search student..."
-        value={filters.studentName}
-        onChange={(e) => handleFilterChange('studentName', e.target.value)}
-        className="border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
-      />
-    </div>
+          {/* Filters Row */}
+          <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
+            {/* Student Name */}
+            <div className="flex flex-col">
+              <label className="text-gray-600 mb-1 font-medium">Student Name</label>
+              <input
+                type="text"
+                placeholder="Search student..."
+                value={filters.studentName}
+                onChange={(e) => handleFilterChange('studentName', e.target.value)}
+                className="border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
+              />
+            </div>
 
-    {/* Status */}
-    <div className="flex flex-col">
-      <label className="text-gray-600 mb-1 font-medium">Status</label>
-      <select
-        value={filters.status}
-        onChange={(e) => handleFilterChange('status', e.target.value)}
-        className="border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
-      >
-        <option value="">All Status</option>
-        <option value="paid">Paid</option>
-        <option value="partial">Partial</option>
-        <option value="unpaid">Unpaid</option>
-      </select>
-    </div>
+            {/* Status */}
+            <div className="flex flex-col">
+              <label className="text-gray-600 mb-1 font-medium">Status</label>
+              <select
+                value={filters.status}
+                onChange={(e) => handleFilterChange('status', e.target.value)}
+                className="border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
+              >
+                <option value="">All Status</option>
+                <option value="paid">Paid</option>
+                <option value="partial">Partial</option>
+                <option value="unpaid">Unpaid</option>
+              </select>
+            </div>
 
-    {/* Course */}
-    <div className="flex flex-col">
-      <label className="text-gray-600 mb-1 font-medium">Course</label>
-      <select
-        value={filters.course}
-        onChange={(e) => handleFilterChange('course', e.target.value)}
-        className="border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
-      >
-        <option value="">All Courses</option>
-        {courses.map(course => (
-          <option key={course.id} value={course.id}>
-            {course.course_name}
-          </option>
-        ))}
-      </select>
-    </div>
+            {/* Course */}
+            <div className="flex flex-col">
+              <label className="text-gray-600 mb-1 font-medium">Course</label>
+              <select
+                value={filters.course}
+                onChange={(e) => handleFilterChange('course', e.target.value)}
+                className="border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
+              >
+                <option value="">All Courses</option>
+                {courses.map(course => (
+                  <option key={course.id} value={course.id}>
+                    {course.course_name}
+                  </option>
+                ))}
+              </select>
+            </div>
 
-    {/* From Date */}
-    <div className="flex flex-col">
-      <label className="text-gray-600 mb-1 font-medium">From Date</label>
-      <input
-        type="date"
-        value={filters.dateFrom}
-        onChange={(e) => handleFilterChange('dateFrom', e.target.value)}
-        className="border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
-      />
-    </div>
+            {/* From Date */}
+            <div className="flex flex-col">
+              <label className="text-gray-600 mb-1 font-medium">From Date</label>
+              <input
+                type="date"
+                value={filters.dateFrom}
+                onChange={(e) => handleFilterChange('dateFrom', e.target.value)}
+                className="border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
+              />
+            </div>
 
-    {/* To Date */}
-    <div className="flex flex-col">
-      <label className="text-gray-600 mb-1 font-medium">To Date</label>
-      <input
-        type="date"
-        value={filters.dateTo}
-        onChange={(e) => handleFilterChange('dateTo', e.target.value)}
-        className="border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
-      />
-    </div>
-  </div>
-</div>
+            {/* To Date */}
+            <div className="flex flex-col">
+              <label className="text-gray-600 mb-1 font-medium">To Date</label>
+              <input
+                type="date"
+                value={filters.dateTo}
+                onChange={(e) => handleFilterChange('dateTo', e.target.value)}
+                className="border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
+              />
+            </div>
+          </div>
+        </div>
 
         {/* Student Fees Table */}
         <div className="sf-table-container">
@@ -719,7 +769,6 @@ const StudentFees = () => {
                         </div>
                         <div>
                           <div className="sf-student-name">{fee.student?.name || getStudentName(fee.student_id)}</div>
-                         
                         </div>
                       </div>
                     </td>
@@ -740,7 +789,7 @@ const StudentFees = () => {
                       ₹{parseFloat(fee.pending_amount || 0).toLocaleString()}
                     </td>
                     <td>
-                      <span className={`sf-badge ${getStatusClass(fee.status)}`}>
+                      <span>
                         {fee.status}
                       </span>
                     </td>
@@ -807,7 +856,13 @@ const StudentFees = () => {
                             onClick={() => handleStudentSelect(student)}
                           >
                             <div className="sf-dropdown-student-name">{student.full_name}</div>
-                           
+                            <div className="sf-dropdown-admission">Admission: {student.admission_number}</div>
+                            <div className="sf-dropdown-courses">
+                              {student.courses && student.courses.length > 0 
+                                ? `${student.courses.length} course(s) enrolled`
+                                : 'No courses enrolled'
+                              }
+                            </div>
                           </div>
                         ))}
                       </div>
@@ -815,24 +870,32 @@ const StudentFees = () => {
                   </div>
                 </div>
 
+                {/* Course Information Display */}
                 <div className="sf-form-group">
-                  <label>Course</label>
-                  <div className="sf-course-display">
-                    {selectedStudent && selectedStudent.course_id ? (
-                      <div className="sf-course-info-display">
-                        {getCourseDetails(selectedStudent.course_id)}
-                        {selectedCourse && (
-                          <div className="sf-course-price-info">
-                            <p>Course Price: ₹{parseFloat(selectedCourse.discounted_price || 0).toLocaleString()}</p>
+                  <label>Course Information</label>
+                  {selectedStudent ? (
+                    selectedStudent.courses && selectedStudent.courses.length > 0 ? (
+                      <div className="sf-course-display">
+                        {selectedStudent.courses.map(course => (
+                          <div key={course.id} className="sf-course-info-card">
+                            <div className="sf-course-name">{course.course_name}</div>
+                            <div className="sf-course-price">
+                              ₹{parseFloat(course.discounted_price || 0).toLocaleString()}
+                            </div>
                           </div>
-                        )}
+                        ))}
                       </div>
                     ) : (
-                      <div className="sf-no-course">
-                        Select a student to view course details
+                      <div className="sf-no-courses-warning">
+                        <i className="fas fa-exclamation-triangle"></i>
+                        This student is not enrolled in any courses
                       </div>
-                    )}
-                  </div>
+                    )
+                  ) : (
+                    <div className="sf-select-student-first">
+                      Please select a student first
+                    </div>
+                  )}
                 </div>
 
                 <div className="sf-form-group">
@@ -880,7 +943,7 @@ const StudentFees = () => {
                 )}
 
                 <div className="sf-form-group">
-                  <label>Branch Discount %(Manual)</label>
+                  <label>Branch Discount %</label>
                   <input
                     type="number"
                     name="branch_discount_percent"
@@ -894,34 +957,47 @@ const StudentFees = () => {
                 </div>
 
                 <div className="sf-form-group">
+                  <label>Branch Discount Amount (₹)</label>
+                  <input
+                    type="number"
+                    name="branch_discount_amount"
+                    value={formData.branch_discount_amount}
+                    onChange={handleInputChange}
+                    min="0"
+                    step="0.01"
+                    placeholder="Enter discount amount"
+                  />
+                </div>
+
+                <div className="sf-form-group">
                   <label>Apply Coupon</label>
                   <div className="sf-coupon-section">
                     <select
                       value={selectedCoupon}
                       onChange={(e) => setSelectedCoupon(e.target.value)}
                       className="sf-coupon-select"
+                      disabled={!selectedStudent}
                     >
                       <option value="">-- Select Coupon --</option>
-                      {coupons
-                        .filter(c => !selectedStudent?.course_id || c.course_id == selectedStudent.course_id)
-                        .map(coupon => (
-                          <option key={coupon.id} value={coupon.id}>
-                            {coupon.code} ({coupon.discount_type} - {coupon.discount_value})
-                          </option>
-                        ))}
+                      {coupons.map(coupon => (
+                        <option key={coupon.id} value={coupon.id}>
+                          {coupon.code} ({coupon.discount_type} - {coupon.discount_value})
+                        </option>
+                      ))}
                     </select>
                     <button
                       type="button"
                       onClick={handleApplyCoupon}
                       className="sf-apply-coupon-btn"
+                      disabled={!selectedStudent}
                     >
                       Apply
                     </button>
                   </div>
-                  {finalFee > 0 && finalFee !== parseFloat(selectedCourse?.discounted_price || 0) && (
+                  {finalFee > 0 && selectedCourse && (
                     <div className="sf-final-fee">
                       <i className="fas fa-tag"></i>
-                      Final Fee after discount: ₹{finalFee.toLocaleString()}
+                      Final Fee after all discounts: ₹{finalFee.toLocaleString()}
                     </div>
                   )}
                 </div>
@@ -934,7 +1010,7 @@ const StudentFees = () => {
                 <button
                   type="submit"
                   className="sf-save-btn"
-                  disabled={!selectedStudent || !selectedStudent.course_id}
+                  disabled={!selectedStudent}
                 >
                   <i className="fas fa-save"></i>
                   Generate Fee
@@ -964,13 +1040,13 @@ const StudentFees = () => {
                       <>
                         <p className="sf-info-title"><strong>Name:</strong> {viewFee.student.full_name}</p>
                         <p><strong>Admission No:</strong> {viewFee.student.admission_number}</p>
-                        <p><strong>Current Course:</strong> {getCourseDetails(viewFee.student.course_id)}</p>
+                        {/* <p><strong>Current Course:</strong> {getCourseDetails(viewFee.student.course_id)}</p> */}
                       </>
                     ) : (
                       <>
                         <p className="sf-info-title"><strong>Name:</strong> {getStudentName(viewFee.student_id)}</p>
                         <p><strong>Admission No:</strong> {getStudentAdmissionNumber(viewFee.student_id)}</p>
-                        <p><strong>Current Course:</strong> {getCourseDetails(viewFee.course_id)}</p>
+                        {/* <p><strong>Current Course:</strong> {getCourseDetails(viewFee.course_id)}</p> */}
                       </>
                     )}
                   </div>
@@ -978,7 +1054,7 @@ const StudentFees = () => {
                 <div>
                   <h4>Fee Information</h4>
                   <div className="sf-info-box">
-                    <p><strong>Course:</strong> {getCourseDetails(viewFee.course_id)}</p>
+                    {/* <p><strong>Course:</strong> {getCourseDetails(viewFee.course_id)}</p> */}
                     <p><strong>Total Fee:</strong> ₹{parseFloat(viewFee.total_fee || 0).toLocaleString()}</p>
                     <p><strong>Paid Amount:</strong> ₹{parseFloat(viewFee.paid_amount || 0).toLocaleString()}</p>
                     <p><strong>Pending Amount:</strong> ₹{parseFloat(viewFee.pending_amount || 0).toLocaleString()}</p>
@@ -1002,6 +1078,7 @@ const StudentFees = () => {
                           <th>Installment #</th>
                           <th>Due Date</th>
                           <th>Amount</th>
+                          <th>Status</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -1010,6 +1087,11 @@ const StudentFees = () => {
                             <td>{installment.installment_number}</td>
                             <td>{installment.due_date ? new Date(installment.due_date).toLocaleDateString() : 'N/A'}</td>
                             <td>₹{parseFloat(installment.amount || 0).toLocaleString()}</td>
+                            <td>
+                              <span>
+                                {installment.status}
+                              </span>
+                            </td>
                           </tr>
                         ))}
                       </tbody>
