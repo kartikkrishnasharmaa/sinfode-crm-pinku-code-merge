@@ -20,6 +20,8 @@ import {
 } from "react-icons/fa";
 import { useNavigate } from "react-router-dom"; // for navigation
 import * as XLSX from "xlsx";
+import { ToastContainer, toast } from 'react-toastify';
+import "react-toastify/dist/ReactToastify.css";
 
 export default function Staff() {
   const [staffList, setStaffList] = useState([]);
@@ -71,7 +73,7 @@ export default function Staff() {
     try {
       const token = localStorage.getItem("token");
       if (!token) {
-        alert("No token found! Please login again.");
+        toast.error("No token found! Please login again.");
         return;
       }
       const res = await axios.get("/staff", {
@@ -81,7 +83,7 @@ export default function Staff() {
       setStaffList(res.data || []);
     } catch (error) {
       console.error("Error fetching staff:", error);
-      alert("Failed to load staff list");
+      toast.error("Failed to load staff list");
     }
   };
 
@@ -108,10 +110,10 @@ export default function Staff() {
           staff.id === id ? { ...staff, status: newStatus } : staff
         )
       );
-      alert(`Status changed to ${newStatus}`);
+      toast.success(`Status changed to ${newStatus}`);
     } catch (error) {
       console.error("Error updating status:", error);
-      alert("Failed to update status");
+      toast.error("Failed to update status");
     }
   };
 
@@ -123,11 +125,11 @@ export default function Staff() {
         await axios.delete(`/staff/delete/${id}`, {
           headers: { Authorization: `Bearer ${token}` },
         });
-        alert("Staff deleted successfully!");
+        toast.success("Staff deleted successfully!");
         fetchStaff();
       } catch (error) {
         console.error("Error deleting staff:", error);
-        alert("Failed to delete staff");
+        toast.error("Failed to delete staff");
       }
     }
   };
@@ -302,13 +304,13 @@ export default function Staff() {
         await axios.put(`/staff/update/${editingStaffId}`, submitData, {
           headers: { Authorization: `Bearer ${token}` },
         });
-        alert("Staff updated successfully!");
+        toast.success("Staff updated successfully!");
       } else {
         // Create
         await axios.post("/staff/create", submitData, {
           headers: { Authorization: `Bearer ${token}` },
         });
-        alert("Staff created successfully!");
+        toast.success("Staff created successfully!");
       }
 
       fetchStaff();
@@ -324,9 +326,9 @@ export default function Staff() {
         for (const field in errors) {
           errorMessage += `${field}: ${errors[field].join(", ")}\n`;
         }
-        alert(errorMessage);
+        toast.error(errorMessage);
       } else {
-        alert(editingStaffId ? "Error updating staff" : "Error creating staff");
+        toast.error(editingStaffId ? "Error updating staff" : "Error creating staff");
       }
     } finally {
       setLoading(false);
@@ -362,6 +364,7 @@ export default function Staff() {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      <ToastContainer position="top-right" autoClose={3000} hideProgressBar />
       <div className="p-6">
         {/* Header */}
         <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center mb-6 gap-4">

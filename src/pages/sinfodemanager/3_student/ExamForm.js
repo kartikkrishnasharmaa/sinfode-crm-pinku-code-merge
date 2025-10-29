@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from "react";
 import axios from "../../../api/axiosConfig";
+import { ToastContainer, toast } from 'react-toastify';
+import "react-toastify/dist/ReactToastify.css";
 
 const ExamForm = ({ formData, setFormData, setShowModal, refreshData }) => {
   const [calculatedValues, setCalculatedValues] = useState({
@@ -293,7 +295,7 @@ const ExamForm = ({ formData, setFormData, setShowModal, refreshData }) => {
     e.preventDefault();
 
     if (formData.obtainedMarks > formData.totalMarks) {
-      alert("Obtained marks cannot be greater than total marks!");
+      toast.error("Obtained marks cannot be greater than total marks!");
       return;
     }
 
@@ -342,7 +344,12 @@ const ExamForm = ({ formData, setFormData, setShowModal, refreshData }) => {
   };
 
   const showNotification = (message, type) => {
-    alert(`${type === "success" ? "Success" : "Error"}: ${message}`);
+    toast(`${type === "success" ? "Success" : "Error"}: ${message}`, {
+      type: type === "success" ? "success" : "error",
+      position: "top-right",
+      autoClose: 3000,
+      hideProgressBar: true
+    });
   };
 
   // Helper function to handle input focus
@@ -371,6 +378,7 @@ const ExamForm = ({ formData, setFormData, setShowModal, refreshData }) => {
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <ToastContainer position="top-right" autoClose={3000} hideProgressBar />
       <div className="bg-white rounded-lg shadow-2xl w-full max-w-4xl mx-4 max-h-screen overflow-y-auto">
         <div
           className="sf-blue text-white px-6 py-4 rounded-t-lg"

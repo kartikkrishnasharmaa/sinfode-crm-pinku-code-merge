@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from "../../../api/axiosConfig";
+import { ToastContainer, toast } from 'react-toastify';
+import "react-toastify/dist/ReactToastify.css";
 
 import ExamForm from './ExamForm';
 import ExamTable from './ExamTable';
@@ -220,7 +222,12 @@ function Exam() {
   };
 
   const showNotification = (message, type) => {
-    alert(`${type === 'success' ? 'Success' : 'Error'}: ${message}`);
+    toast(`${type === 'success' ? 'Success' : 'Error'}: ${message}`, {
+      type: type === 'success' ? 'success' : 'error',
+      position: "top-right",
+      autoClose: 3000,
+      hideProgressBar: true
+    });
   };
 
   const getGrade = (percentage) => {
@@ -241,6 +248,7 @@ function Exam() {
 
   return (
     <div className="bg-gray-50 min-h-screen" style={{ fontFamily: "'Inter', 'Salesforce Sans', sans-serif" }}>
+      <ToastContainer position="top-right" autoClose={3000} hideProgressBar />
       {/* Header */}
       <div className="sf-blue text-white py-6 px-6 shadow-lg" style={{ background: 'linear-gradient(135deg, #0176d3 0%, #005fb2 100%)' }}>
         <div className="max-w-7xl mx-auto">

@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from "../../../api/axiosConfig";
+import { ToastContainer, toast } from 'react-toastify';
+import "react-toastify/dist/ReactToastify.css";
 
 const ExamTable = ({ refreshFlag }) => {
   const [records, setRecords] = useState([]);
@@ -13,7 +15,7 @@ const ExamTable = ({ refreshFlag }) => {
     try {
       const token = localStorage.getItem("token");
       if (!token) {
-        alert("No token found! Please login again.");
+        toast.error("No token found! Please login again.");
         return;
       }
 
@@ -48,7 +50,7 @@ const ExamTable = ({ refreshFlag }) => {
       setLoading(false);
     } catch (error) {
       console.error("Error fetching exam records:", error);
-      alert("Failed to load exam records");
+      toast.error("Failed to load exam records");
       setLoading(false);
     }
   };
@@ -85,10 +87,10 @@ const ExamTable = ({ refreshFlag }) => {
       setRecords(records.filter(record => record.id !== id));
       setFilteredRecords(filteredRecords.filter(record => record.id !== id));
 
-      alert("Exam record deleted successfully!");
+      toast.success("Exam record deleted successfully!");
     } catch (error) {
       console.error("Error deleting exam record:", error);
-      alert("Failed to delete exam record");
+      toast.error("Failed to delete exam record");
     }
   };
 
@@ -127,6 +129,7 @@ const ExamTable = ({ refreshFlag }) => {
   return (
     <div>
       <div className="mb-6 flex justify-between items-center">
+        <ToastContainer position="top-right" autoClose={3000} hideProgressBar />
 
       </div>
 

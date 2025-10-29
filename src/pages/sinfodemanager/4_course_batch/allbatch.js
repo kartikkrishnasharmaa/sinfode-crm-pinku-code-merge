@@ -1,6 +1,8 @@
 import { useState, useEffect } from "react";
 import axios from "../../../api/axiosConfig";
 import { FaEye, FaEdit, FaTrash } from "react-icons/fa";
+import { ToastContainer, toast } from 'react-toastify';
+import "react-toastify/dist/ReactToastify.css";
 
 function Allbatch() {
   const [batches, setBatches] = useState([]);
@@ -129,7 +131,7 @@ function Allbatch() {
       if (!editForm.batch_name || !editForm.course_id || !editForm.start_date || 
           !editForm.end_date || !editForm.student_limit || !editForm.batch_start_time ||
           !editForm.batch_end_time) {
-        alert("Please fill in all fields");
+        toast.error("Please fill in all fields");
         return;
       }
 
@@ -153,14 +155,14 @@ function Allbatch() {
       });
       
       console.log("Update response:", response.data);
-      alert("Batch updated successfully!");
+      toast.success("Batch updated successfully!");
       setIsEditModalOpen(false);
       fetchBatches();
     } catch (error) {
       console.error("Error updating batch:", error);
       if (error.response) {
         console.error("Response data:", error.response.data);
-        alert(`Error: ${error.response.data.message || 'Update failed'}`);
+        toast.error(`Error: ${error.response.data.message || 'Update failed'}`);
       }
     }
   };
@@ -173,7 +175,7 @@ function Allbatch() {
       await axios.delete(`/batches/destroy/${id}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      alert("Batch deleted successfully!");
+      toast.success("Batch deleted successfully!");
       setBatches(batches.filter((b) => b.id !== id));
       // Refetch batches to update the filtered list
       fetchBatches();
@@ -184,6 +186,7 @@ function Allbatch() {
 
   return (
     <div className="p-6">
+      <ToastContainer position="top-right" autoClose={3000} hideProgressBar />
       <h1 className="text-[30px] mb-6 font-semibold font-nunito">
         All Batches
       </h1>

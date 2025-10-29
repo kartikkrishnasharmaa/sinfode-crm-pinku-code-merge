@@ -478,21 +478,42 @@ const StudentFees = () => {
     setSelectedCoupon('');
   };
 
-  const handleView = async (id) => {
-    try {
-      const token = localStorage.getItem("token");
-      const feeRes = await axios.get(`/studentfee/${id}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+const handleView = async (id) => {
+  try {
+    const token = localStorage.getItem("token");
+    const feeRes = await axios.get(`/studentfee/${id}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
 
-      const feeData = feeRes.data;
-      setViewFee(feeData);
-      setInstallmentDetails(feeData.installments || []);
-      setShowViewModal(true);
-    } catch (error) {
-      console.error("Error fetching student fee details:", error);
+    const feeData = feeRes.data;
+    setViewFee(feeData);
+    setInstallmentDetails(feeData.installments || []);
+    
+    // Get student data to fetch all courses
+    const student = studentsMap[feeData.student_id];
+    if (student) {
+      // Handle both single course (course_id) and multiple courses (courses array)
+      if (student.courses && student.courses.length > 0) {
+        // Student has multiple courses
+        setSelectedCourses(student.courses);
+      } else if (student.course_id) {
+        // Student has single course (legacy structure)
+        const singleCourse = courses.find(c => c.id === student.course_id);
+        if (singleCourse) {
+          setSelectedCourses([singleCourse]);
+        } else {
+          setSelectedCourses([]);
+        }
+      } else {
+        setSelectedCourses([]);
+      }
     }
-  };
+    
+    setShowViewModal(true);
+  } catch (error) {
+    console.error("Error fetching student fee details:", error);
+  }
+};
 
   // Delete fee function
   const handleDelete = async (id) => {
@@ -532,13 +553,13 @@ const StudentFees = () => {
       handleDelete(feeToDelete.id);
     }
   };
-
-  const closeViewModal = () => {
-    setShowViewModal(false);
-    setViewFee(null);
-    setFeeStructureDetails(null);
-    setInstallmentDetails([]);
-  };
+const closeViewModal = () => {
+  setShowViewModal(false);
+  setViewFee(null);
+  setFeeStructureDetails(null);
+  setInstallmentDetails([]);
+  setSelectedCourses([]); // Reset selected courses when closing modal
+};
 
   const openPaymentModal = (id) => {
     setCurrentEditId(id);
@@ -1156,108 +1177,155 @@ const StudentFees = () => {
         </div>
       )}
 
-      {/* View Fee Modal */}
-      {showViewModal && viewFee && (
-        <div className="sf-modal-backdrop">
-          <div className="sf-modal sf-view-modal">
-            <div className="sf-modal-header">
-              <h3>Fee Details</h3>
-              <button onClick={closeViewModal} className="sf-modal-close">
-                <i className="fas fa-times"></i>
-              </button>
-            </div>
-            <div className="sf-view-content">
-              <div className="sf-view-grid">
-                <div>
-                  <h4>Student Information</h4>
-                  <div className="sf-info-box">
-                    <p className="sf-info-title"><strong>Name:</strong> {getStudentName(viewFee.student_id)}</p>
-                    <p><strong>Admission No:</strong> {getStudentAdmissionNumber(viewFee.student_id)}</p>
-                    <p><strong>Course:</strong> {getCourseDetails(viewFee.course_id)}</p>
-                  </div>
-                </div>
-                <div>
-                  <h4>Fee Information</h4>
-                  <div className="sf-info-box">
-                    <p><strong>Total Fee:</strong> ₹{parseFloat(viewFee.total_fee || 0).toLocaleString()}</p>
-                    <p><strong>Paid Amount:</strong> ₹{parseFloat(viewFee.paid_amount || 0).toLocaleString()}</p>
-                    <p><strong>Pending Amount:</strong> ₹{parseFloat(viewFee.pending_amount || 0).toLocaleString()}</p>
-                    <p><strong>Status:</strong>
-                      <span className={`sf-badge`}>
-                        {viewFee.status}
-                      </span>
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Installment Details */}
-              {installmentDetails.length > 0 && (
-                <div className="installment-section">
-                  <h3 className="installment-title">📅 Installment Schedule</h3>
-                  <div className="installment-box">
-                    <table className="installment-table">
-                      <thead>
-                        <tr>
-                          <th>Installment #</th>
-                          <th>Due Date</th>
-                          <th>Amount</th>
-                          <th>Status</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {installmentDetails.map((installment, index) => (
-                          <tr key={installment.id || index}>
-                            <td>{installment.installment_number}</td>
-                            <td>{installment.due_date ? new Date(installment.due_date).toLocaleDateString() : 'N/A'}</td>
-                            <td>₹{parseFloat(installment.amount || 0).toLocaleString()}</td>
-                            <td>
-                              <span className={`sf-badge`}>
-                                {installment.status}
-                              </span>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
+   {/* View Fee Modal */}
+{showViewModal && viewFee && (
+  <div className="sf-modal-backdrop">
+    <div className="sf-modal sf-view-modal">
+      <div className="sf-modal-header">
+        <h3>Fee Details</h3>
+        <button onClick={closeViewModal} className="sf-modal-close">
+          <i className="fas fa-times"></i>
+        </button>
+      </div>
+      <div className="sf-view-content">
+        <div className="sf-view-grid">
+          <div>
+            <h4>Student Information</h4>
+            <div className="sf-info-box">
+              <p className="sf-info-title">
+                <strong>Name:</strong> {getStudentName(viewFee.student_id)}
+              </p>
+              <p><strong>Admission No:</strong> {getStudentAdmissionNumber(viewFee.student_id)}</p>
+              
+              {/* Single Course Display (for backward compatibility) */}
+              {selectedCourses.length === 1 && (
+                <p><strong>Course:</strong> {getCourseDetails(selectedCourses[0].id)}</p>
               )}
-
-              {/* Payment History */}
-              {viewFee.payments && viewFee.payments.length > 0 && (
-                <div>
-                  <h4 className="installment-title">Payment History</h4>
-                  <div className="sf-info-box">
-                    <div className="sf-payments-list">
-                      <table className="sf-payments-table">
-                        <thead>
-                          <tr>
-                            <th>#</th>
-                            <th>Amount Paid</th>
-                            <th>Payment Date</th>
-                            <th>Payment Mode</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {viewFee.payments.map((payment, index) => (
-                            <tr key={payment.id || index}>
-                              <td>{index + 1}</td>
-                              <td>₹{parseFloat(payment.amount_paid || 0).toLocaleString()}</td>
-                              <td>{new Date(payment.payment_date).toLocaleDateString()}</td>
-                              <td>{payment.payment_mode || 'N/A'}</td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
+              
+              {/* Multiple Courses Display */}
+              {selectedCourses.length > 1 && (
+                <div className="sf-multiple-courses">
+                  <strong>Courses:</strong>
+                  <div className="sf-courses-list-view">
+                    {selectedCourses.map((course, index) => (
+                      <div key={course.id} className="sf-course-item-view">
+                        <div className="sf-course-info-view">
+                          <div className="sf-course-name-view">
+                            {course.course_name} ({course.course_code})
+                          </div>
+                          <div className="sf-course-price-view">
+                            ₹{parseFloat(course.discounted_price || course.price || 0).toLocaleString()}
+                          </div>
+                        </div>
+                        {index < selectedCourses.length - 1 && <hr className="sf-course-divider" />}
+                      </div>
+                    ))}
+                    <div className="sf-total-courses-fee">
+                      <strong>Total Courses Fee: </strong>
+                      ₹{selectedCourses.reduce((total, course) => 
+                        total + parseFloat(course.discounted_price || course.price || 0), 0
+                      ).toLocaleString()}
                     </div>
                   </div>
                 </div>
               )}
             </div>
           </div>
+          <div>
+            <h4>Fee Information</h4>
+            <div className="sf-info-box">
+              <p><strong>Total Fee:</strong> ₹{parseFloat(viewFee.total_fee || 0).toLocaleString()}</p>
+              <p><strong>Paid Amount:</strong> ₹{parseFloat(viewFee.paid_amount || 0).toLocaleString()}</p>
+              <p><strong>Pending Amount:</strong> ₹{parseFloat(viewFee.pending_amount || 0).toLocaleString()}</p>
+              <p><strong>Status:</strong>
+                <span className={`sf-badge`}>
+                  {viewFee.status}
+                </span>
+              </p>
+              
+              {/* Display discount information if available */}
+              {feeStructureDetails && (
+                <>
+                  {feeStructureDetails.branch_discount_percent > 0 && (
+                    <p><strong>Branch Discount:</strong> {feeStructureDetails.branch_discount_percent}%</p>
+                  )}
+                  {feeStructureDetails.branch_discount_amount > 0 && (
+                    <p><strong>Branch Discount Amount:</strong> ₹{feeStructureDetails.branch_discount_amount}</p>
+                  )}
+                </>
+              )}
+            </div>
+          </div>
         </div>
-      )}
+
+        {/* Rest of your existing view modal code remains same */}
+        {/* Installment Details */}
+        {installmentDetails.length > 0 && (
+          <div className="installment-section">
+            <h3 className="installment-title">📅 Installment Schedule</h3>
+            <div className="installment-box">
+              <table className="installment-table">
+                <thead>
+                  <tr>
+                    <th>Installment #</th>
+                    <th>Due Date</th>
+                    <th>Amount</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {installmentDetails.map((installment, index) => (
+                    <tr key={installment.id || index}>
+                      <td>{installment.installment_number}</td>
+                      <td>{installment.due_date ? new Date(installment.due_date).toLocaleDateString() : 'N/A'}</td>
+                      <td>₹{parseFloat(installment.amount || 0).toLocaleString()}</td>
+                      <td>
+                        <span className={`sf-badge`}>
+                          {installment.status}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
+        {/* Payment History */}
+        {viewFee.payments && viewFee.payments.length > 0 && (
+          <div>
+            <h4 className="installment-title">Payment History</h4>
+            <div className="sf-info-box">
+              <div className="sf-payments-list">
+                <table className="sf-payments-table">
+                  <thead>
+                    <tr>
+                      <th>#</th>
+                      <th>Amount Paid</th>
+                      <th>Payment Date</th>
+                      <th>Payment Mode</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {viewFee.payments.map((payment, index) => (
+                      <tr key={payment.id || index}>
+                        <td>{index + 1}</td>
+                        <td>₹{parseFloat(payment.amount_paid || 0).toLocaleString()}</td>
+                        <td>{new Date(payment.payment_date).toLocaleDateString()}</td>
+                        <td>{payment.payment_mode || 'N/A'}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  </div>
+)}
 
       {/* Delete Confirmation Modal */}
       {showDeleteModal && feeToDelete && (

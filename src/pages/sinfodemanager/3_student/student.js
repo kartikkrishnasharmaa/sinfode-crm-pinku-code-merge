@@ -611,7 +611,7 @@ export default function Student() {
                 : "hover:bg-gray-100 text-gray-700 border border-transparent"
             }`}
           >
-            🪪 ID Cards
+           📋  ID Cards
           </button>
           
           <button

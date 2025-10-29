@@ -19,6 +19,8 @@ import {
 } from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
 import * as XLSX from "xlsx";
+import { ToastContainer, toast } from 'react-toastify';
+import "react-toastify/dist/ReactToastify.css";
 
 export default function Accountant() {
   const [accountantList, setAccountantList] = useState([]);
@@ -73,7 +75,7 @@ export default function Accountant() {
     try {
       const token = localStorage.getItem("token");
       if (!token) {
-        alert("No token found! Please login again.");
+        toast.error("No token found! Please login again.");
         return;
       }
       const res = await axios.get("/accountants", {
@@ -91,7 +93,7 @@ export default function Accountant() {
       setAccountantList(data);
     } catch (error) {
       console.error("Error fetching accountants:", error);
-      alert("Failed to load accountants list");
+      toast.error("Failed to load accountants list");
     }
   };
 
@@ -267,10 +269,10 @@ export default function Accountant() {
           accountant.id === id ? { ...accountant, attendance_status: newStatus } : accountant
         )
       );
-      alert(`Attendance status changed to ${newStatus}`);
+      toast.success(`Attendance status changed to ${newStatus}`);
     } catch (error) {
       console.error("Error updating status:", error);
-      alert("Failed to update attendance");
+      toast.error("Failed to update attendance");
     }
   };
 
@@ -282,11 +284,11 @@ export default function Accountant() {
         await axios.delete(`/accountants/${id}`, {
           headers: { Authorization: `Bearer ${token}` },
         });
-        alert("Accountant deleted successfully!");
+        toast.success("Accountant deleted successfully!");
         fetchAccountants();
       } catch (error) {
         console.error("Error deleting accountant:", error);
-        alert("Failed to delete accountant");
+        toast.error("Failed to delete accountant");
       }
     }
   };
@@ -331,12 +333,12 @@ export default function Accountant() {
         await axios.put(`/accountants/${editingAccountantId}`, updateData, {
           headers: { Authorization: `Bearer ${token}` },
         });
-        alert("Accountant updated successfully!");
+        toast.success("Accountant updated successfully!");
       } else {
         await axios.post("/accountants", formData, {
           headers: { Authorization: `Bearer ${token}` },
         });
-        alert("Accountant created successfully!");
+        toast.success("Accountant created successfully!");
       }
 
       fetchAccountants();
@@ -345,7 +347,7 @@ export default function Accountant() {
       resetForm();
     } catch (error) {
       console.error(error);
-      alert(editingAccountantId ? "Error updating accountant" : "Error creating accountant");
+      toast.error(editingAccountantId ? "Error updating accountant" : "Error creating accountant");
     } finally {
       setLoading(false);
     }
@@ -402,6 +404,7 @@ export default function Accountant() {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      <ToastContainer position="top-right" autoClose={3000} hideProgressBar />
       <div className="p-6">
         {/* Header */}
         <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center mb-6 gap-4">
