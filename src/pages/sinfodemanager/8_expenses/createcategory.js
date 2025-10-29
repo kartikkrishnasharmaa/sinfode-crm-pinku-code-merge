@@ -1,5 +1,7 @@
 import { useState, useEffect } from "react";
 import axios from "../../../api/axiosConfig";
+import { ToastContainer, toast } from 'react-toastify';
+import "react-toastify/dist/ReactToastify.css";
 
 function CreateCategory() {
   const [name, setName] = useState("");
@@ -14,7 +16,7 @@ function CreateCategory() {
     if (userBranchId) {
       setUserBranch(userBranchId);
     } else {
-      alert("No branch assigned to user! Please contact administrator.");
+      toast.error("No branch assigned to user! Please contact administrator.");
     }
   }, []);
 
@@ -30,7 +32,7 @@ function CreateCategory() {
     try {
       const token = localStorage.getItem("token");
       if (!token) {
-        alert("No token found! Please login again.");
+        toast.error("No token found! Please login again.");
         return;
       }
 
@@ -43,16 +45,20 @@ function CreateCategory() {
         headers: { Authorization: `Bearer ${token}` },
       });
 
-      setMessage(`✅ Category Created: ${res.data.name}`);
+      setMessage(` Category Created: ${res.data.name}`);
+      toast.success(` Category Created: ${res.data.name}`);
       setName("");
     } catch (err) {
       console.error(err);
-      setMessage("❌ Error creating category");
+      setMessage("Error creating category");
+      toast.error("Error creating category");
     }
   };
 
   return (
     <div className="items-center flex justify-center mt-10">
+      <ToastContainer position="top-right" autoClose={3000} />
+      
       <div className="bg-white shadow-lg rounded-2xl p-8 w-full max-w-lg">
         <h2 className="text-2xl font-bold mb-6 text-center">Create Category</h2>
 

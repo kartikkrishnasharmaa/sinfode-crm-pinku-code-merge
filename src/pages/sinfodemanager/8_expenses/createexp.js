@@ -1,5 +1,7 @@
 import { useState, useEffect } from "react";
 import axios from "../../../api/axiosConfig";
+import { ToastContainer, toast } from 'react-toastify';
+import "react-toastify/dist/ReactToastify.css";
 
 function CreateExpense() {
   const [categories, setCategories] = useState([]);
@@ -23,7 +25,7 @@ function CreateExpense() {
       setUserBranchId(branchId);
       setUserBranchName(branchName);
     } else {
-      alert("No branch assigned to user! Please contact administrator.");
+      toast.error("No branch assigned to user! Please contact administrator.");
     }
   }, []);
 
@@ -35,7 +37,7 @@ function CreateExpense() {
       try {
         const token = localStorage.getItem("token");
         if (!token) {
-          alert("No token found! Please login again.");
+          toast.error("No token found! Please login again.");
           return;
         }
         const res = await axios.get("/categories", {
@@ -47,7 +49,7 @@ function CreateExpense() {
         setCategories(userCategories);
       } catch (error) {
         console.error("Error fetching categories:", error);
-        alert("Failed to load categories");
+        toast.error("Failed to load categories");
       }
     };
     fetchCategories();
@@ -65,7 +67,7 @@ function CreateExpense() {
     try {
       const token = localStorage.getItem("token");
       if (!token) {
-        alert("No token found! Please login again.");
+        toast.error("No token found! Please login again.");
         return;
       }
 
@@ -84,6 +86,7 @@ function CreateExpense() {
       });
 
       setMessage(`✅ Expense Created: ID ${res.data.id}`);
+      toast.success(`✅ Expense Created: ID ${res.data.id}`);
       // reset form
       setCategoryId("");
       setPaymentTo("");
@@ -99,6 +102,8 @@ function CreateExpense() {
 
   return (
     <div className="items-center flex justify-center mt-10">
+      <ToastContainer position="top-right" autoClose={3000} />
+      
       <div className="bg-white shadow-lg rounded-2xl p-8 w-full max-w-2xl">
         <h2 className="text-2xl font-bold mb-6 text-center">Create Expense</h2>
 

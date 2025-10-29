@@ -3,6 +3,8 @@ import axios from "../../../api/axiosConfig";
 import './Collection.css';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
+import { ToastContainer, toast } from 'react-toastify';
+import "react-toastify/dist/ReactToastify.css";
 
 const Collection = () => {
   const [showModal, setShowModal] = useState(false);
@@ -497,7 +499,7 @@ const Collection = () => {
     e.preventDefault();
     
     if (!selectedStudent) {
-      alert("Please select a student");
+      toast.error("Please select a student");
       return;
     }
 
@@ -529,11 +531,11 @@ const Collection = () => {
       setFeeRecords(filteredRecords || []);
       setFilteredFeeRecords(filteredRecords || []);
       
-      alert("Fee record saved successfully!");
+      toast.success("Fee record saved successfully!");
       closeModal();
     } catch (error) {
       console.error("Error saving fee data:", error);
-      alert("Error saving fee data. Please try again.");
+      toast.error("Error saving fee data. Please try again.");
     }
   };
 
@@ -541,7 +543,7 @@ const Collection = () => {
     e.preventDefault();
     
     if (!selectedFeeRecord) {
-      alert("No fee record selected");
+      toast.error("No fee record selected");
       return;
     }
 
@@ -571,12 +573,11 @@ const Collection = () => {
       
       setFeeRecords(filteredRecords || []);
       setFilteredFeeRecords(filteredRecords || []);
-      
-      alert("Payment recorded successfully!");
+      toast.success("Payment recorded successfully!");
       closePaymentModal();
     } catch (error) {
       console.error("Error saving payment:", error);
-      alert("Error saving payment. Please try again.");
+      toast.error("Error saving payment. Please try again.");
     }
   };
 
@@ -616,6 +617,7 @@ const Collection = () => {
 
   return (
     <div className="collection-container">
+      <ToastContainer position="top-right" autoClose={3000} />
       <div className="collection-header">
         <h1>Fee Collection Management</h1>
       </div>

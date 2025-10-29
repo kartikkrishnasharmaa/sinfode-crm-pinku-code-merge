@@ -94,14 +94,7 @@ const Discount = () => {
       <div className="py-6 px-4 min-h-screen bg-gray-50">
         <div className="max-w-5xl mx-auto">
           {/* Header */}
-          <div className="text-center mb-6">
-            <h1 className="text-2xl font-bold text-gray-800">Discount Request History</h1>
-            <button
-              className="mt-3 px-4 py-2 rounded bg-blue-600 text-white text-sm"
-              onClick={() => setShowRequestModal(true)}>
-              New Discount Request
-            </button>
-          </div>
+ 
 
           {/* Request List */}
           <div className="space-y-4">

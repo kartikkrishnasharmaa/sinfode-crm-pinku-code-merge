@@ -124,6 +124,7 @@ function StudentIDCardGenerator() {
         <div className="flex-1">
           <label className="block mb-1 font-medium">Select Course</label>
           <select
+            className="border rounded-lg p-2 w-full"
             value={selectedCourse}
             onChange={(e) => setSelectedCourse(e.target.value)}
           >

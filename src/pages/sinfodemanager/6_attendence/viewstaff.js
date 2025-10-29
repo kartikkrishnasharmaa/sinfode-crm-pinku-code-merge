@@ -334,8 +334,8 @@ function ViewStaffAttendance() {
                     key={index} 
                     className={`min-h-12 rounded-lg flex flex-col items-center justify-center p-1
                       ${day.isWeekend ? 'bg-gray-100' : 'bg-white'} 
-                      ${day.status === 'Present' ? 'bg-green-700 text-white border border-green-300' : ''}
-                      ${day.status === 'Absent' ? 'bg-red-700 text-white border border-red-300' : ''}
+                      ${day.status === 'Present' ? 'bg-green-700 text-gray-700 border border-green-300' : ''}
+                      ${day.status === 'Absent' ? 'bg-red-700 text-red-700 border border-red-300' : ''}
                       ${!day.date ? 'invisible' : 'border'}`}
                   >
                     {day.date && (

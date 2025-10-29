@@ -1,6 +1,8 @@
 import { useState, useEffect } from "react";
 import SMLayout from "../../../layouts/Sinfodemanager";
 import axios from "../../../api/axiosConfig";
+import { ToastContainer, toast } from 'react-toastify';
+import "react-toastify/dist/ReactToastify.css";
 
 export default function Lead() {
   const [leads, setLeads] = useState([]);
@@ -49,7 +51,7 @@ export default function Lead() {
       setLeads(response.data);
     } catch (error) {
       console.error("Error fetching leads:", error);
-      alert("Failed to load leads");
+      toast.error("Failed to load leads");
     } finally {
       setIsLoading(false);
     }
@@ -117,7 +119,7 @@ export default function Lead() {
       });
 
       if (response.data.success) {
-        alert("Lead created successfully!");
+        toast.success("Lead created successfully!");
         // Reset form
         setFormData({
           branch_id: userBranchId || "", // Reset to user's branch ID
@@ -140,7 +142,7 @@ export default function Lead() {
       }
     } catch (error) {
       console.error("Error creating lead:", error);
-      alert("Failed to create lead");
+      toast.error("Failed to create lead");
     } finally {
       setIsLoading(false);
     }
@@ -154,13 +156,13 @@ export default function Lead() {
       });
 
       if (response.data.success) {
-        alert("Lead updated successfully!");
+        toast.success("Lead updated successfully!");
         fetchLeads(); // Refresh the list
         return true;
       }
     } catch (error) {
       console.error("Error updating lead:", error);
-      alert("Failed to update lead");
+      toast.error("Failed to update lead");
       return false;
     }
   };
@@ -175,12 +177,12 @@ export default function Lead() {
       });
 
       if (response.data.success) {
-        alert("Lead deleted successfully!");
+        toast.success("Lead deleted successfully!");
         fetchLeads(); // Refresh the list
       }
     } catch (error) {
       console.error("Error deleting lead:", error);
-      alert("Failed to delete lead");
+      toast.error("Failed to delete lead");
     }
   };
 
@@ -329,6 +331,8 @@ export default function Lead() {
   return (
     <SMLayout>
       <div className="min-h-screen">
+            <ToastContainer position="top-right" autoClose={3000} />
+      
         {/* Header */}
         <header className="bg-white border-b border-sf-border sf-shadow">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">

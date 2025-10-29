@@ -2,6 +2,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import axios from "../../../api/axiosConfig";
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
+import { ToastContainer, toast } from 'react-toastify';
+import "react-toastify/dist/ReactToastify.css";
 
 const StaffSalaryManagement = () => {
   // State variables

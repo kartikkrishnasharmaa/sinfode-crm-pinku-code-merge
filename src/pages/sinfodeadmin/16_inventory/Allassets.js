@@ -241,7 +241,7 @@ function Allassets() {
                 setBranchFilter("");
                 setStatusFilter("");
               }}
-              className="w-full bg-gray-200 hover:bg-gray-300 text-gray-800 py-2 px-4 rounded-lg transition-colors"
+              className="bg-[#3F8CFF] hover:bg-blue-700 text-white px-4 py-2 rounded-3xl flex items-center gap-2"
             >
               Clear Filters
             </button>

@@ -221,7 +221,7 @@ function Tassets() {
           <div className="flex justify-end mt-4">
             <button
               onClick={clearFilters}
-              className="px-2 py-1 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 text-sm transition-colors"
+              className="bg-[#3F8CFF] hover:bg-blue-700 text-white px-4 py-1 rounded-3xl flex items-center gap-2"
             >
               Clear Filters
             </button>
@@ -288,7 +288,7 @@ function Tassets() {
             {Object.values(filters).some(value => value !== "") && (
               <button
                 onClick={clearFilters}
-                className="mt-4 inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                className="bg-[#3F8CFF] hover:bg-blue-700 text-white px-4 py-2 rounded-3xl flex items-center gap-2"
               >
                 Clear Filters
               </button>

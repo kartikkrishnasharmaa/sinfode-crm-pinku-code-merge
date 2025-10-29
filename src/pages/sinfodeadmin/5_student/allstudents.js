@@ -553,7 +553,7 @@ export default function Allstudents() {
         />
         <button
           onClick={() => setDateFilter({ from: "", to: "" })}
-          className="bg-gray-200 px-2 py-1 rounded"
+          className="bg-[#3F8CFF] hover:bg-blue-700 text-white px-4 py-2 rounded-3xl flex items-center gap-2"
         >
           Reset Dates
         </button>

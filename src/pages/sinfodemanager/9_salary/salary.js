@@ -2,6 +2,8 @@ import SAAdminLayout from "../../../layouts/Sinfodemanager";
 import { useState, useEffect } from "react";
 import Salayslip from "./salaryslip"
 import Generatesalary from "./generatesalary";
+import { ToastContainer, toast } from 'react-toastify';
+import "react-toastify/dist/ReactToastify.css";
 
 function Overview() {
   return (

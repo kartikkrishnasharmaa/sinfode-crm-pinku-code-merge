@@ -246,46 +246,25 @@ function Exam() {
       {/* Header */}
       <div className="sf-blue text-white py-6 px-6 shadow-lg" style={{ background: 'linear-gradient(135deg, #0176d3 0%, #005fb2 100%)' }}>
         <div className="max-w-7xl mx-auto">
-          <div className="flex items-center space-x-3">
+          <div className="flex items-center">
             <div className="bg-white bg-opacity-20 p-2 rounded-lg">
               <svg className="w-8 h-8" viewBox="0 0 24 24" fill="currentColor" role="img" aria-label="Education (book)">
                 <title>Book</title>
                 <path d="M21 6v11a1 1 0 0 1-1 1c-2.5 0-5-1-7-1s-4.5 1-7 1a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1c2.5 0 5 1 7 1s4.5-1 7-1a1 1 0 0 1 1 1zM3 6c2.5 0 5 1 7 1s4.5-1 7-1" />
               </svg>
-
-
             </div>
-            <div>
-              <h1 className="text-3xl font-bold">Exam Marks Management</h1>
-            </div>
+              <h1 className="text-3xl ml-4 font-bold">Exam Marks Management</h1>
+            <button
+              onClick={() => setShowModal(true)}
+              className="bg-slate-100 text-blue-600 ml-[190px] font-bold px-4 py-2 rounded-lg">
+              <span>+ Add Marks</span>
+            </button>
           </div>
         </div>
       </div>
 
       <div className="max-w-7xl py-8">
         {/* Action Bar */}
-        <div className="flex justify-between items-center mb-8">
-          <div>
-          </div>
-          <button
-            onClick={() => setShowModal(true)}
-            className="sf-button text-white px-6 py-3 rounded-lg font-medium flex items-center space-x-2 shadow-lg"
-            style={{ background: '#0176d3', transition: 'all 0.2s ease' }}
-            onMouseOver={(e) => {
-              e.target.style.background = '#005fb2';
-              e.target.style.transform = 'translateY(-1px)';
-            }}
-            onMouseOut={(e) => {
-              e.target.style.background = '#0176d3';
-              e.target.style.transform = 'translateY(0)';
-            }}
-          >
-
-            <span>+ Add Marks</span>
-          </button>
-        </div>
-
-
 
         {/* Data Table */}
         <ExamTable
