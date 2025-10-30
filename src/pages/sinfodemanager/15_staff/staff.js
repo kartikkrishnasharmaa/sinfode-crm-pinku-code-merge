@@ -407,10 +407,9 @@ export default function Staff() {
             <button
               onClick={() => setShowFilters(!showFilters)}
               className={`px-4 py-2 rounded-lg flex items-center gap-2 transition-colors ${
-                showFilters ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-              }`}
+                showFilters ? 'bg-[#3F8CFF] text-white px-4 py-2 rounded-lg' : 'bg-[#3F8CFF] text-white px-4 py-2 rounded-lg'}`}
             >
-              <FaFilter /> Filters
+              <FaFilter /> Filter
               {Object.values(filters).some(filter => 
                 typeof filter === 'string' ? filter !== 'all' : 
                 Object.values(filter).some(Boolean)
@@ -494,7 +493,7 @@ export default function Staff() {
               <div className="mt-4 flex justify-end">
                 <button
                   onClick={resetFilters}
-                  className="px-4 py-2 text-gray-600 hover:text-gray-800 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                  className="bg-[#3F8CFF] text-white px-4 py-2 rounded-lg"
                 >
                   Reset Filters
                 </button>

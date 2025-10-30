@@ -272,7 +272,7 @@ const Reminder = () => {
           <div className="flex items-end">
             <button
               onClick={clearFilters}
-              className="w-full px-4 py-2 bg-gray-500 text-white rounded-md hover:bg-gray-600 transition-colors"
+              className="bg-blue-600 border border-x-white text-white px-4 py-2 rounded-xl hover:bg-blue-700 transition-colors flex items-center gap-2"
             >
               Clear Filters
             </button>

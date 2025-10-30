@@ -364,24 +364,7 @@ export default function Allstudents() {
             </div>
           </div>
           
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              <FaFilter className="inline mr-2" />
-              Branch
-            </label>
-            <div className="bg-gray-50 rounded-lg px-4 py-2.5 border">
-              <span className="text-sm font-medium text-gray-800">{selectedBranchName}</span>
-            </div>
-          </div>
           
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Results
-            </label>
-            <div className="bg-blue-50 rounded-lg px-4 py-2.5 border border-blue-200 text-center">
-              <span className="text-sm font-bold text-blue-600">{filteredStudents.length} students</span>
-            </div>
-          </div>
         </div>
       </div>
 

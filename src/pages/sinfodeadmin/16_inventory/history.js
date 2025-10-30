@@ -218,7 +218,7 @@ function Tassets() {
             </div>
           </div>
 
-          <div className="flex justify-end mt-4">
+          <div className="flex mt-4">
             <button
               onClick={clearFilters}
               className="bg-[#3F8CFF] hover:bg-blue-700 text-white px-4 py-1 rounded-3xl flex items-center gap-2"

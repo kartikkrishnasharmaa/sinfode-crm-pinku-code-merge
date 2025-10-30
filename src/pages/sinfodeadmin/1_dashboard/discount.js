@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import axios from "../../../api/axiosConfig";
 import SAAdminLayout from "../../../layouts/Sinfodeadmin";
+import { ToastContainer, toast } from 'react-toastify';
+import "react-toastify/dist/ReactToastify.css";
 
 const Discount = () => {
   const [discountRequests, setDiscountRequests] = useState([]);
@@ -45,7 +47,7 @@ const Discount = () => {
       await axios.post(`/branches/${user.branch_id}/discount-request`, payload, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      alert('Discount request submitted successfully!');
+      toast.success('Discount request submitted successfully!');
       setShowRequestModal(false);
       setRequestedValue('');
       fetchDiscountRequests();
@@ -62,7 +64,7 @@ const Discount = () => {
       await axios.put(`/discount-requests/${requestId}`, { status }, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      alert(`Request ${status} successfully!`);
+      toast.success(`Request ${status} successfully!`);
       fetchDiscountRequests();
     } catch (err) {
       setError('Failed to update request status');
@@ -92,6 +94,7 @@ const Discount = () => {
   return (
     <SAAdminLayout>
       <div className="py-6 px-4 min-h-screen bg-gray-50">
+        <ToastContainer position="top-right" autoClose={3000} hideProgressBar />
         <div className="max-w-5xl mx-auto">
           {/* Header */}
  

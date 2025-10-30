@@ -569,7 +569,7 @@ const StudentFees = () => {
             </div>
           </div>
           <div className="sf-header-right">
-            <button onClick={openModal} className="sf-add-btn">
+            <button onClick={openModal} className="bg-blue-600 border border-x-white text-white px-4 py-2 rounded-xl hover:bg-blue-700 transition-colors flex items-center gap-2">
               <i className="fas fa-plus"></i>
               Generate Fee
             </button>

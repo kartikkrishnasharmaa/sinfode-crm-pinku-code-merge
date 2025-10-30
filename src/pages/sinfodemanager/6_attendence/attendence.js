@@ -123,6 +123,7 @@ function AddAttendance() {
           <label className="block mb-1 font-medium">Select Course</label>
           <select
             value={selectedCourse}
+            className="border rounded-lg p-2 w-full"
             onChange={(e) => setSelectedCourse(e.target.value)}
           >
             <option value="">Select Course</option>

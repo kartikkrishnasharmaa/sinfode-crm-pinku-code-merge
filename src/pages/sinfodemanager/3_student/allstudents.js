@@ -311,7 +311,7 @@ export default function Allstudents() {
           <button
             onClick={() => setShowFilters(!showFilters)}
             className={`px-4 py-2 rounded-lg flex items-center gap-2 transition-colors ${
-              showFilters ? 'bg-blue-100 text-blue-700 border border-blue-300' : 'bg-gray-100 text-gray-700 hover:bg-gray-200 border border-gray-300'
+              showFilters ? 'bg-blue-700 text-white border border-blue-300' : 'bg-gray-100 text-gray-700 hover:bg-gray-200 border border-gray-300'
             }`}
           >
             <FaFilter /> Filters
@@ -405,7 +405,7 @@ export default function Allstudents() {
             <div className="mt-4 flex justify-end">
               <button
                 onClick={resetFilters}
-                className="px-4 py-2 text-gray-600 hover:text-gray-800 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                className="bg-blue-700 text-white px-4 py-2 rounded-lg hover:bg-blue-800 transition-colors flex items-center gap-2"
               >
                 Reset Filters
               </button>

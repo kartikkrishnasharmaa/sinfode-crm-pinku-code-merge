@@ -99,6 +99,7 @@ function StudentIDCardGenerator() {
           <label className="block mb-1 font-medium">Select Course</label>
           <select
             value={selectedCourse}
+            className="w-full border border-gray-300 rounded px-3 py-2"
             onChange={(e) => setSelectedCourse(e.target.value)}
           >
             <option value="">Select Course</option>
@@ -186,18 +187,18 @@ function StudentIDCardGenerator() {
                     />
                   </div>
 
-                  <div className="student-name">
+                  <div className="text-white">
                     {selectedStudent.full_name.toUpperCase()}
                   </div>
 
                   <div className="info-section">
                     <div className="info-row">
-                      <span className="info-label">Father Name:</span>
+                      <span className="info-label">Father Name &nbsp;:&nbsp;</span>
                       <span className="info-value">{selectedStudent.guardian_name}</span>
                     </div>
 
                     <div className="info-row">
-                      <span className="info-label">Branch:</span>
+                      <span className="info-label">Branch &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; :&nbsp;</span>
                       <span className="info-value">
                         {branches.find(
                           (b) =>

@@ -252,47 +252,29 @@ function Exam() {
       {/* Header */}
       <div className="sf-blue text-white py-6 px-6 shadow-lg" style={{ background: 'linear-gradient(135deg, #0176d3 0%, #005fb2 100%)' }}>
         <div className="max-w-7xl mx-auto">
-          <div className="flex items-center space-x-3">
+          <div className="flex items-center">
             <div className="bg-white bg-opacity-20 p-2 rounded-lg">
               <svg className="w-8 h-8" fill="currentColor" viewBox="0 0 24 24">
                 <path d="M12 2L2 7极10c0 5.55 3.84 9.74 9 11 5.16-1.26 9-5.45 9-11V7l-10-5z"/>
               </svg>
             </div>
-            <div>
+            <div className="ml-4">
               <h1 className="text-3xl font-bold">Exam Marks Management</h1>
               <p className="text-blue-100 text-lg">Comprehensive student assessment tracking system</p>
             </div>
+              <button 
+            onClick={() => setShowModal(true)}
+            className="sf-button text-white border border-white ml-[140px] px-6 py-3 rounded-lg font-medium flex items-center space-x-2 shadow-lg"
+          >
+          
+            <span>+ Add Marks</span>
+          </button>
           </div>
         </div>
       </div>
 
       <div className="max-w-7xl mx-auto px-6 py-8">
-        {/* Action Bar */}
-        <div className="flex justify-between items-center mb-8">
-          <div>
-            {/* <h2 className="text-2xl font-semibold text-gray-800">Exam Records</h2> */}
-            {/* <p className="text-gray-600">Manage and track student exam performance</p> */}
-          </div>
-          <button 
-            onClick={() => setShowModal(true)}
-            className="sf-button text-white px-6 py-3 rounded-lg font-medium flex items-center space-x-2 shadow-lg"
-            style={{ background: '#0176d3', transition: 'all 0.2s ease' }}
-            onMouseOver={(e) => {
-              e.target.style.background = '#005fb2';
-              e.target.style.transform = 'translateY(-1px)';
-            }}
-            onMouseOut={(e) => {
-              e.target.style.background = '#0176d3';
-              e.target.style.transform = 'translateY(0)';
-            }}
-          >
-          
-            <span>+ Add Marks</span>
-          </button>
-        </div>
-
-       
-
+    
         {/* Data Table */}
         <ExamTable 
           records={records} 

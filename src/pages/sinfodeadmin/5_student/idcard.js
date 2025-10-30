@@ -212,19 +212,19 @@ function StudentIDCardGenerator() {
                     />
                   </div>
 
-                  <div className="student-name text-white">
+                  <div className="text-white font-extrabold">
                     {selectedStudent.full_name.toUpperCase()}
                   </div>
 
                   <div className="info-section">
                     <div className="info-row">
                       <span className="info-label">Father Name:</span>
-                      <span className="info-value">{selectedStudent.guardian_name}</span>
+                      <span className="info-value ml-2">{selectedStudent.guardian_name}</span>
                     </div>
 
                     <div className="info-row">
-                      <span className="info-label">Branch:</span>
-                      <span className="info-value">
+                      <span className="info-label">Branch &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; :</span>
+                      <span className="info-value ml-2">
                         {branches.find(
                           (b) =>
                             b.id.toString() ===

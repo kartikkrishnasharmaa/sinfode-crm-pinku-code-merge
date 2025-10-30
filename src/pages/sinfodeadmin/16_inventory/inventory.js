@@ -115,12 +115,14 @@ function AddAssets() {
           <input
             type="text"
             name="asset_code"
-            placeholder="Asset Code"
+            placeholder="Asset Code (max 6 chars)"
             value={formData.asset_code}
             onChange={handleChange}
+            maxLength={6}
             className="w-full border rounded-lg p-3"
             required
           />
+
           <input
             type="date"
             name="purchase_date"
@@ -231,8 +233,8 @@ export default function Assets() {
               setSidebarOpen(false);
             }}
             className={`block w-full text-left px-4 py-5 rounded-lg transition-colors ${activeTab === "addAssets"
-                ? "bg-blue-100 text-black font-semibold"
-                : "hover:bg-blue-100 text-black"
+              ? "bg-blue-100 text-black font-semibold"
+              : "hover:bg-blue-100 text-black"
               }`}
           >
             ➕ Add Assets
@@ -243,8 +245,8 @@ export default function Assets() {
               setSidebarOpen(false);
             }}
             className={`block w-full text-left px-4 py-5 rounded-lg transition-colors ${activeTab === "assetsList"
-                ? "bg-blue-100 text-black font-semibold"
-                : "hover:bg-blue-100 text-black"
+              ? "bg-blue-100 text-black font-semibold"
+              : "hover:bg-blue-100 text-black"
               }`}
           >
             📋 All Assets
@@ -255,8 +257,8 @@ export default function Assets() {
               setSidebarOpen(false);
             }}
             className={`block w-full text-left px-4 py-5 rounded-lg transition-colors ${activeTab === "transferAssets"
-                ? "bg-blue-100 text-black font-semibold"
-                : "hover:bg-blue-100 text-black"
+              ? "bg-blue-100 text-black font-semibold"
+              : "hover:bg-blue-100 text-black"
               }`}
           >
             📋 Transfer Assets
@@ -267,8 +269,8 @@ export default function Assets() {
               setSidebarOpen(false);
             }}
             className={`block w-full text-left px-4 py-5 rounded-lg transition-colors ${activeTab === "transferhistory"
-                ? "bg-blue-100 text-black font-semibold"
-                : "hover:bg-blue-100 text-black"
+              ? "bg-blue-100 text-black font-semibold"
+              : "hover:bg-blue-100 text-black"
               }`}
           >
             📋 Transfer History

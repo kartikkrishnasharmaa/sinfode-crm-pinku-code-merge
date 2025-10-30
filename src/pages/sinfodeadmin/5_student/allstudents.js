@@ -210,8 +210,8 @@ export default function Allstudents() {
 
   // Get batches for a specific course
   const getBatchesForCourse = (courseId) => {
-    return batches.filter(batch => 
-      batch.course_id == courseId || 
+    return batches.filter(batch =>
+      batch.course_id == courseId ||
       (batch.courses && batch.courses.some(course => course.id == courseId))
     );
   };
@@ -355,7 +355,7 @@ export default function Allstudents() {
       Branch: student.branch?.branch_name,
       "Courses": student.courses?.map(c => c.course_name).join(", ") || "N/A",
       "Batches": student.courses?.map(c => c.batch?.batch_name).filter(Boolean).join(", ") || "N/A",
-      "Batch Timings": student.courses?.map(c => 
+      "Batch Timings": student.courses?.map(c =>
         c.batch ? formatBatchTiming(c.batch.batch_start_time, c.batch.batch_end_time) : "N/A"
       ).filter(timing => timing !== "N/A").join(" | ") || "N/A",
     }));
@@ -387,12 +387,12 @@ export default function Allstudents() {
 
   const formatTimeToIST = (timeString) => {
     if (!timeString) return "N/A";
-    
+
     try {
       const [hours, minutes] = timeString.split(':');
       const date = new Date();
       date.setHours(parseInt(hours), parseInt(minutes), 0);
-      
+
       return date.toLocaleTimeString('en-IN', {
         hour: '2-digit',
         minute: '2-digit',
@@ -409,7 +409,7 @@ export default function Allstudents() {
     if (!startTime && !endTime) return "Timing not set";
     if (!startTime) return `Till ${formatTimeToIST(endTime)}`;
     if (!endTime) return `From ${formatTimeToIST(startTime)}`;
-    
+
     return `${formatTimeToIST(startTime)} - ${formatTimeToIST(endTime)}`;
   };
 
@@ -457,7 +457,7 @@ export default function Allstudents() {
         pauseOnHover
         theme="light"
       />
-      
+
       {/* Header */}
       <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-6 gap-4">
         <h1 className="text-2xl md:text-3xl font-nunito font-semibold">
@@ -591,7 +591,13 @@ export default function Allstudents() {
                 >
                   <div className="col-span-3 flex items-center gap-4">
                     <img
-                      src={student.photo_url || "https://rapidapi.com/hub/_next/image?url=https%3A%2F%2Frapidapi-prod-apis.s3.amazonaws.com%2F0499ccca-a115-4e70-b4f3-1c1587d6de2b.png&w=3840&q=75"}
+                      src={
+                        student.photo_url
+                          ? student.photo_url
+                          : student.gender === "Male"
+                            ? "https://cdn-icons-png.flaticon.com/512/3135/3135715.png" // default male image
+                            : "https://cdn-icons-png.flaticon.com/512/3135/3135789.png" // default female image
+                      }
                       alt={student.full_name}
                       className="w-12 h-12 rounded-full object-cover border"
                     />
@@ -663,11 +669,11 @@ export default function Allstudents() {
         </div>
       ) : (
         // Card View
-        <div className="grid mt-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid mt-10 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredStudents.map((student) => (
             <div
               key={student.id}
-              className="bg-white rounded-2xl shadow hover:shadow-lg transition p-6 flex flex-col items-center text-center"
+              className="bg-white mt-5 rounded-2xl shadow hover:shadow-lg transition p-6 flex flex-col items-center text-center"
             >
               <div className="w-20 h-20 rounded-full overflow-hidden border-4 border-white shadow-md -mt-12 mb-3">
                 <img
@@ -1043,16 +1049,15 @@ export default function Allstudents() {
                     {selectedEditCourses.length} course(s) selected
                   </span>
                 </div>
-                
+
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                   {courses.map((course) => (
-                    <div 
-                      key={course.id} 
-                      className={`border-2 rounded-xl p-4 transition-all duration-200 ${
-                        selectedEditCourses.includes(course.id) 
-                          ? 'border-blue-500 bg-blue-50 shadow-md' 
+                    <div
+                      key={course.id}
+                      className={`border-2 rounded-xl p-4 transition-all duration-200 ${selectedEditCourses.includes(course.id)
+                          ? 'border-blue-500 bg-blue-50 shadow-md'
                           : 'border-gray-200 hover:border-gray-300 hover:shadow-sm'
-                      }`}
+                        }`}
                     >
                       <div className="flex items-start space-x-3">
                         <input
@@ -1063,13 +1068,13 @@ export default function Allstudents() {
                           className="mt-1 w-5 h-5 text-blue-600 rounded focus:ring-blue-500 border-gray-300"
                         />
                         <div className="flex-1 min-w-0">
-                          <label 
+                          <label
                             htmlFor={`edit-course-${course.id}`}
                             className="font-semibold text-gray-900 cursor-pointer hover:text-blue-600 block text-sm"
                           >
                             {course.course_name}
                           </label>
-                          
+
                           <div className="mt-2 space-y-1">
                             <p className="text-xs text-gray-600">
                               <span className="font-medium">Code:</span> {course.course_code}
@@ -1078,12 +1083,11 @@ export default function Allstudents() {
                               <span className="font-medium">Duration:</span> {course.duration} months
                             </p>
                             <p className="text-xs text-gray-600">
-                              <span className="font-medium">Mode:</span> 
-                              <span className={`ml-1 px-2 py-0.5 rounded text-xs ${
-                                course.mode === 'Online' ? 'bg-green-100 text-green-800' :
-                                course.mode === 'Offline' ? 'bg-blue-100 text-blue-800' :
-                                'bg-purple-100 text-purple-800'
-                              }`}>
+                              <span className="font-medium">Mode:</span>
+                              <span className={`ml-1 px-2 py-0.5 rounded text-xs ${course.mode === 'Online' ? 'bg-green-100 text-green-800' :
+                                  course.mode === 'Offline' ? 'bg-blue-100 text-blue-800' :
+                                    'bg-purple-100 text-purple-800'
+                                }`}>
                                 {course.mode}
                               </span>
                             </p>
@@ -1097,7 +1101,7 @@ export default function Allstudents() {
                               ₹{course.discounted_price || course.actual_price || "0"}
                             </span>
                           </div>
-                          
+
                           {/* Batch selection for selected courses */}
                           {selectedEditCourses.includes(course.id) && (
                             <div className="mt-4 pt-3 border-t border-gray-200">
@@ -1113,7 +1117,7 @@ export default function Allstudents() {
                                 <option value="">Choose a batch</option>
                                 {getBatchesForCourse(course.id).map((batch) => (
                                   <option key={batch.id} value={batch.id}>
-                                    {batch.batch_name} 
+                                    {batch.batch_name}
                                     {batch.batch_start_time && ` (${formatTime(batch.batch_start_time)})`}
                                   </option>
                                 ))}
@@ -1125,7 +1129,7 @@ export default function Allstudents() {
                     </div>
                   ))}
                 </div>
-                
+
                 {/* Selected Courses Summary */}
                 {selectedEditCourses.length > 0 && (
                   <div className="mt-6 p-6 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-200">
