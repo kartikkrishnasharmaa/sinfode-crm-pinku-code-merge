@@ -350,7 +350,7 @@ const handleUpdateStudent = async (e) => {
         }
       });
 
-      formData.append("photo", editPhoto);
+      formData.append("photo_url", editPhoto);
 
       response = await axios.put(
         `/students/update/${selectedStudent.id}`,
