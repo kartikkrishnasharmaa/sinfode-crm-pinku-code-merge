@@ -398,7 +398,7 @@ export default function Allstudents() {
                         <div className="flex-shrink-0 h-12 w-12">
                           <img
                             className="h-12 w-12 rounded-full object-cover border-2 border-gray-200"
-                            src={student.photo_url || "/default-avatar.png"}
+                            src={student.photo_url || "https://img.freepik.com/free-vector/smiling-man-with-glasses_1308-174409.jpg?semt=ais_hybrid&w=740&q=80"}
                             alt={student.full_name}
                           />
                         </div>
