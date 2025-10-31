@@ -235,7 +235,7 @@ const Reminder = () => {
                 <tr>
                   {[
                     "Student",
-                    "Contact Number",
+                    // "Contact Number",
                     "Installment",
                     "Amount",
                     "Due Date",
@@ -257,9 +257,9 @@ const Reminder = () => {
                     <td className="px-6 py-4 text-sm font-medium text-gray-900">
                       {item.fee_structure.student.full_name}
                     </td>
-                    <td className="px-6 py-4 text-sm text-gray-500">
+                    {/* <td className="px-6 py-4 text-sm text-gray-500">
                       {item.fee_structure.student.contact_number}
-                    </td>
+                    </td> */}
                     <td className="px-6 py-4 text-sm text-gray-500">
                       Installment #{item.installment_number}
                     </td>
