@@ -155,21 +155,21 @@ export default function Allstudents() {
       const response = await axios.get(`/students/show/${studentId}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-     
+
       const updatedStudent = response.data;
-     
+
       // Update the students state with fresh data
       setStudents(prevStudents =>
         prevStudents.map(student =>
           student.id === studentId ? updatedStudent : student
         )
       );
-     
+
       // Update selected student if it's the same one
       if (selectedStudent && selectedStudent.id === studentId) {
         setSelectedStudent(updatedStudent);
       }
-     
+
       return updatedStudent;
     } catch (error) {
       console.error("Error refreshing student data:", error);
@@ -195,14 +195,14 @@ export default function Allstudents() {
     const studentData = await fetchStudent(id);
     if (studentData) {
       setSelectedStudent(studentData);
-     
+
       // Initialize form data with proper formatting for date inputs
       const formattedData = {
         ...studentData,
         dob: studentData.dob ? studentData.dob.split('T')[0] : '',
         admission_date: studentData.admission_date ? studentData.admission_date.split('T')[0] : ''
       };
-     
+
       setEditFormData(formattedData);
       setPhotoPreview(studentData.photo_url || "");
 
@@ -306,7 +306,112 @@ export default function Allstudents() {
     }
   }, [selectedEditCourses, courses]);
 
+const handleUpdateStudent = async (e) => {
+  e.preventDefault();
+  setIsLoading(true);
+ 
+  try {
+    const token = localStorage.getItem("token");
 
+    // Prepare the data in exact format like Postman
+    const updateData = {
+      full_name: editFormData.full_name,
+      email: editFormData.email,
+      contact_number: editFormData.contact_number,
+      dob: formatDateForAPI(editFormData.dob),
+      gender: editFormData.gender,
+      address: editFormData.address,
+      guardian_name: editFormData.guardian_name,
+      guardian_contact: editFormData.guardian_contact,
+      admission_date: formatDateForAPI(editFormData.admission_date),
+      admission_number: editFormData.admission_number,
+      branch_id: editFormData.branch_id,
+      course_ids: selectedEditCourses,
+      batch_ids: selectedEditCourses.map(courseId => courseBatches[courseId] || null).filter(batchId => batchId !== null)
+    };
+
+    console.log("=== SENDING UPDATE DATA ===");
+    console.log("Update Data:", updateData);
+
+    let response;
+
+    if (editPhoto) {
+      // If photo exists, use FormData
+      const formData = new FormData();
+      
+      // Append all fields
+      Object.entries(updateData).forEach(([key, value]) => {
+        if (value !== undefined && value !== null && value !== '') {
+          if (Array.isArray(value)) {
+            value.forEach(item => formData.append(`${key}[]`, item.toString()));
+          } else {
+            formData.append(key, value.toString());
+          }
+        }
+      });
+
+      formData.append("photo", editPhoto);
+
+      response = await axios.put(
+        `/students/update/${selectedStudent.id}`,
+        formData,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "multipart/form-data",
+          },
+        }
+      );
+    } else {
+      // If no photo, use JSON
+      response = await axios.put(
+        `/students/update/${selectedStudent.id}`,
+        updateData,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+    }
+
+    console.log("=== UPDATE RESPONSE ===");
+    console.log("Response data:", response.data);
+
+    if (response.data) {
+      // Force refresh the entire students list
+      await fetchStudents();
+      
+      // Refresh the specific student data
+      const refreshedStudent = await refreshStudentData(selectedStudent.id);
+      if (refreshedStudent) {
+        setSelectedStudent(refreshedStudent);
+      }
+
+      setShowEditModal(false);
+      setEditPhoto(null);
+      setPhotoPreview("");
+     
+      toast.success("Student updated successfully!");
+    }
+   
+  } catch (error) {
+    console.error("=== UPDATE ERROR ===");
+    console.error("Error details:", error);
+   
+    if (error.response?.data?.errors) {
+      const validationErrors = error.response.data.errors;
+      Object.entries(validationErrors).forEach(([field, messages]) => {
+        toast.error(`${field}: ${Array.isArray(messages) ? messages.join(', ') : messages}`);
+      });
+    } else {
+      toast.error(error.response?.data?.message || "Failed to update student");
+    }
+  }
+ 
+  setIsLoading(false);
+};
   // Date formatting helper for API
   const formatDateForAPI = (dateString) => {
     if (!dateString) return '';
@@ -317,242 +422,6 @@ export default function Allstudents() {
       return dateString;
     }
   };
-
-
-  const handleUpdateStudent = async (e) => {
-    e.preventDefault();
-    setIsLoading(true);
-   
-    try {
-      const token = localStorage.getItem("token");
-      const formData = new FormData();
-
-
-      console.log("=== UPDATE REQUEST DATA ===");
-      console.log("Edit Form Data:", editFormData);
-      console.log("Selected Courses:", selectedEditCourses);
-      console.log("Course Batches:", courseBatches);
-
-
-      // Append all basic student information with proper formatting
-      const studentFields = {
-        "full_name": editFormData.full_name,
-        "email": editFormData.email,
-        "contact_number": editFormData.contact_number,
-        "dob": formatDateForAPI(editFormData.dob),
-        "gender": editFormData.gender,
-        "address": editFormData.address,
-        "guardian_name": editFormData.guardian_name,
-        "guardian_contact": editFormData.guardian_contact,
-        "admission_date": formatDateForAPI(editFormData.admission_date),
-        "admission_number": editFormData.admission_number,
-        "branch_id": editFormData.branch_id
-      };
-
-
-      // Append each field with proper validation
-      Object.entries(studentFields).forEach(([key, value]) => {
-        if (value !== undefined && value !== null && value !== '') {
-          formData.append(key, value.toString());
-          console.log(`Appended ${key}:`, value);
-        } else {
-          console.log(`Skipped ${key}:`, value);
-        }
-      });
-
-
-      // Handle courses and batches - FIXED FORMAT
-      if (selectedEditCourses.length > 0) {
-        selectedEditCourses.forEach(courseId => {
-          formData.append("courses[]", courseId.toString());
-          console.log("Appended course:", courseId);
-         
-          const batchId = courseBatches[courseId];
-          if (batchId && batchId !== '') {
-            formData.append(`batches[${courseId}]`, batchId.toString());
-            console.log(`Appended batch for course ${courseId}:`, batchId);
-          }
-        });
-      } else {
-        // If no courses selected, send empty array
-        formData.append("courses[]", "");
-      }
-
-
-      // Append fee information
-      formData.append("course_fee", editTotalFee.toString());
-      formData.append("final_fee", editTotalFee.toString());
-      console.log("Appended total fee:", editTotalFee);
-
-
-      // Append photo if changed
-      if (editPhoto) {
-        formData.append("photo", editPhoto);
-        console.log("Appended new photo");
-      }
-
-
-      // Log FormData contents for debugging
-      console.log("=== FORM DATA CONTENTS ===");
-      for (let [key, value] of formData.entries()) {
-        console.log(key, value);
-      }
-
-
-      // Make the API request
-      const response = await axios.put(
-        `/students/update/${selectedStudent.id}`,
-        formData,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "multipart/form-data",
-          },
-        }
-      );
-
-
-      console.log("=== UPDATE RESPONSE ===");
-      console.log("Response data:", response.data);
-
-
-      if (response.data) {
-        // Refresh the student data from server to get all updated fields
-        const refreshedStudent = await refreshStudentData(selectedStudent.id);
-       
-        if (refreshedStudent) {
-          // Update the students state with fresh data
-          setStudents(prevStudents =>
-            prevStudents.map(student =>
-              student.id === selectedStudent.id ? refreshedStudent : student
-            )
-          );
-         
-          // Update selected student for view modal
-          setSelectedStudent(refreshedStudent);
-        }
-
-
-        setShowEditModal(false);
-        setEditPhoto(null);
-        setPhotoPreview("");
-       
-        toast.success("Student updated successfully!");
-      } else {
-        throw new Error("Update failed - no response data");
-      }
-     
-    } catch (error) {
-      console.error("=== UPDATE ERROR ===");
-      console.error("Error details:", error);
-     
-      if (error.response) {
-        console.error("Error response data:", error.response.data);
-        console.error("Error response status:", error.response.status);
-       
-        // Show detailed validation errors
-        if (error.response.data.errors) {
-          const validationErrors = error.response.data.errors;
-          console.error("Validation errors:", validationErrors);
-         
-          // Display each validation error
-          Object.entries(validationErrors).forEach(([field, messages]) => {
-            if (Array.isArray(messages)) {
-              toast.error(`${field}: ${messages.join(', ')}`);
-            } else {
-              toast.error(`${field}: ${messages}`);
-            }
-          });
-        } else if (error.response.data.message) {
-          toast.error(`Failed to update student: ${error.response.data.message}`);
-        } else {
-          toast.error('Failed to update student: Server error');
-        }
-      } else if (error.request) {
-        console.error("No response received:", error.request);
-        toast.error("No response from server. Please check your connection.");
-      } else {
-        console.error("Error message:", error.message);
-        toast.error("Failed to update student. Please try again.");
-      }
-    }
-   
-    setIsLoading(false);
-  };
-
-
-  // Alternative JSON update method (without photo)
-  const handleUpdateStudentJSON = async (e) => {
-    e.preventDefault();
-    setIsLoading(true);
-   
-    try {
-      const token = localStorage.getItem("token");
-     
-      const updateData = {
-        full_name: editFormData.full_name,
-        email: editFormData.email,
-        contact_number: editFormData.contact_number,
-        dob: editFormData.dob,
-        gender: editFormData.gender,
-        address: editFormData.address,
-        guardian_name: editFormData.guardian_name,
-        guardian_contact: editFormData.guardian_contact,
-        admission_date: editFormData.admission_date,
-        admission_number: editFormData.admission_number,
-        branch_id: editFormData.branch_id,
-        courses: selectedEditCourses,
-        batches: courseBatches,
-        course_fee: editTotalFee,
-        final_fee: editTotalFee,
-        _method: 'PUT' // Some APIs need this for PUT requests
-      };
-
-
-      console.log("=== SENDING JSON UPDATE ===");
-      console.log("Update Data:", updateData);
-
-
-      const response = await axios.put(
-        `/students/update/${selectedStudent.id}`,
-        updateData,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-        }
-      );
-
-
-      console.log("=== JSON UPDATE RESPONSE ===");
-      console.log("Response data:", response.data);
-
-
-      if (response.data) {
-        // Refresh student data
-        await refreshStudentData(selectedStudent.id);
-        setShowEditModal(false);
-        toast.success("Student updated successfully!");
-      }
-     
-    } catch (error) {
-      console.error("=== JSON UPDATE ERROR ===");
-      console.error("Error details:", error);
-     
-      if (error.response?.data?.errors) {
-        const validationErrors = error.response.data.errors;
-        Object.entries(validationErrors).forEach(([field, messages]) => {
-          toast.error(`${field}: ${Array.isArray(messages) ? messages.join(', ') : messages}`);
-        });
-      } else {
-        toast.error(error.response?.data?.message || "Failed to update student");
-      }
-    }
-   
-    setIsLoading(false);
-  };
-
 
   const handlePhotoChange = (e) => {
     const file = e.target.files[0];
@@ -591,12 +460,12 @@ export default function Allstudents() {
       await axios.delete(`/students/destroy/${selectedStudent.id}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-     
+
       // Remove student from state immediately
       setStudents(prevStudents =>
         prevStudents.filter(student => student.id !== selectedStudent.id)
       );
-     
+
       setShowDeleteModal(false);
       toast.success("Student deleted successfully!");
     } catch (error) {
@@ -658,12 +527,12 @@ export default function Allstudents() {
 
   const formatTimeToIST = (timeString) => {
     if (!timeString) return "N/A";
-   
+
     try {
       const [hours, minutes] = timeString.split(':');
       const date = new Date();
       date.setHours(parseInt(hours), parseInt(minutes), 0);
-     
+
       return date.toLocaleTimeString('en-IN', {
         hour: '2-digit',
         minute: '2-digit',
@@ -681,7 +550,7 @@ export default function Allstudents() {
     if (!startTime && !endTime) return "Timing not set";
     if (!startTime) return `Till ${formatTimeToIST(endTime)}`;
     if (!endTime) return `From ${formatTimeToIST(startTime)}`;
-   
+
     return `${formatTimeToIST(startTime)} - ${formatTimeToIST(endTime)}`;
   };
 
@@ -732,7 +601,7 @@ export default function Allstudents() {
         pauseOnHover
         theme="light"
       />
-     
+
       {/* Header */}
       <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-6 gap-4">
         <h1 className="text-2xl md:text-3xl font-nunito font-semibold">
@@ -1344,16 +1213,15 @@ export default function Allstudents() {
                     {selectedEditCourses.length} course(s) selected
                   </span>
                 </div>
-               
+
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                   {courses.map((course) => (
                     <div
                       key={course.id}
-                      className={`border-2 rounded-xl p-4 transition-all duration-200 ${
-                        selectedEditCourses.includes(course.id)
-                          ? 'border-blue-500 bg-blue-50 shadow-md'
-                          : 'border-gray-200 hover:border-gray-300 hover:shadow-sm'
-                      }`}
+                      className={`border-2 rounded-xl p-4 transition-all duration-200 ${selectedEditCourses.includes(course.id)
+                        ? 'border-blue-500 bg-blue-50 shadow-md'
+                        : 'border-gray-200 hover:border-gray-300 hover:shadow-sm'
+                        }`}
                     >
                       <div className="flex items-start space-x-3">
                         <input
@@ -1370,7 +1238,7 @@ export default function Allstudents() {
                           >
                             {course.course_name}
                           </label>
-                         
+
                           <div className="mt-2 space-y-1">
                             <p className="text-xs text-gray-600">
                               <span className="font-medium">Code:</span> {course.course_code}
@@ -1380,11 +1248,10 @@ export default function Allstudents() {
                             </p>
                             <p className="text-xs text-gray-600">
                               <span className="font-medium">Mode:</span>
-                              <span className={`ml-1 px-2 py-0.5 rounded text-xs ${
-                                course.mode === 'Online' ? 'bg-green-100 text-green-800' :
+                              <span className={`ml-1 px-2 py-0.5 rounded text-xs ${course.mode === 'Online' ? 'bg-green-100 text-green-800' :
                                 course.mode === 'Offline' ? 'bg-blue-100 text-blue-800' :
-                                'bg-purple-100 text-purple-800'
-                              }`}>
+                                  'bg-purple-100 text-purple-800'
+                                }`}>
                                 {course.mode}
                               </span>
                             </p>
@@ -1399,7 +1266,7 @@ export default function Allstudents() {
                               ₹{course.discounted_price || course.actual_price || "0"}
                             </span>
                           </div>
-                         
+
                           {/* Batch selection for selected courses */}
                           {selectedEditCourses.includes(course.id) && (
                             <div className="mt-4 pt-3 border-t border-gray-200">
@@ -1427,7 +1294,7 @@ export default function Allstudents() {
                     </div>
                   ))}
                 </div>
-               
+
                 {/* Selected Courses Summary */}
                 {selectedEditCourses.length > 0 && (
                   <div className="mt-6 p-6 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-200">
@@ -1465,7 +1332,7 @@ export default function Allstudents() {
                 )}
               </div>
 
-
+              {/* Remove the alternative JSON button - keep only one button */}
               <div className="flex justify-end space-x-3 pt-4">
                 <button
                   type="button"
@@ -1478,18 +1345,6 @@ export default function Allstudents() {
                 >
                   Cancel
                 </button>
-               
-                {/* Alternative JSON Update Button (for testing) */}
-                {!editPhoto && (
-                  <button
-                    type="button"
-                    onClick={handleUpdateStudentJSON}
-                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-green-600"
-                    disabled={isLoading}
-                  >
-                    {isLoading ? "Updating..." : "Update Student"}
-                  </button>
-                )}
                 <button
                   type="submit"
                   className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-blue-600"
