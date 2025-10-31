@@ -385,7 +385,7 @@ export default function Allstudents() {
                   <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Student</th>
                   <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden md:table-cell">Guardian</th>
                   <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden lg:table-cell">Contact</th>
-                  <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden xl:table-cell">Branch & Admission</th>
+                  {/* <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden xl:table-cell">Branch & Admission</th> */}
                   <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
                   <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                 </tr>
@@ -421,10 +421,10 @@ export default function Allstudents() {
                         {student.contact_number}
                       </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap hidden xl:table-cell">
+                    {/* <td className="px-6 py-4 whitespace-nowrap hidden xl:table-cell">
                       <div className="text-sm text-gray-900">#{student.admission_number}</div>
                       <div className="text-sm text-gray-500">{student.branch?.branch_name}</div>
-                    </td>
+                    </td> */}
                     <td className="px-6 py-4 whitespace-nowrap">
                       <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
                         student.enrollment_status === 'Active' 
@@ -776,7 +776,7 @@ export default function Allstudents() {
               >
                 Close
               </button>
-              <button
+              {/* <button
                 onClick={() => {
                   setEditFormData(selectedStudent);
                   setShowEditModal(true);
@@ -785,7 +785,7 @@ export default function Allstudents() {
                 className="px-6 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
               >
                 Edit Student
-              </button>
+              </button> */}
             </div>
           </div>
         </div>
