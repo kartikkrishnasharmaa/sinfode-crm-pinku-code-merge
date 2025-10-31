@@ -492,11 +492,11 @@ export default function Allstudents() {
                 <div className="p-6">
                   <div className="flex flex-col items-center text-center">
                     <div className="relative -mt-12 mb-4">
-                      <div className="w-20 h-20 rounded-full border-4 border-white shadow-lg overflow-hidden">
+                      <div className="w-20 h-20 rounded-full mt-9 border-4 border-white shadow-lg overflow-hidden">
                         <img
-                          src={student.photo_url || "/default-avatar.png"}
+                          src={student.photo_url || "https://img.freepik.com/free-vector/smiling-man-with-glasses_1308-174409.jpg?semt=ais_hybrid&w=740&q=80"}
                           alt={student.full_name}
-                          className="w-full h-full object-cover"
+                          className="w-full h-full  object-cover"
                         />
                       </div>
                     </div>
@@ -557,12 +557,7 @@ export default function Allstudents() {
                       <FaEye size={14} />
                       View Details
                     </button>
-                    <button
-                      onClick={() => setOpenMenuId(openMenuId === student.id ? null : student.id)}
-                      className="p-2 hover:bg-gray-200 rounded-lg transition-colors"
-                    >
-                      <HiDotsVertical size={16} className="text-gray-600" />
-                    </button>
+               
                   </div>
                 </div>
               </div>
