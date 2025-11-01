@@ -167,31 +167,31 @@ export default function Allstudents() {
   // Get unique values for filters
   const uniqueGenders = [...new Set(students.map(student => student.gender).filter(Boolean))];
   const uniqueEnrollmentStatuses = [...new Set(students.map(student => student.enrollment_status).filter(Boolean))];
-  const uniqueBatches = [...new Set(students.flatMap(student => 
+  const uniqueBatches = [...new Set(students.flatMap(student =>
     student.courses?.map(course => course.batch?.batch_name) || []
   ).filter(Boolean))];
-  const uniqueCourses = [...new Set(students.flatMap(student => 
+  const uniqueCourses = [...new Set(students.flatMap(student =>
     student.courses?.map(course => course.course_name) || []
   ).filter(Boolean))];
 
   // Process students with filtering
   const processedStudents = students.filter((student) => {
-    const matchesSearch = search === "" || 
+    const matchesSearch = search === "" ||
       (student.full_name || "").toLowerCase().includes(search.toLowerCase()) ||
       (student.email || "").toLowerCase().includes(search.toLowerCase()) ||
       (student.admission_number || "").toLowerCase().includes(search.toLowerCase());
 
-    const matchesBranch = userRole === "admin" 
+    const matchesBranch = userRole === "admin"
       ? selectedBranch === "" || student.branch_id === parseInt(selectedBranch)
       : true;
 
     const matchesGender = filters.gender === "all" || student.gender === filters.gender;
     const matchesEnrollment = filters.enrollment_status === "all" || student.enrollment_status === filters.enrollment_status;
 
-    const matchesCourse = filters.course === "all" || 
+    const matchesCourse = filters.course === "all" ||
       student.courses?.some(course => course.course_name === filters.course);
 
-    const matchesBatch = filters.batch === "all" || 
+    const matchesBatch = filters.batch === "all" ||
       student.courses?.some(course => course.batch?.batch_name === filters.batch);
 
     const admissionDate = new Date(student.admission_date);
@@ -227,13 +227,12 @@ export default function Allstudents() {
     if (!student.courses || student.courses.length === 0) {
       return [<span key="none" className="bg-gray-100 text-gray-600 px-2 py-1 rounded text-xs">No Courses</span>];
     }
-    
+
     return student.courses.slice(0, 2).map((course, index) => (
-      <span 
-        key={course.id} 
-        className={`px-2 py-1 rounded text-xs font-medium ${
-          index === 0 ? 'bg-blue-100 text-blue-800' : 'bg-green-100 text-green-800'
-        }`}
+      <span
+        key={course.id}
+        className={`px-2 py-1 rounded text-xs font-medium ${index === 0 ? 'bg-blue-100 text-blue-800' : 'bg-green-100 text-green-800'
+          }`}
       >
         {course.course_name}
       </span>
@@ -254,21 +253,19 @@ export default function Allstudents() {
           <div className="flex bg-white border border-gray-300 p-1 rounded-lg">
             <button
               onClick={() => setViewMode("list")}
-              className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-                viewMode === "list"
+              className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${viewMode === "list"
                   ? "bg-blue-600 text-white shadow-sm"
                   : "bg-transparent text-gray-600 hover:bg-gray-100"
-              }`}
+                }`}
             >
               List View
             </button>
             <button
               onClick={() => setViewMode("grid")}
-              className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-                viewMode === "grid"
+              className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${viewMode === "grid"
                   ? "bg-blue-600 text-white shadow-sm"
                   : "bg-transparent text-gray-600 hover:bg-gray-100"
-              }`}
+                }`}
             >
               Grid View
             </button>
@@ -310,16 +307,15 @@ export default function Allstudents() {
           {/* Filter Toggle */}
           <button
             onClick={() => setShowFilters(!showFilters)}
-            className={`px-4 py-2 rounded-lg flex items-center gap-2 transition-colors ${
-              showFilters ? 'bg-blue-700 text-white border border-blue-300' : 'bg-gray-100 text-gray-700 hover:bg-gray-200 border border-gray-300'
-            }`}
+            className={`bg-blue-700 text-white px-4 py-2 rounded-lg hover:bg-blue-800 transition-colors flex items-center gap-2'
+              }`}
           >
             <FaFilter /> Filters
             {Object.values(filters).some(filter =>
               typeof filter === 'string' ? filter !== 'all' : Object.values(filter).some(Boolean)
             ) && (
-              <span className="bg-red-500 text-white rounded-full w-2 h-2"></span>
-            )}
+                <span className="bg-red-500 text-white rounded-full w-2 h-2"></span>
+              )}
           </button>
         </div>
 
@@ -506,18 +502,16 @@ export default function Allstudents() {
                       <span className="truncate">{student.email}</span>
                     </p>
                     <div className="flex items-center gap-2 mt-2">
-                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                        student.enrollment_status === "Active" 
-                          ? "bg-green-100 text-green-800" 
+                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${student.enrollment_status === "Active"
+                          ? "bg-green-100 text-green-800"
                           : "bg-red-100 text-red-800"
-                      }`}>
+                        }`}>
                         {student.enrollment_status}
                       </span>
-                      <span className={`px-2 py-1 rounded-full text-xs ${
-                        student.gender === 'Male' 
-                          ? 'bg-blue-100 text-blue-800' 
+                      <span className={`px-2 py-1 rounded-full text-xs ${student.gender === 'Male'
+                          ? 'bg-blue-100 text-blue-800'
                           : 'bg-pink-100 text-pink-800'
-                      }`}>
+                        }`}>
                         {student.gender}
                       </span>
                     </div>
@@ -542,7 +536,7 @@ export default function Allstudents() {
                   </div>
                 </div>
 
-                {/* Batch Information */}
+                {/* Batch Information
                 {student.courses && student.courses.length > 0 && (
                   <div className="space-y-2">
                     {student.courses.slice(0, 2).map((course) => (
@@ -556,8 +550,8 @@ export default function Allstudents() {
                         )}
                       </div>
                     ))}
-                  </div>
-                )}
+                  </div> */}
+                {/* )} */}
               </div>
 
               {/* Footer with Actions */}
@@ -650,11 +644,10 @@ export default function Allstudents() {
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex flex-col gap-1">
-                        <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${
-                          student.enrollment_status === "Active" 
-                            ? "bg-green-100 text-green-800" 
+                        <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${student.enrollment_status === "Active"
+                            ? "bg-green-100 text-green-800"
                             : "bg-red-100 text-red-800"
-                        }`}>
+                          }`}>
                           {student.enrollment_status}
                         </span>
                         <span className="text-xs text-gray-500 capitalize">{student.gender}</span>
@@ -709,18 +702,16 @@ export default function Allstudents() {
                       {selectedStudent.email}
                     </p>
                     <div className="space-y-2">
-                      <span className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${
-                        selectedStudent.enrollment_status === "Active" 
-                          ? "bg-green-100 text-green-800" 
+                      <span className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${selectedStudent.enrollment_status === "Active"
+                          ? "bg-green-100 text-green-800"
                           : "bg-red-100 text-red-800"
-                      }`}>
+                        }`}>
                         {selectedStudent.enrollment_status}
                       </span>
-                      <span className={`inline-block px-3 py-1 rounded-full text-sm ${
-                        selectedStudent.gender === 'Male' 
-                          ? 'bg-blue-100 text-blue-800' 
+                      <span className={`inline-block px-3 py-1 rounded-full text-sm ${selectedStudent.gender === 'Male'
+                          ? 'bg-blue-100 text-blue-800'
                           : 'bg-pink-100 text-pink-800'
-                      }`}>
+                        }`}>
                         {selectedStudent.gender}
                       </span>
                     </div>
@@ -832,7 +823,7 @@ export default function Allstudents() {
                                 ₹{course.discounted_price || course.actual_price || '0'}
                               </span>
                             </div>
-                            
+
                             {course.batch && (
                               <div className="bg-gray-50 rounded-lg p-3">
                                 <div className="flex justify-between items-center text-sm">
