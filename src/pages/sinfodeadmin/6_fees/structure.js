@@ -49,6 +49,13 @@ const StudentFees = () => {
   const [tableSearch, setTableSearch] = useState('');
   const [filteredFees, setFilteredFees] = useState([]);
 
+  // New states for pagination
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
+
+  // New state for fee status filter
+  const [feeStatusFilter, setFeeStatusFilter] = useState('all'); // 'all', 'paid', 'pending'
+
   // Create maps for quick lookups
   const studentsMap = useMemo(() => {
     const map = {};
@@ -74,31 +81,62 @@ const StudentFees = () => {
     return map;
   }, [branches]);
 
-  // Filter and sort fees
+  // Filter and sort fees with status filter
   const filteredAndSortedFees = useMemo(() => {
-    return (tableSearch ? studentFees.filter(fee => {
-      const student = studentsMap[fee.student_id];
-      if (!student) return false;
-      return (
-        student.full_name.toLowerCase().includes(tableSearch.toLowerCase()) ||
-        student.admission_number.toLowerCase().includes(tableSearch.toLowerCase()) ||
-        getCourseName(fee.course_id).toLowerCase().includes(tableSearch.toLowerCase())
-      );
-    }) : studentFees)
-      .filter(fee => {
-        if (!dateFilter.from && !dateFilter.to) return true;
-        const createdDate = new Date(fee.created_at);
-        if (dateFilter.from && createdDate < new Date(dateFilter.from)) return false;
-        if (dateFilter.to && createdDate > new Date(dateFilter.to)) return false;
-        return true;
-      })
-      .sort((a, b) => {
-        const valA = a[sortField] || "";
-        const valB = b[sortField] || "";
-        if (sortOrder === "asc") return new Date(valA) - new Date(valB);
-        return new Date(valB) - new Date(valA);
+    let filtered = studentFees;
+
+    // Apply fee status filter
+    if (feeStatusFilter === 'paid') {
+      filtered = filtered.filter(fee => parseFloat(fee.pending_amount || 0) === 0);
+    } else if (feeStatusFilter === 'pending') {
+      filtered = filtered.filter(fee => parseFloat(fee.pending_amount || 0) > 0);
+    }
+
+    // Apply search filter
+    if (tableSearch) {
+      filtered = filtered.filter(fee => {
+        const student = studentsMap[fee.student_id];
+        if (!student) return false;
+        return (
+          student.full_name.toLowerCase().includes(tableSearch.toLowerCase()) ||
+          student.admission_number.toLowerCase().includes(tableSearch.toLowerCase()) ||
+          getCourseName(fee.course_id).toLowerCase().includes(tableSearch.toLowerCase())
+        );
       });
-  }, [studentFees, tableSearch, studentsMap, dateFilter, sortField, sortOrder]);
+    }
+
+    // Apply date filter
+    filtered = filtered.filter(fee => {
+      if (!dateFilter.from && !dateFilter.to) return true;
+      const createdDate = new Date(fee.created_at);
+      if (dateFilter.from && createdDate < new Date(dateFilter.from)) return false;
+      if (dateFilter.to && createdDate > new Date(dateFilter.to)) return false;
+      return true;
+    });
+
+    // Apply sorting
+    return filtered.sort((a, b) => {
+      const valA = a[sortField] || "";
+      const valB = b[sortField] || "";
+      if (sortOrder === "asc") return new Date(valA) - new Date(valB);
+      return new Date(valB) - new Date(valA);
+    });
+  }, [studentFees, feeStatusFilter, tableSearch, studentsMap, dateFilter, sortField, sortOrder]);
+
+  // Pagination logic
+  const indexOfLastItem = currentPage * itemsPerPage;
+  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+  const currentFees = filteredAndSortedFees.slice(indexOfFirstItem, indexOfLastItem);
+  const totalPages = Math.ceil(filteredAndSortedFees.length / itemsPerPage);
+
+  // Pagination controls
+  const paginate = (pageNumber) => setCurrentPage(pageNumber);
+  const nextPage = () => {
+    if (currentPage < totalPages) setCurrentPage(currentPage + 1);
+  };
+  const prevPage = () => {
+    if (currentPage > 1) setCurrentPage(currentPage - 1);
+  };
 
   // Fetch all student fees
   const fetchStudentFees = async () => {
@@ -132,6 +170,7 @@ const StudentFees = () => {
         status: branch.status,
         opening_date: branch.opening_date,
         discount_range: branch.discount_range || "",
+        discount_amount: branch.discount_amount || 0,
         pin_code: branch.pin_code || "",
         address: branch.address || "",
         branch_type: branch.branch_type || "Main",
@@ -231,33 +270,38 @@ const StudentFees = () => {
     }
   }, [studentSearch, students]);
 
+  // Reset pagination when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [tableSearch, dateFilter, feeStatusFilter]);
+
   // Calculate total fees from all courses - FIXED
   const calculateTotalFees = () => {
     if (selectedCourses.length === 0) return 0;
-    
+
     const baseTotal = selectedCourses.reduce((total, course) => {
       return total + parseFloat(course.discounted_price || 0);
     }, 0);
-    
+
     return baseTotal;
   };
 
   // Calculate discounted total - FIXED
   const calculateDiscountedTotal = () => {
     const baseTotal = calculateTotalFees();
-    
+
     // Apply branch discount percentage if provided
     if (formData.branch_discount_percent) {
       const discountPercent = (formData.branch_discount_percent) / 100;
       return baseTotal * (1 - discountPercent);
     }
-    
+
     // Apply branch discount amount if provided
     if (formData.branch_discount_amount) {
       const discountAmount = (formData.branch_discount_amount);
       return Math.max(0, baseTotal - discountAmount);
     }
-    
+
     return baseTotal;
   };
 
@@ -276,7 +320,7 @@ const StudentFees = () => {
     setStudentSearch(`${student.full_name} (${student.admission_number})`);
     setShowStudentDropdown(false);
     setSelectedStudent(student);
-    
+
     // Set selected courses from student's courses
     // FIX: Handle both single course (course_id) and multiple courses (courses array)
     if (student.courses && student.courses.length > 0) {
@@ -297,6 +341,11 @@ const StudentFees = () => {
     if (formData.branch_discount_percent) {
       validateBranchDiscountForStudent(formData.branch_discount_percent, student.id);
     }
+  };
+
+  // NEW: Check if both discount fields are filled
+  const checkBothDiscountsFilled = (percent, amount) => {
+    return percent && amount && percent > 0 && amount > 0;
   };
 
   const validateBranchDiscountForStudent = (discountPercent, studentId) => {
@@ -380,18 +429,48 @@ const StudentFees = () => {
     return true;
   };
 
-  // Handle branch discount input change with validation
+  // Handle branch discount input change with validation - UPDATED
   const handleBranchDiscountChange = (e) => {
     const { name, value } = e.target;
 
+    // Check if both discount fields are being filled
+    if (name === 'branch_discount_percent' && value && formData.branch_discount_amount) {
+      alert('You can only apply either percentage discount OR amount discount, not both. The amount discount will be cleared.');
+      setFormData(prev => ({
+        ...prev,
+        branch_discount_amount: ''
+      }));
+    } else if (name === 'branch_discount_amount' && value && formData.branch_discount_percent) {
+      alert('You can only apply either percentage discount OR amount discount, not both. The percentage discount will be cleared.');
+      setFormData(prev => ({
+        ...prev,
+        branch_discount_percent: ''
+      }));
+    }
+
     if (value && selectedStudent && selectedStudent.branch_id) {
-      const isValid = validateBranchDiscount(value, selectedStudent.branch_id);
-      if (!isValid) {
-        setFormData(prev => ({
-          ...prev,
-          [name]: ''
-        }));
-        return;
+      // For percentage discount, validate the range
+      if (name === 'branch_discount_percent') {
+        const isValid = validateBranchDiscount(value, selectedStudent.branch_id);
+        if (!isValid) {
+          setFormData(prev => ({
+            ...prev,
+            [name]: ''
+          }));
+          return;
+        }
+      }
+      // For amount discount, validate against branch's discount_amount
+      else if (name === 'branch_discount_amount') {
+        const branch = branchesMap[selectedStudent.branch_id];
+        if (branch && branch.discount_amount && parseFloat(value) > parseFloat(branch.discount_amount)) {
+          alert(`Branch discount amount cannot exceed ₹${branch.discount_amount} for this branch.`);
+          setFormData(prev => ({
+            ...prev,
+            [name]: ''
+          }));
+          return;
+        }
       }
     }
 
@@ -449,6 +528,26 @@ const StudentFees = () => {
     }
   };
 
+  // Get fee status badge class
+  const getFeeStatusClass = (fee) => {
+    const pendingAmount = parseFloat(fee.pending_amount || 0);
+    if (pendingAmount === 0) {
+      return 'sf-badge sf-badge-paid';
+    } else {
+      return 'sf-badge sf-badge-pending';
+    }
+  };
+
+  // Get fee status text
+  const getFeeStatusText = (fee) => {
+    const pendingAmount = parseFloat(fee.pending_amount || 0);
+    if (pendingAmount === 0) {
+      return 'Paid';
+    } else {
+      return 'Pending';
+    }
+  };
+
   const openModal = () => {
     setFormData({
       student_id: '',
@@ -478,42 +577,42 @@ const StudentFees = () => {
     setSelectedCoupon('');
   };
 
-const handleView = async (id) => {
-  try {
-    const token = localStorage.getItem("token");
-    const feeRes = await axios.get(`/studentfee/${id}`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
+  const handleView = async (id) => {
+    try {
+      const token = localStorage.getItem("token");
+      const feeRes = await axios.get(`/studentfee/${id}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
 
-    const feeData = feeRes.data;
-    setViewFee(feeData);
-    setInstallmentDetails(feeData.installments || []);
-    
-    // Get student data to fetch all courses
-    const student = studentsMap[feeData.student_id];
-    if (student) {
-      // Handle both single course (course_id) and multiple courses (courses array)
-      if (student.courses && student.courses.length > 0) {
-        // Student has multiple courses
-        setSelectedCourses(student.courses);
-      } else if (student.course_id) {
-        // Student has single course (legacy structure)
-        const singleCourse = courses.find(c => c.id === student.course_id);
-        if (singleCourse) {
-          setSelectedCourses([singleCourse]);
+      const feeData = feeRes.data;
+      setViewFee(feeData);
+      setInstallmentDetails(feeData.installments || []);
+
+      // Get student data to fetch all courses
+      const student = studentsMap[feeData.student_id];
+      if (student) {
+        // Handle both single course (course_id) and multiple courses (courses array)
+        if (student.courses && student.courses.length > 0) {
+          // Student has multiple courses
+          setSelectedCourses(student.courses);
+        } else if (student.course_id) {
+          // Student has single course (legacy structure)
+          const singleCourse = courses.find(c => c.id === student.course_id);
+          if (singleCourse) {
+            setSelectedCourses([singleCourse]);
+          } else {
+            setSelectedCourses([]);
+          }
         } else {
           setSelectedCourses([]);
         }
-      } else {
-        setSelectedCourses([]);
       }
+
+      setShowViewModal(true);
+    } catch (error) {
+      console.error("Error fetching student fee details:", error);
     }
-    
-    setShowViewModal(true);
-  } catch (error) {
-    console.error("Error fetching student fee details:", error);
-  }
-};
+  };
 
   // Delete fee function
   const handleDelete = async (id) => {
@@ -553,13 +652,13 @@ const handleView = async (id) => {
       handleDelete(feeToDelete.id);
     }
   };
-const closeViewModal = () => {
-  setShowViewModal(false);
-  setViewFee(null);
-  setFeeStructureDetails(null);
-  setInstallmentDetails([]);
-  setSelectedCourses([]); // Reset selected courses when closing modal
-};
+  const closeViewModal = () => {
+    setShowViewModal(false);
+    setViewFee(null);
+    setFeeStructureDetails(null);
+    setInstallmentDetails([]);
+    setSelectedCourses([]); // Reset selected courses when closing modal
+  };
 
   const openPaymentModal = (id) => {
     setCurrentEditId(id);
@@ -577,6 +676,12 @@ const closeViewModal = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
+    // NEW: Check if both discount fields are filled
+    if (checkBothDiscountsFilled(formData.branch_discount_percent, formData.branch_discount_amount)) {
+      alert('Please use either percentage discount OR amount discount, not both.');
+      return;
+    }
+
     if (selectedCourses.length === 0) {
       alert("Selected student doesn't have any courses assigned");
       return;
@@ -590,6 +695,15 @@ const closeViewModal = () => {
       }
     }
 
+    // Validate branch discount amount before submission
+    if (formData.branch_discount_amount && selectedStudent.branch_id) {
+      const branch = branchesMap[selectedStudent.branch_id];
+      if (branch && branch.discount_amount && parseFloat(formData.branch_discount_amount) > parseFloat(branch.discount_amount)) {
+        alert(`Branch discount amount cannot exceed ₹${branch.discount_amount} for this branch.`);
+        return;
+      }
+    }
+
     // Check if student already has a fee structure
     if (hasExistingFeeStructure(formData.student_id)) {
       if (!window.confirm("This student already has a fee structure. Do you want to proceed anyway?")) {
@@ -599,7 +713,7 @@ const closeViewModal = () => {
 
     try {
       const token = localStorage.getItem("token");
-      
+
       // Create ONE fee structure for the student (not per course)
       const feeStructureData = {
         student_id: parseInt(formData.student_id),
@@ -656,10 +770,10 @@ const closeViewModal = () => {
 
       closeModal();
       toast.success(`Fee generated successfully for ${selectedCourses.length} course(s)!`);
-      
+
     } catch (error) {
       console.error("Error creating fee structure and student fee:", error);
-      
+
       if (error.response) {
         console.error('Error response data:', error.response.data);
         console.error('Error response status:', error.response.status);
@@ -699,7 +813,7 @@ const closeViewModal = () => {
   const handleInputChange = (e) => {
     const { name, value } = e.target;
 
-    if (name === 'branch_discount_percent') {
+    if (name === 'branch_discount_percent' || name === 'branch_discount_amount') {
       handleBranchDiscountChange(e);
     } else {
       setFormData({
@@ -730,6 +844,21 @@ const closeViewModal = () => {
     studentFees.reduce((sum, fee) => sum + parseFloat(fee.pending_amount || 0), 0),
     [studentFees]
   );
+
+  // NEW: Handle stats card clicks
+  const handleTotalFeesClick = () => {
+    setFeeStatusFilter('all');
+    setTableSearch('');
+    setDateFilter({ from: '', to: '' });
+  };
+
+  const handlePaidFeesClick = () => {
+    setFeeStatusFilter('paid');
+  };
+
+  const handlePendingFeesClick = () => {
+    setFeeStatusFilter('pending');
+  };
 
   if (loading) {
     return (
@@ -767,21 +896,30 @@ const closeViewModal = () => {
 
       {/* Main Content */}
       <main className="sf-main">
-        {/* Stats Cards */}
+        {/* Stats Cards - Made Clickable */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
           {/* Total Fees Card */}
-          <div className="bg-gradient-to-br from-blue-90 to-white rounded-2xl shadow-sm border border-blue-100 p-6">
+          <div
+            className={`bg-gradient-to-br from-blue-90 to-white rounded-2xl shadow-sm border border-blue-100 p-6 cursor-pointer transition-all hover:shadow-md ${feeStatusFilter === 'all' ? 'ring-2 ring-blue-400' : ''
+              }`}
+            onClick={handleTotalFeesClick}
+            title="Click to view all fees"
+          >
             <div className="flex justify-between items-start">
               <div>
                 <p className="text-sm font-semibold text-blue-700 mb-1">Total Fees</p>
                 <h3 className="text-xl font-bold text-gray-900 mb-2">₹{totalFees.toLocaleString()}</h3>
               </div>
-            
             </div>
           </div>
 
           {/* Paid Amount Card */}
-          <div className="bg-gradient-to-br from-green-50 to-white rounded-2xl shadow-sm border border-green-100 p-6">
+          <div
+            className={`bg-gradient-to-br from-green-50 to-white rounded-2xl shadow-sm border border-green-100 p-6 cursor-pointer transition-all hover:shadow-md ${feeStatusFilter === 'paid' ? 'ring-2 ring-green-400' : ''
+              }`}
+            onClick={handlePaidFeesClick}
+            title="Click to view fully paid fees"
+          >
             <div className="flex justify-between items-start">
               <div>
                 <p className="text-sm font-semibold text-green-700 mb-1">Paid Amount</p>
@@ -793,14 +931,16 @@ const closeViewModal = () => {
                   ></div>
                 </div>
               </div>
-              {/* <div className="w-12 h-12 bg-green-500 rounded-xl flex items-center justify-center shadow-sm">
-                <i className="fas fa-check-circle text-white text-lg"></i>
-              </div> */}
             </div>
           </div>
 
           {/* Pending Amount Card */}
-          <div className="bg-gradient-to-br from-red-50 to-white rounded-2xl shadow-sm border border-red-100 p-6">
+          <div
+            className={`bg-gradient-to-br from-red-50 to-white rounded-2xl shadow-sm border border-red-100 p-6 cursor-pointer transition-all hover:shadow-md ${feeStatusFilter === 'pending' ? 'ring-2 ring-red-400' : ''
+              }`}
+            onClick={handlePendingFeesClick}
+            title="Click to view pending fees"
+          >
             <div className="flex justify-between items-start">
               <div>
                 <p className="text-sm font-semibold text-red-700 mb-1">Pending Amount</p>
@@ -812,12 +952,29 @@ const closeViewModal = () => {
                   ></div>
                 </div>
               </div>
-              {/* <div className="w-12 h-12 bg-red-500 rounded-xl flex items-center justify-center shadow-sm">
-                <i className="fas fa-exclamation-circle text-white text-lg"></i>
-              </div> */}
             </div>
           </div>
         </div>
+
+        {/* Active Filter Indicator */}
+        {feeStatusFilter !== 'all' && (
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <i className="fas fa-filter text-blue-600"></i>
+                <span className="text-blue-700 font-medium">
+                  Showing {feeStatusFilter === 'paid' ? 'fully paid' : 'pending'} fees
+                </span>
+              </div>
+              <button
+                onClick={() => setFeeStatusFilter('all')}
+                className="text-blue-600 hover:text-blue-800 text-sm font-medium"
+              >
+                Show All
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* Filters */}
         <div className="flex flex-wrap items-center gap-3 mb-4 bg-white p-4 rounded-xl shadow-sm border border-gray-200">
@@ -893,7 +1050,7 @@ const closeViewModal = () => {
                 </tr>
               </thead>
               <tbody>
-                {filteredAndSortedFees.map(fee => (
+                {currentFees.map(fee => (
                   <tr key={fee.id}>
                     <td>
                       <div className="sf-student-info">
@@ -925,8 +1082,8 @@ const closeViewModal = () => {
                       ₹{parseFloat(fee.pending_amount || 0).toLocaleString()}
                     </td>
                     <td>
-                      <span className={`sf-badge`}>
-                        {fee.status}
+                      <span className={getFeeStatusClass(fee)}>
+                        {getFeeStatusText(fee)}
                       </span>
                     </td>
                     <td>
@@ -945,17 +1102,106 @@ const closeViewModal = () => {
                     </td>
                   </tr>
                 ))}
-                {filteredAndSortedFees.length === 0 && (
+                {currentFees.length === 0 && (
                   <tr>
                     <td colSpan="7" className="sf-no-data">
                       <i className="fas fa-info-circle"></i>
-                      {tableSearch ? 'No matching records found' : 'No fee records available'}
+                      {tableSearch || feeStatusFilter !== 'all' ? 'No matching records found' : 'No fee records available'}
                     </td>
                   </tr>
                 )}
               </tbody>
             </table>
           </div>
+
+          {/* Pagination */}
+          {filteredAndSortedFees.length > 0 && (
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-4 px-6 py-4 bg-white border-t border-gray-200">
+              {/* Pagination Info */}
+              <div className="text-sm text-gray-600">
+                Showing <span className="font-semibold text-gray-900">{indexOfFirstItem + 1}</span> to{" "}
+                <span className="font-semibold text-gray-900">
+                  {Math.min(indexOfLastItem, filteredAndSortedFees.length)}
+                </span>{" "}
+                of <span className="font-semibold text-gray-900">{filteredAndSortedFees.length}</span> entries
+              </div>
+
+              {/* Pagination Controls */}
+              <div className="flex items-center gap-2">
+                {/* Previous Button */}
+                <button
+                  onClick={prevPage}
+                  disabled={currentPage === 1}
+                  className={`
+        flex items-center justify-center w-10 h-10 rounded-lg border transition-all duration-200
+        ${currentPage === 1
+                      ? "border-gray-300 bg-gray-100 text-gray-400 cursor-not-allowed"
+                      : "border-gray-300 bg-white text-gray-700 hover:bg-gray-50 hover:border-gray-400 hover:text-gray-900"
+                    }
+      `}
+                >
+                  <i className="fas fa-chevron-left text-sm"></i>
+                </button>
+
+                {/* Page Numbers */}
+                <div className="flex items-center gap-1">
+                  {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                    <button
+                      key={page}
+                      onClick={() => paginate(page)}
+                      className={`
+            flex items-center justify-center w-10 h-10 rounded-lg border transition-all duration-200 font-medium
+            ${currentPage === page
+                          ? "bg-blue-600 border-blue-600 text-white shadow-sm"
+                          : "border-gray-300 bg-white text-gray-700 hover:bg-gray-50 hover:border-gray-400"
+                        }
+          `}
+                    >
+                      {page}
+                    </button>
+                  ))}
+                </div>
+
+                {/* Next Button */}
+                <button
+                  onClick={nextPage}
+                  disabled={currentPage === totalPages}
+                  className={`
+        flex items-center justify-center w-10 h-10 rounded-lg border transition-all duration-200
+        ${currentPage === totalPages
+                      ? "border-gray-300 bg-gray-100 text-gray-400 cursor-not-allowed"
+                      : "border-gray-300 bg-white text-gray-700 hover:bg-gray-50 hover:border-gray-400 hover:text-gray-900"
+                    }
+      `}
+                >
+                  <i className="fas fa-chevron-right text-sm"></i>
+                </button>
+              </div>
+
+              {/* Items Per Page Selector */}
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-gray-600">Show:</span>
+                <select
+                  value={itemsPerPage}
+                  onChange={(e) => {
+                    setItemsPerPage(Number(e.target.value));
+                    setCurrentPage(1);
+                  }}
+                  className="
+        px-3 py-2 text-sm border border-gray-300 rounded-lg bg-white 
+        focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500
+        transition-all duration-200 hover:border-gray-400
+      "
+                >
+                  <option value="5">5</option>
+                  <option value="10">10</option>
+                  <option value="20">20</option>
+                  <option value="50">50</option>
+                </select>
+                <span className="text-sm text-gray-600">per page</span>
+              </div>
+            </div>
+          )}
         </div>
       </main>
 
@@ -1082,7 +1328,7 @@ const closeViewModal = () => {
                   {selectedStudent && selectedStudent.branch_id && branchesMap[selectedStudent.branch_id] && (
                     <div className="sf-branch-discount-info">
                       <small>
-                        Enter fixed discount amount in rupees
+                        Maximum discount amount: ₹{branchesMap[selectedStudent.branch_id].discount_amount || 0}
                       </small>
                     </div>
                   )}
@@ -1134,7 +1380,7 @@ const closeViewModal = () => {
                 <div className="sf-form-group">
                   <label>Apply Coupon</label>
                   <div className="sf-coupon-section">
-                    <select 
+                    <select
                       value={selectedCoupon}
                       onChange={e => setSelectedCoupon(e.target.value)}
                       className="sf-coupon-select"
@@ -1146,9 +1392,9 @@ const closeViewModal = () => {
                         </option>
                       ))}
                     </select>
-                    <button 
-                      type="button" 
-                      onClick={handleApplyCoupon} 
+                    <button
+                      type="button"
+                      onClick={handleApplyCoupon}
                       className="sf-apply-coupon-btn"
                     >
                       Apply
@@ -1175,155 +1421,155 @@ const closeViewModal = () => {
         </div>
       )}
 
-   {/* View Fee Modal */}
-{showViewModal && viewFee && (
-  <div className="sf-modal-backdrop">
-    <div className="sf-modal sf-view-modal">
-      <div className="sf-modal-header">
-        <h3>Fee Details</h3>
-        <button onClick={closeViewModal} className="sf-modal-close">
-          <i className="fas fa-times"></i>
-        </button>
-      </div>
-      <div className="sf-view-content">
-        <div className="sf-view-grid">
-          <div>
-            <h4>Student Information</h4>
-            <div className="sf-info-box">
-              <p className="sf-info-title">
-                <strong>Name:</strong> {getStudentName(viewFee.student_id)}
-              </p>
-              <p><strong>Admission No:</strong> {getStudentAdmissionNumber(viewFee.student_id)}</p>
-              
-              {/* Single Course Display (for backward compatibility) */}
-              {selectedCourses.length === 1 && (
-                <p><strong>Course:</strong> {getCourseDetails(selectedCourses[0].id)}</p>
-              )}
-              
-              {/* Multiple Courses Display */}
-              {selectedCourses.length > 1 && (
-                <div className="sf-multiple-courses">
-                  <strong>Courses:</strong>
-                  <div className="sf-courses-list-view">
-                    {selectedCourses.map((course, index) => (
-                      <div key={course.id} className="sf-course-item-view">
-                        <div className="sf-course-info-view">
-                          <div className="sf-course-name-view">
-                            {course.course_name} ({course.course_code})
-                          </div>
-                          <div className="sf-course-price-view">
-                            ₹{parseFloat(course.discounted_price || course.price || 0).toLocaleString()}
+      {/* View Fee Modal */}
+      {showViewModal && viewFee && (
+        <div className="sf-modal-backdrop">
+          <div className="sf-modal sf-view-modal">
+            <div className="sf-modal-header">
+              <h3>Fee Details</h3>
+              <button onClick={closeViewModal} className="sf-modal-close">
+                <i className="fas fa-times"></i>
+              </button>
+            </div>
+            <div className="sf-view-content">
+              <div className="sf-view-grid">
+                <div>
+                  <h4>Student Information</h4>
+                  <div className="sf-info-box">
+                    <p className="sf-info-title">
+                      <strong>Name:</strong> {getStudentName(viewFee.student_id)}
+                    </p>
+                    <p><strong>Admission No:</strong> {getStudentAdmissionNumber(viewFee.student_id)}</p>
+
+                    {/* Single Course Display (for backward compatibility) */}
+                    {selectedCourses.length === 1 && (
+                      <p><strong>Course:</strong> {getCourseDetails(selectedCourses[0].id)}</p>
+                    )}
+
+                    {/* Multiple Courses Display */}
+                    {selectedCourses.length > 1 && (
+                      <div className="sf-multiple-courses">
+                        <strong>Courses:</strong>
+                        <div className="sf-courses-list-view">
+                          {selectedCourses.map((course, index) => (
+                            <div key={course.id} className="sf-course-item-view">
+                              <div className="sf-course-info-view">
+                                <div className="sf-course-name-view">
+                                  {course.course_name} ({course.course_code})
+                                </div>
+                                <div className="sf-course-price-view">
+                                  ₹{parseFloat(course.discounted_price || course.price || 0).toLocaleString()}
+                                </div>
+                              </div>
+                              {index < selectedCourses.length - 1 && <hr className="sf-course-divider" />}
+                            </div>
+                          ))}
+                          <div className="sf-total-courses-fee">
+                            <strong>Total Courses Fee: </strong>
+                            ₹{selectedCourses.reduce((total, course) =>
+                              total + parseFloat(course.discounted_price || course.price || 0), 0
+                            ).toLocaleString()}
                           </div>
                         </div>
-                        {index < selectedCourses.length - 1 && <hr className="sf-course-divider" />}
                       </div>
-                    ))}
-                    <div className="sf-total-courses-fee">
-                      <strong>Total Courses Fee: </strong>
-                      ₹{selectedCourses.reduce((total, course) => 
-                        total + parseFloat(course.discounted_price || course.price || 0), 0
-                      ).toLocaleString()}
+                    )}
+                  </div>
+                </div>
+                <div>
+                  <h4>Fee Information</h4>
+                  <div className="sf-info-box">
+                    <p><strong>Total Fee:</strong> ₹{parseFloat(viewFee.total_fee || 0).toLocaleString()}</p>
+                    <p><strong>Paid Amount:</strong> ₹{parseFloat(viewFee.paid_amount || 0).toLocaleString()}</p>
+                    <p><strong>Pending Amount:</strong> ₹{parseFloat(viewFee.pending_amount || 0).toLocaleString()}</p>
+                    <p><strong>Status:</strong>
+                      <span className={getFeeStatusClass(viewFee)}>
+                        {getFeeStatusText(viewFee)}
+                      </span>
+                    </p>
+
+                    {/* Display discount information if available */}
+                    {feeStructureDetails && (
+                      <>
+                        {feeStructureDetails.branch_discount_percent > 0 && (
+                          <p><strong>Branch Discount:</strong> {feeStructureDetails.branch_discount_percent}%</p>
+                        )}
+                        {feeStructureDetails.branch_discount_amount > 0 && (
+                          <p><strong>Branch Discount Amount:</strong> ₹{feeStructureDetails.branch_discount_amount}</p>
+                        )}
+                      </>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Rest of your existing view modal code remains same */}
+              {/* Installment Details */}
+              {installmentDetails.length > 0 && (
+                <div className="installment-section">
+                  <h3 className="installment-title">📅 Installment Schedule</h3>
+                  <div className="installment-box">
+                    <table className="installment-table">
+                      <thead>
+                        <tr>
+                          <th>Installment #</th>
+                          <th>Due Date</th>
+                          <th>Amount</th>
+                          <th>Status</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {installmentDetails.map((installment, index) => (
+                          <tr key={installment.id || index}>
+                            <td>{installment.installment_number}</td>
+                            <td>{installment.due_date ? new Date(installment.due_date).toLocaleDateString() : 'N/A'}</td>
+                            <td>₹{parseFloat(installment.amount || 0).toLocaleString()}</td>
+                            <td>
+                              <span className={`sf-badge ${installment.status === 'paid' ? 'sf-badge-paid' : 'sf-badge-pending'}`}>
+                                {installment.status}
+                              </span>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+
+              {/* Payment History */}
+              {viewFee.payments && viewFee.payments.length > 0 && (
+                <div>
+                  <h4 className="installment-title">Payment History</h4>
+                  <div className="sf-info-box">
+                    <div className="sf-payments-list">
+                      <table className="sf-payments-table">
+                        <thead>
+                          <tr>
+                            <th>#</th>
+                            <th>Amount Paid</th>
+                            <th>Payment Date</th>
+                            <th>Payment Mode</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {viewFee.payments.map((payment, index) => (
+                            <tr key={payment.id || index}>
+                              <td>{index + 1}</td>
+                              <td>₹{parseFloat(payment.amount_paid || 0).toLocaleString()}</td>
+                              <td>{new Date(payment.payment_date).toLocaleDateString()}</td>
+                              <td>{payment.payment_mode || 'N/A'}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
                     </div>
                   </div>
                 </div>
               )}
             </div>
           </div>
-          <div>
-            <h4>Fee Information</h4>
-            <div className="sf-info-box">
-              <p><strong>Total Fee:</strong> ₹{parseFloat(viewFee.total_fee || 0).toLocaleString()}</p>
-              <p><strong>Paid Amount:</strong> ₹{parseFloat(viewFee.paid_amount || 0).toLocaleString()}</p>
-              <p><strong>Pending Amount:</strong> ₹{parseFloat(viewFee.pending_amount || 0).toLocaleString()}</p>
-              <p><strong>Status:</strong>
-                <span className={`sf-badge`}>
-                  {viewFee.status}
-                </span>
-              </p>
-              
-              {/* Display discount information if available */}
-              {feeStructureDetails && (
-                <>
-                  {feeStructureDetails.branch_discount_percent > 0 && (
-                    <p><strong>Branch Discount:</strong> {feeStructureDetails.branch_discount_percent}%</p>
-                  )}
-                  {feeStructureDetails.branch_discount_amount > 0 && (
-                    <p><strong>Branch Discount Amount:</strong> ₹{feeStructureDetails.branch_discount_amount}</p>
-                  )}
-                </>
-              )}
-            </div>
-          </div>
         </div>
-
-        {/* Rest of your existing view modal code remains same */}
-        {/* Installment Details */}
-        {installmentDetails.length > 0 && (
-          <div className="installment-section">
-            <h3 className="installment-title">📅 Installment Schedule</h3>
-            <div className="installment-box">
-              <table className="installment-table">
-                <thead>
-                  <tr>
-                    <th>Installment #</th>
-                    <th>Due Date</th>
-                    <th>Amount</th>
-                    <th>Status</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {installmentDetails.map((installment, index) => (
-                    <tr key={installment.id || index}>
-                      <td>{installment.installment_number}</td>
-                      <td>{installment.due_date ? new Date(installment.due_date).toLocaleDateString() : 'N/A'}</td>
-                      <td>₹{parseFloat(installment.amount || 0).toLocaleString()}</td>
-                      <td>
-                        <span className={`sf-badge`}>
-                          {installment.status}
-                        </span>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        )}
-
-        {/* Payment History */}
-        {viewFee.payments && viewFee.payments.length > 0 && (
-          <div>
-            <h4 className="installment-title">Payment History</h4>
-            <div className="sf-info-box">
-              <div className="sf-payments-list">
-                <table className="sf-payments-table">
-                  <thead>
-                    <tr>
-                      <th>#</th>
-                      <th>Amount Paid</th>
-                      <th>Payment Date</th>
-                      <th>Payment Mode</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {viewFee.payments.map((payment, index) => (
-                      <tr key={payment.id || index}>
-                        <td>{index + 1}</td>
-                        <td>₹{parseFloat(payment.amount_paid || 0).toLocaleString()}</td>
-                        <td>{new Date(payment.payment_date).toLocaleDateString()}</td>
-                        <td>{payment.payment_mode || 'N/A'}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </div>
-        )}
-      </div>
-    </div>
-  </div>
-)}
+      )}
 
       {/* Delete Confirmation Modal */}
       {showDeleteModal && feeToDelete && (
