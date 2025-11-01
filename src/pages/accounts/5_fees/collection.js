@@ -3,6 +3,8 @@ import axios from "../../../api/axiosConfig";
 import './Collection.css';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
+import { toast, ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 const Collection = () => {
   const [showModal, setShowModal] = useState(false);
@@ -283,7 +285,7 @@ const Collection = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!selectedStudent) {
-      alert("Please select a student");
+      toast.warning("Please select a student");
       return;
     }
     try {
@@ -307,11 +309,11 @@ const Collection = () => {
         record.student && record.student.branch_id === userBranchId
       );
       setFeeRecords(filteredRecords || []);
-      alert("Fee record saved successfully!");
+      toast.warning("Fee record saved successfully!");
       closeModal();
     } catch (error) {
       console.error("Error saving fee data:", error);
-      alert("Error saving fee data. Please try again.");
+      toast.warning("Error saving fee data. Please try again.");
     }
   };
 
@@ -319,7 +321,7 @@ const Collection = () => {
   const handlePaymentSubmit = async (e) => {
     e.preventDefault();
     if (!selectedFeeRecord) {
-      alert("No fee record selected");
+      toast.warning("No fee record selected");
       return;
     }
     try {
@@ -341,11 +343,11 @@ const Collection = () => {
         record.student && record.student.branch_id === userBranchId
       );
       setFeeRecords(filteredRecords || []);
-      alert("Payment recorded successfully!");
+      toast.warning("Payment recorded successfully!");
       closePaymentModal();
     } catch (error) {
       console.error("Error saving payment:", error);
-      alert("Error saving payment. Please try again.");
+      toast.warning("Error saving payment. Please try again.");
     }
   };
 
@@ -355,6 +357,7 @@ const Collection = () => {
 
   return (
     <div className="collection-container">
+      <ToastContainer position='top-right' autoClose={3000} hideProgressBar={false} newestOnTop={false} closeOnClick rtl={false} pauseOnFocusLoss draggable pauseOnHover />
       <div className="collection-header">
         <h1>Fee Collection Management</h1>
       </div>

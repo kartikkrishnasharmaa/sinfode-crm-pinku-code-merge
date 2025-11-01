@@ -2,6 +2,8 @@ import SAAdminLayout from "../../../layouts/Sinfodeadmin";
 import AllCoupans from "./allcoupan";
 import { useState, useEffect } from "react";
 import axios from "../../../api/axiosConfig";
+import { toast, ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 function AddCoupan() {
   const [couponCode, setCouponCode] = useState("");
@@ -33,7 +35,7 @@ function AddCoupan() {
   // ✅ Create coupon
   const handleCreateCoupon = async () => {
     if (!selectedCourse) {
-      alert("Please select a course");
+      toast.warning("Please select a course");
       return;
     }
 
@@ -54,7 +56,7 @@ function AddCoupan() {
         }
       );
 
-      alert("Coupon created successfully!");
+      toast.warning("Coupon created successfully!");
       // reset fields
       setCouponCode("");
       setDiscountValue("");
@@ -63,12 +65,14 @@ function AddCoupan() {
       setSelectedCourse("");
     } catch (error) {
       console.error("Error creating coupon:", error.response?.data || error);
-      alert(error.response?.data?.message || "Failed to create coupon!");
+      toast.warning(error.response?.data?.message || "Failed to create coupon!");
     }
   };
 
   return (
     <div className="items-center">
+      <ToastContainer position='top-right' autoClose={3000} hideProgressBar={false} newestOnTop={false} closeOnClick rtl={false} pauseOnFocusLoss draggable pauseOnHover />
+
       <div className="bg-white shadow-lg rounded-2xl p-8 w-full max-w-lg">
         <h1 className="text-2xl font-bold text-gray-800 mb-6 border-b pb-2">
           Create New Coupon
@@ -87,7 +91,7 @@ function AddCoupan() {
             <option value="">-- Select Course --</option>
             {courses.map((course) => (
               <option key={course.id} value={course.id}>
-                {course.course_name} 
+                {course.course_name}
               </option>
             ))}
           </select>
@@ -184,26 +188,24 @@ export default function Campaign() {
         <div className="w-70 bg-white rounded-xl shadow-md p-4 space-y-3">
           <button
             onClick={() => setActiveTab("addCoupan")}
-            className={`block w-full text-left px-4 py-5 rounded-lg ${
-              activeTab === "addCoupan"
+            className={`block w-full text-left px-4 py-5 rounded-lg ${activeTab === "addCoupan"
                 ? "bg-blue-100 text-black"
                 : "hover:bg-blue-100 text-black"
-            }`}
+              }`}
           >
             ➕ Add Coupon
           </button>
 
           <button
             onClick={() => setActiveTab("coupanList")}
-            className={`block w-full text-left px-4 py-5 rounded-lg ${
-              activeTab === "coupanList"
+            className={`block w-full text-left px-4 py-5 rounded-lg ${activeTab === "coupanList"
                 ? "bg-blue-100 text-black"
                 : "hover:bg-blue-100 text-black"
-            }`}
+              }`}
           >
             📋 All Coupons
           </button>
-    
+
         </div>
 
         {/* Content */}

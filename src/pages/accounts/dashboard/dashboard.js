@@ -15,6 +15,8 @@ import {
   ArcElement,
 } from "chart.js";
 import { Bar } from "react-chartjs-2";
+import { toast, ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 // Register ChartJS components
 ChartJS.register(
@@ -75,7 +77,7 @@ export default function Dashboard() {
       setTotalRevenue(total);
     } catch (error) {
       console.error("Error fetching revenue data:", error);
-      alert("Failed to load revenue data");
+      toast.warning("Failed to load revenue data");
     } finally {
       setLoading(false);
     }
@@ -252,6 +254,8 @@ export default function Dashboard() {
   return (
     <SAAdminLayout>
       <div className="p-6 bg-[#F4F9FD] min-h-screen">
+            <ToastContainer position='top-right' autoClose={3000} hideProgressBar={false} newestOnTop={false} closeOnClick rtl={false} pauseOnFocusLoss draggable pauseOnHover />
+
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6">
           <div>
             <p className="text-gray-500">Welcome Back,</p>
