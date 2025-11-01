@@ -2,7 +2,6 @@ import { useState, useEffect } from "react";
 import axios from "../../../api/axiosConfig";
 import SAStaffLayout from "../../../layouts/StaffLayout";
 
-
 import * as XLSX from "xlsx";
 import {
   FaEye,
@@ -26,7 +25,6 @@ import { useNavigate } from "react-router-dom";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
-
 export default function Allstudents() {
   const [students, setStudents] = useState([]);
   const [branches, setBranches] = useState([]);
@@ -49,12 +47,11 @@ export default function Allstudents() {
   const [sortOrder, setSortOrder] = useState("desc");
   const [dateFilter, setDateFilter] = useState({ from: "", to: "" });
 
-
   // New states for course selection in edit modal
   const [selectedEditCourses, setSelectedEditCourses] = useState([]);
   const [courseBatches, setCourseBatches] = useState({});
   const [editTotalFee, setEditTotalFee] = useState(0);
-
+  const [removePhotoFlag, setRemovePhotoFlag] = useState(false);
 
   useEffect(() => {
     function handleClickOutside(event) {
@@ -72,7 +69,6 @@ export default function Allstudents() {
     };
   }, [openMenuId]);
 
-
   const fetchStudents = async () => {
     try {
       const token = localStorage.getItem("token");
@@ -84,7 +80,6 @@ export default function Allstudents() {
       console.error("Error fetching students:", error);
     }
   };
-
 
   const fetchBranches = async () => {
     try {
@@ -98,7 +93,6 @@ export default function Allstudents() {
     }
   };
 
-
   const fetchCourses = async () => {
     try {
       const token = localStorage.getItem("token");
@@ -110,7 +104,6 @@ export default function Allstudents() {
       console.error("Error fetching courses:", error);
     }
   };
-
 
   const fetchBatches = async () => {
     try {
@@ -125,14 +118,12 @@ export default function Allstudents() {
     }
   };
 
-
   useEffect(() => {
     fetchStudents();
     fetchBranches();
     fetchCourses();
     fetchBatches();
   }, []);
-
 
   const fetchStudent = async (id) => {
     try {
@@ -147,7 +138,6 @@ export default function Allstudents() {
     }
   };
 
-
   // Add this function to refresh a single student
   const refreshStudentData = async (studentId) => {
     try {
@@ -155,28 +145,27 @@ export default function Allstudents() {
       const response = await axios.get(`/students/show/${studentId}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-
+      
       const updatedStudent = response.data;
-
+      
       // Update the students state with fresh data
-      setStudents(prevStudents =>
-        prevStudents.map(student =>
+      setStudents(prevStudents => 
+        prevStudents.map(student => 
           student.id === studentId ? updatedStudent : student
         )
       );
-
+      
       // Update selected student if it's the same one
       if (selectedStudent && selectedStudent.id === studentId) {
         setSelectedStudent(updatedStudent);
       }
-
+      
       return updatedStudent;
     } catch (error) {
       console.error("Error refreshing student data:", error);
       return null;
     }
   };
-
 
   const handleViewStudent = async (id) => {
     setIsLoading(true);
@@ -189,28 +178,26 @@ export default function Allstudents() {
     setOpenMenuId(null);
   };
 
-
   const handleEditStudent = async (id) => {
     setIsLoading(true);
     const studentData = await fetchStudent(id);
     if (studentData) {
       setSelectedStudent(studentData);
-
+      
       // Initialize form data with proper formatting for date inputs
       const formattedData = {
         ...studentData,
         dob: studentData.dob ? studentData.dob.split('T')[0] : '',
         admission_date: studentData.admission_date ? studentData.admission_date.split('T')[0] : ''
       };
-
+      
       setEditFormData(formattedData);
       setPhotoPreview(studentData.photo_url || "");
-
+      setRemovePhotoFlag(false);
 
       // Initialize course selection for edit
       const initialCourses = studentData.courses?.map(c => c.id) || [];
       setSelectedEditCourses(initialCourses);
-
 
       const initialBatches = {};
       studentData.courses?.forEach(course => {
@@ -219,7 +206,6 @@ export default function Allstudents() {
         }
       });
       setCourseBatches(initialBatches);
-
 
       // Calculate total fee
       let calculatedFee = 0;
@@ -232,13 +218,11 @@ export default function Allstudents() {
       });
       setEditTotalFee(calculatedFee);
 
-
       setShowEditModal(true);
     }
     setIsLoading(false);
     setOpenMenuId(null);
   };
-
 
   // Course selection handlers for edit modal
   const handleEditCourseSelection = (courseId) => {
@@ -256,7 +240,6 @@ export default function Allstudents() {
     });
   };
 
-
   const handleEditBatchSelection = (courseId, batchId) => {
     setCourseBatches(prev => ({
       ...prev,
@@ -264,15 +247,13 @@ export default function Allstudents() {
     }));
   };
 
-
   // Get batches for a specific course
   const getBatchesForCourse = (courseId) => {
-    return batches.filter(batch =>
-      batch.course_id == courseId ||
+    return batches.filter(batch => 
+      batch.course_id == courseId || 
       (batch.courses && batch.courses.some(course => course.id == courseId))
     );
   };
-
 
   // Format time for display
   const formatTime = (timeString) => {
@@ -287,7 +268,6 @@ export default function Allstudents() {
       return timeString;
     }
   };
-
 
   // Calculate total fee when courses change
   useEffect(() => {
@@ -306,112 +286,6 @@ export default function Allstudents() {
     }
   }, [selectedEditCourses, courses]);
 
-const handleUpdateStudent = async (e) => {
-  e.preventDefault();
-  setIsLoading(true);
- 
-  try {
-    const token = localStorage.getItem("token");
-
-    // Prepare the data in exact format like Postman
-    const updateData = {
-      full_name: editFormData.full_name,
-      email: editFormData.email,
-      contact_number: editFormData.contact_number,
-      dob: formatDateForAPI(editFormData.dob),
-      gender: editFormData.gender,
-      address: editFormData.address,
-      guardian_name: editFormData.guardian_name,
-      guardian_contact: editFormData.guardian_contact,
-      admission_date: formatDateForAPI(editFormData.admission_date),
-      admission_number: editFormData.admission_number,
-      branch_id: editFormData.branch_id,
-      course_ids: selectedEditCourses,
-      batch_ids: selectedEditCourses.map(courseId => courseBatches[courseId] || null).filter(batchId => batchId !== null)
-    };
-
-    console.log("=== SENDING UPDATE DATA ===");
-    console.log("Update Data:", updateData);
-
-    let response;
-
-    if (editPhoto) {
-      // If photo exists, use FormData
-      const formData = new FormData();
-      
-      // Append all fields
-      Object.entries(updateData).forEach(([key, value]) => {
-        if (value !== undefined && value !== null && value !== '') {
-          if (Array.isArray(value)) {
-            value.forEach(item => formData.append(`${key}[]`, item.toString()));
-          } else {
-            formData.append(key, value.toString());
-          }
-        }
-      });
-
-      formData.append("photo_url", editPhoto);
-
-      response = await axios.put(
-        `/students/update/${selectedStudent.id}`,
-        formData,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "multipart/form-data",
-          },
-        }
-      );
-    } else {
-      // If no photo, use JSON
-      response = await axios.put(
-        `/students/update/${selectedStudent.id}`,
-        updateData,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-        }
-      );
-    }
-
-    console.log("=== UPDATE RESPONSE ===");
-    console.log("Response data:", response.data);
-
-    if (response.data) {
-      // Force refresh the entire students list
-      await fetchStudents();
-      
-      // Refresh the specific student data
-      const refreshedStudent = await refreshStudentData(selectedStudent.id);
-      if (refreshedStudent) {
-        setSelectedStudent(refreshedStudent);
-      }
-
-      setShowEditModal(false);
-      setEditPhoto(null);
-      setPhotoPreview("");
-     
-      toast.success("Student updated successfully!");
-    }
-   
-  } catch (error) {
-    console.error("=== UPDATE ERROR ===");
-    console.error("Error details:", error);
-   
-    if (error.response?.data?.errors) {
-      const validationErrors = error.response.data.errors;
-      Object.entries(validationErrors).forEach(([field, messages]) => {
-        toast.error(`${field}: ${Array.isArray(messages) ? messages.join(', ') : messages}`);
-      });
-    } else {
-      toast.error(error.response?.data?.message || "Failed to update student");
-    }
-  }
- 
-  setIsLoading(false);
-};
   // Date formatting helper for API
   const formatDateForAPI = (dateString) => {
     if (!dateString) return '';
@@ -423,24 +297,207 @@ const handleUpdateStudent = async (e) => {
     }
   };
 
+  const handleUpdateStudent = async (e) => {
+    e.preventDefault();
+    setIsLoading(true);
+    
+    try {
+      const token = localStorage.getItem("token");
+      
+      // Always use FormData to handle both photo and other data
+      const formData = new FormData();
+
+      console.log("=== UPDATE REQUEST DATA ===");
+      console.log("Edit Form Data:", editFormData);
+      console.log("Selected Courses:", selectedEditCourses);
+      console.log("Course Batches:", courseBatches);
+      console.log("Photo File:", editPhoto);
+      console.log("Remove Photo Flag:", removePhotoFlag);
+
+      // Append all basic student information with proper formatting
+      const studentFields = {
+        "full_name": editFormData.full_name,
+        "email": editFormData.email,
+        "contact_number": editFormData.contact_number,
+        "dob": formatDateForAPI(editFormData.dob),
+        "gender": editFormData.gender,
+        "address": editFormData.address,
+        "guardian_name": editFormData.guardian_name,
+        "guardian_contact": editFormData.guardian_contact,
+        "admission_date": formatDateForAPI(editFormData.admission_date),
+        "admission_number": editFormData.admission_number,
+        "branch_id": editFormData.branch_id,
+        "course_fee": editTotalFee.toString(),
+        "final_fee": editTotalFee.toString(),
+        "_method": "PUT"
+      };
+
+      // Append each field with proper validation
+      Object.entries(studentFields).forEach(([key, value]) => {
+        if (value !== undefined && value !== null && value !== '') {
+          formData.append(key, value.toString());
+          console.log(`Appended ${key}:`, value);
+        } else {
+          console.log(`Skipped ${key}:`, value);
+        }
+      });
+
+      // Handle courses and batches - FIXED FORMAT
+      if (selectedEditCourses.length > 0) {
+        selectedEditCourses.forEach(courseId => {
+          formData.append("course_ids[]", courseId.toString());
+          console.log("Appended course:", courseId);
+          
+          const batchId = courseBatches[courseId];
+          if (batchId && batchId !== '') {
+            formData.append("batch_ids[]", batchId.toString());
+            console.log(`Appended batch for course ${courseId}:`, batchId);
+          } else {
+            formData.append("batch_ids[]", "");
+            console.log(`Appended empty batch for course ${courseId}`);
+          }
+        });
+      } else {
+        // If no courses selected, send empty arrays
+        formData.append("course_ids[]", "");
+        formData.append("batch_ids[]", "");
+      }
+
+      // Handle photo - FIXED
+      if (editPhoto) {
+        formData.append("photo", editPhoto);
+        console.log("Appended new photo file");
+      }
+
+      // Handle photo removal - FIXED
+      if (removePhotoFlag) {
+        formData.append("remove_photo", "1");
+        console.log("Appended remove_photo flag");
+      }
+
+      // Log FormData contents for debugging
+      console.log("=== FORM DATA CONTENTS ===");
+      for (let [key, value] of formData.entries()) {
+        if (key === 'photo') {
+          console.log(key, value.name, value.type, value.size);
+        } else {
+          console.log(key, value);
+        }
+      }
+
+      // Make the API request with FormData
+      const response = await axios.post(
+        `/students/update/${selectedStudent.id}`, 
+        formData, 
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "multipart/form-data",
+          },
+        }
+      );
+
+      console.log("=== UPDATE RESPONSE ===");
+      console.log("Response data:", response.data);
+
+      if (response.data) {
+        // Refresh the student data from server to get all updated fields
+        await fetchStudents(); // Refresh the entire list
+        
+        // Also refresh the specific student
+        const refreshedStudent = await refreshStudentData(selectedStudent.id);
+        
+        if (refreshedStudent) {
+          setSelectedStudent(refreshedStudent);
+        }
+
+        setShowEditModal(false);
+        setEditPhoto(null);
+        setPhotoPreview("");
+        setRemovePhotoFlag(false);
+        
+        toast.success("Student updated successfully!");
+      } else {
+        throw new Error("Update failed - no response data");
+      }
+      
+    } catch (error) {
+      console.error("=== UPDATE ERROR ===");
+      console.error("Error details:", error);
+      
+      if (error.response) {
+        console.error("Error response data:", error.response.data);
+        console.error("Error response status:", error.response.status);
+        
+        // Show detailed validation errors
+        if (error.response.data.errors) {
+          const validationErrors = error.response.data.errors;
+          console.error("Validation errors:", validationErrors);
+          
+          // Display each validation error
+          Object.entries(validationErrors).forEach(([field, messages]) => {
+            if (Array.isArray(messages)) {
+              toast.error(`${field}: ${messages.join(', ')}`);
+            } else {
+              toast.error(`${field}: ${messages}`);
+            }
+          });
+        } else if (error.response.data.message) {
+          toast.error(`Failed to update student: ${error.response.data.message}`);
+        } else {
+          toast.error('Failed to update student: Server error');
+        }
+      } else if (error.request) {
+        console.error("No response received:", error.request);
+        toast.error("No response from server. Please check your connection.");
+      } else {
+        console.error("Error message:", error.message);
+        toast.error("Failed to update student. Please try again.");
+      }
+    }
+    
+    setIsLoading(false);
+  };
+
   const handlePhotoChange = (e) => {
     const file = e.target.files[0];
     if (file) {
-      setEditPhoto(file);
+      // Validate file type
+      const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+      if (!validTypes.includes(file.type)) {
+        toast.error('Please select a valid image file (JPEG, PNG, GIF, WebP)');
+        return;
+      }
 
+      // Validate file size (max 5MB)
+      const maxSize = 5 * 1024 * 1024; // 5MB in bytes
+      if (file.size > maxSize) {
+        toast.error('Image size should be less than 5MB');
+        return;
+      }
+
+      setEditPhoto(file);
+      setRemovePhotoFlag(false); // Reset remove flag when new photo is selected
 
       const reader = new FileReader();
       reader.onload = (e) => {
         setPhotoPreview(e.target.result);
       };
       reader.readAsDataURL(file);
+      
+      toast.info('New photo selected. Click Update to save changes.');
     }
   };
 
+  const handleRemovePhoto = () => {
+    setEditPhoto(null);
+    setPhotoPreview("");
+    setRemovePhotoFlag(true);
+    toast.info('Photo will be removed. Click Update to save changes.');
+  };
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-
 
     if (name === "contact_number" || name === "guardian_contact") {
       const numericValue = value.replace(/\D/g, "").slice(0, 10);
@@ -452,7 +509,6 @@ const handleUpdateStudent = async (e) => {
     }
   };
 
-
   const handleDeleteStudent = async () => {
     setIsLoading(true);
     try {
@@ -460,12 +516,12 @@ const handleUpdateStudent = async (e) => {
       await axios.delete(`/students/destroy/${selectedStudent.id}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-
+      
       // Remove student from state immediately
-      setStudents(prevStudents =>
+      setStudents(prevStudents => 
         prevStudents.filter(student => student.id !== selectedStudent.id)
       );
-
+      
       setShowDeleteModal(false);
       toast.success("Student deleted successfully!");
     } catch (error) {
@@ -474,7 +530,6 @@ const handleUpdateStudent = async (e) => {
     }
     setIsLoading(false);
   };
-
 
   const exportToExcel = () => {
     const dataForExport = filteredStudents.map((student) => ({
@@ -491,15 +546,13 @@ const handleUpdateStudent = async (e) => {
       "Branch": student.branch?.branch_name,
       "Courses": student.courses?.map(c => c.course_name).join(", ") || "N/A",
       "Batches": student.courses?.map(c => c.batch?.batch_name).filter(Boolean).join(", ") || "N/A",
-      "Batch Timings": student.courses?.map(c =>
+      "Batch Timings": student.courses?.map(c => 
         c.batch ? formatBatchTiming(c.batch.batch_start_time, c.batch.batch_end_time) : "N/A"
       ).filter(timing => timing !== "N/A").join(" | ") || "N/A",
     }));
 
-
     const workbook = XLSX.utils.book_new();
     const worksheet = XLSX.utils.json_to_sheet(dataForExport);
-
 
     const columnWidths = [
       { wch: 15 },
@@ -519,20 +572,18 @@ const handleUpdateStudent = async (e) => {
     ];
     worksheet["!cols"] = columnWidths;
 
-
     XLSX.utils.book_append_sheet(workbook, worksheet, "Students");
     XLSX.writeFile(workbook, "students.xlsx");
   };
 
-
   const formatTimeToIST = (timeString) => {
     if (!timeString) return "N/A";
-
+    
     try {
       const [hours, minutes] = timeString.split(':');
       const date = new Date();
       date.setHours(parseInt(hours), parseInt(minutes), 0);
-
+      
       return date.toLocaleTimeString('en-IN', {
         hour: '2-digit',
         minute: '2-digit',
@@ -545,15 +596,13 @@ const handleUpdateStudent = async (e) => {
     }
   };
 
-
   const formatBatchTiming = (startTime, endTime) => {
     if (!startTime && !endTime) return "Timing not set";
     if (!startTime) return `Till ${formatTimeToIST(endTime)}`;
     if (!endTime) return `From ${formatTimeToIST(startTime)}`;
-
+    
     return `${formatTimeToIST(startTime)} - ${formatTimeToIST(endTime)}`;
   };
-
 
   const filteredStudents = students
     .filter(s =>
@@ -576,7 +625,6 @@ const handleUpdateStudent = async (e) => {
       return new Date(valB) - new Date(valA);
     });
 
-
   const formatDate = (dateString) => {
     if (!dateString) return "N/A";
     return new Date(dateString).toLocaleDateString("en-US", {
@@ -585,7 +633,6 @@ const handleUpdateStudent = async (e) => {
       day: "numeric",
     });
   };
-
 
   return (
     <div className="px-4 md:px-6 lg:px-8">
@@ -601,13 +648,12 @@ const handleUpdateStudent = async (e) => {
         pauseOnHover
         theme="light"
       />
-
+      
       {/* Header */}
       <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-6 gap-4">
         <h1 className="text-2xl md:text-3xl font-nunito font-semibold">
           Students <span className="text-gray-600">({filteredStudents.length})</span>
         </h1>
-
 
         <div className="flex flex-col md:flex-row gap-4 w-full md:w-auto">
           <select
@@ -622,7 +668,6 @@ const handleUpdateStudent = async (e) => {
               </option>
             ))}
           </select>
-
 
           <div className="flex gap-2 bg-gray-200 p-1 rounded-full shrink-0">
             <button
@@ -645,7 +690,6 @@ const handleUpdateStudent = async (e) => {
             </button>
           </div>
 
-
           <button
             onClick={exportToExcel}
             className="flex items-center gap-2 bg-green-600 text-white px-3 py-2 rounded-md hover:bg-green-700 transition-colors shrink-0 text-sm md:px-4 md:py-2 md:text-base"
@@ -655,7 +699,6 @@ const handleUpdateStudent = async (e) => {
           </button>
         </div>
       </div>
-
 
       {/* Search and Filters */}
       <div className="mb-4 max-w-md">
@@ -707,7 +750,6 @@ const handleUpdateStudent = async (e) => {
         </button>
       </div>
 
-
       {/* Loading Indicator */}
       {isLoading && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
@@ -717,7 +759,6 @@ const handleUpdateStudent = async (e) => {
           </div>
         </div>
       )}
-
 
       {/* List View */}
       {viewMode === "list" ? (
@@ -731,7 +772,6 @@ const handleUpdateStudent = async (e) => {
               <div className="col-span-2 text-gray-600 hidden md:flex items-center">Branch</div>
               <div className="col-span-1 text-center">Actions</div>
             </div>
-
 
             {/* Table Rows */}
             <div className="space-y-3">
@@ -754,21 +794,17 @@ const handleUpdateStudent = async (e) => {
                     </div>
                   </div>
 
-
                   <div className="col-span-2 text-gray-600 truncate hidden sm:block">
                     {student.email || "N/A"}
                   </div>
-
 
                   <div className="col-span-2 text-gray-600 hidden md:block">
                     {student.contact_number || "N/A"}
                   </div>
 
-
                   <div className="col-span-2 text-gray-600 hidden md:block">
                     {student.branch?.branch_name || "N/A"}
                   </div>
-
 
                   <div className="col-span-1 flex justify-center relative">
                     <button
@@ -780,7 +816,6 @@ const handleUpdateStudent = async (e) => {
                     >
                       <HiDotsVertical size={20} />
                     </button>
-
 
                     {openMenuId === student.id && (
                       <div
@@ -823,7 +858,7 @@ const handleUpdateStudent = async (e) => {
           {filteredStudents.map((student) => (
             <div
               key={student.id}
-              className="bg-white rounded-2xl shadow hover:shadow-lg transition p-6 flex flex-col items-center text-center"
+              className="bg-white rounded-2xl mt-5 shadow hover:shadow-lg transition p-6 flex flex-col items-center text-center"
             >
               <div className="w-20 h-20 rounded-full overflow-hidden border-4 border-white shadow-md -mt-12 mb-3">
                 <img
@@ -843,7 +878,6 @@ const handleUpdateStudent = async (e) => {
               <span className="mt-3 px-3 py-1 text-xs font-medium rounded-full bg-green-100 text-green-700 hidden md:inline-block w-fit truncate max-w-full">
                 Admission Date: {formatDate(student.admission_date)}
               </span>
-
 
               <div className="flex mt-4 space-x-3">
                 <button
@@ -879,7 +913,6 @@ const handleUpdateStudent = async (e) => {
         </div>
       )}
 
-
       {/* View Student Modal */}
       {showViewModal && selectedStudent && (
         <div className="fixed ml-[270px] inset-0 bg-black bg-opacity-50 flex mt-[100px] items-center justify-center z-[900px] p-4">
@@ -895,7 +928,6 @@ const handleUpdateStudent = async (e) => {
               </button>
             </div>
 
-
             <div className="p-6">
               <div className="flex flex-col md:flex-row gap-6 mb-6">
                 <div className="flex-shrink-0 mx-auto md:mx-0">
@@ -905,7 +937,6 @@ const handleUpdateStudent = async (e) => {
                     className="w-40 h-40 rounded-full object-cover border-4 border-blue-100"
                   />
                 </div>
-
 
                 <div className="flex-grow">
                   <h1 className="text-3xl font-bold mb-2">{selectedStudent.full_name}</h1>
@@ -938,7 +969,6 @@ const handleUpdateStudent = async (e) => {
                 </div>
               </div>
 
-
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
                 <div className="bg-gray-50 p-4 rounded-lg">
                   <h3 className="text-lg font-semibold mb-3 flex items-center">
@@ -947,7 +977,6 @@ const handleUpdateStudent = async (e) => {
                   </h3>
                   <p className="text-gray-700">{selectedStudent.address}</p>
                 </div>
-
 
                 <div className="bg-gray-50 p-4 rounded-lg">
                   <h3 className="text-lg font-semibold mb-3 flex items-center">
@@ -963,7 +992,6 @@ const handleUpdateStudent = async (e) => {
                 </div>
               </div>
 
-
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="bg-blue-50 p-4 rounded-lg">
                   <h3 className="text-lg font-semibold mb-3 flex items-center">
@@ -976,7 +1004,6 @@ const handleUpdateStudent = async (e) => {
                     {selectedStudent.branch?.city}, {selectedStudent.branch?.state}
                   </p>
                 </div>
-
 
                 <div className="bg-green-50 p-4 rounded-lg">
                   <h3 className="text-lg font-semibold mb-3 flex items-center">
@@ -1013,7 +1040,6 @@ const handleUpdateStudent = async (e) => {
         </div>
       )}
 
-
       {/* Edit Student Modal */}
       {showEditModal && selectedStudent && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
@@ -1025,6 +1051,7 @@ const handleUpdateStudent = async (e) => {
                   setShowEditModal(false);
                   setEditPhoto(null);
                   setPhotoPreview("");
+                  setRemovePhotoFlag(false);
                 }}
                 className="text-gray-500 hover:text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-400 rounded"
                 aria-label="Close Edit Modal"
@@ -1033,11 +1060,61 @@ const handleUpdateStudent = async (e) => {
               </button>
             </div>
 
-
             <form onSubmit={handleUpdateStudent} className="p-6">
               {/* Basic Information */}
               <div className="bg-white shadow-lg rounded-xl p-6 mb-6">
                 <h2 className="text-xl font-semibold mb-4 text-gray-800 border-b pb-2">Personal Information</h2>
+                
+                {/* Photo Upload Section - Updated with better styling */}
+                <div className="flex flex-col md:flex-row items-center gap-6 mb-6 p-4 bg-gray-50 rounded-lg">
+                  <div className="flex-shrink-0">
+                    <div className="relative">
+                      <img
+                        src={photoPreview || "https://rapidapi.com/hub/_next/image?url=https%3A%2F%2Frapidapi-prod-apis.s3.amazonaws.com%2F0499ccca-a115-4e70-b4f3-1c1587d6de2b.png&w=3840&q=75"}
+                        alt="Student Preview"
+                        className="w-32 h-32 rounded-full object-cover border-4 border-white shadow-lg"
+                      />
+                      {(photoPreview && photoPreview.startsWith('http')) && (
+                        <button
+                          type="button"
+                          onClick={handleRemovePhoto}
+                          className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-red-400"
+                          title="Remove photo"
+                        >
+                          <FaTimes size={14} />
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                  
+                  <div className="flex-grow">
+                    <label className="block text-sm font-medium mb-2 text-gray-700">
+                      Student Photo
+                    </label>
+                    <div className="flex flex-col sm:flex-row gap-3">
+                      <input
+                        type="file"
+                        onChange={handlePhotoChange}
+                        className="flex-grow border border-gray-300 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-blue-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+                        accept="image/*"
+                      />
+                    </div>
+                    <p className="text-xs text-gray-500 mt-2">
+                      Supported formats: JPEG, PNG, GIF, WebP. Max size: 5MB
+                    </p>
+                    {editPhoto && (
+                      <p className="text-sm text-green-600 mt-1">
+                        ✓ New photo selected and ready to update
+                      </p>
+                    )}
+                    {removePhotoFlag && (
+                      <p className="text-sm text-orange-600 mt-1">
+                        ⚠ Photo will be removed when you update
+                      </p>
+                    )}
+                  </div>
+                </div>
+
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                   <div>
                     <label className="block text-sm font-medium mb-1">Full Name *</label>
@@ -1114,22 +1191,7 @@ const handleUpdateStudent = async (e) => {
                       required
                     />
                   </div>
-                  <div>
-                    <label className="block text-sm font-medium mb-1">Student Photo</label>
-                    <input
-                      type="file"
-                      onChange={handlePhotoChange}
-                      className="w-full border rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
-                      accept="image/*"
-                    />
-                    {photoPreview && (
-                      <div className="mt-2">
-                        <img src={photoPreview} alt="Preview" className="w-20 h-20 rounded-full object-cover" />
-                      </div>
-                    )}
-                  </div>
                 </div>
-
 
                 <div className="mb-4">
                   <label className="block text-sm font-medium mb-1">Address</label>
@@ -1141,7 +1203,6 @@ const handleUpdateStudent = async (e) => {
                     rows="3"
                   />
                 </div>
-
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                   <div>
@@ -1170,7 +1231,6 @@ const handleUpdateStudent = async (e) => {
                     )}
                   </div>
                 </div>
-
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
@@ -1204,7 +1264,6 @@ const handleUpdateStudent = async (e) => {
                 </div>
               </div>
 
-
               {/* Course Enrollment Section */}
               <div className="bg-white shadow-lg rounded-xl p-6 mb-6">
                 <div className="flex items-center justify-between mb-6">
@@ -1213,15 +1272,16 @@ const handleUpdateStudent = async (e) => {
                     {selectedEditCourses.length} course(s) selected
                   </span>
                 </div>
-
+                
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                   {courses.map((course) => (
-                    <div
-                      key={course.id}
-                      className={`border-2 rounded-xl p-4 transition-all duration-200 ${selectedEditCourses.includes(course.id)
-                        ? 'border-blue-500 bg-blue-50 shadow-md'
-                        : 'border-gray-200 hover:border-gray-300 hover:shadow-sm'
-                        }`}
+                    <div 
+                      key={course.id} 
+                      className={`border-2 rounded-xl p-4 transition-all duration-200 ${
+                        selectedEditCourses.includes(course.id) 
+                          ? 'border-blue-500 bg-blue-50 shadow-md' 
+                          : 'border-gray-200 hover:border-gray-300 hover:shadow-sm'
+                      }`}
                     >
                       <div className="flex items-start space-x-3">
                         <input
@@ -1232,13 +1292,13 @@ const handleUpdateStudent = async (e) => {
                           className="mt-1 w-5 h-5 text-blue-600 rounded focus:ring-blue-500 border-gray-300"
                         />
                         <div className="flex-1 min-w-0">
-                          <label
+                          <label 
                             htmlFor={`edit-course-${course.id}`}
                             className="font-semibold text-gray-900 cursor-pointer hover:text-blue-600 block text-sm"
                           >
                             {course.course_name}
                           </label>
-
+                          
                           <div className="mt-2 space-y-1">
                             <p className="text-xs text-gray-600">
                               <span className="font-medium">Code:</span> {course.course_code}
@@ -1247,11 +1307,12 @@ const handleUpdateStudent = async (e) => {
                               <span className="font-medium">Duration:</span> {course.duration} months
                             </p>
                             <p className="text-xs text-gray-600">
-                              <span className="font-medium">Mode:</span>
-                              <span className={`ml-1 px-2 py-0.5 rounded text-xs ${course.mode === 'Online' ? 'bg-green-100 text-green-800' :
+                              <span className="font-medium">Mode:</span> 
+                              <span className={`ml-1 px-2 py-0.5 rounded text-xs ${
+                                course.mode === 'Online' ? 'bg-green-100 text-green-800' :
                                 course.mode === 'Offline' ? 'bg-blue-100 text-blue-800' :
-                                  'bg-purple-100 text-purple-800'
-                                }`}>
+                                'bg-purple-100 text-purple-800'
+                              }`}>
                                 {course.mode}
                               </span>
                             </p>
@@ -1260,13 +1321,12 @@ const handleUpdateStudent = async (e) => {
                             </p>
                           </div>
 
-
                           <div className="mt-3">
                             <span className="text-lg font-bold text-green-600">
                               ₹{course.discounted_price || course.actual_price || "0"}
                             </span>
                           </div>
-
+                          
                           {/* Batch selection for selected courses */}
                           {selectedEditCourses.includes(course.id) && (
                             <div className="mt-4 pt-3 border-t border-gray-200">
@@ -1282,7 +1342,7 @@ const handleUpdateStudent = async (e) => {
                                 <option value="">Choose a batch</option>
                                 {getBatchesForCourse(course.id).map((batch) => (
                                   <option key={batch.id} value={batch.id}>
-                                    {batch.batch_name}
+                                    {batch.batch_name} 
                                     {batch.batch_start_time && ` (${formatTime(batch.batch_start_time)})`}
                                   </option>
                                 ))}
@@ -1294,7 +1354,7 @@ const handleUpdateStudent = async (e) => {
                     </div>
                   ))}
                 </div>
-
+                
                 {/* Selected Courses Summary */}
                 {selectedEditCourses.length > 0 && (
                   <div className="mt-6 p-6 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-200">
@@ -1332,7 +1392,6 @@ const handleUpdateStudent = async (e) => {
                 )}
               </div>
 
-              {/* Remove the alternative JSON button - keep only one button */}
               <div className="flex justify-end space-x-3 pt-4">
                 <button
                   type="button"
@@ -1340,11 +1399,13 @@ const handleUpdateStudent = async (e) => {
                     setShowEditModal(false);
                     setEditPhoto(null);
                     setPhotoPreview("");
+                    setRemovePhotoFlag(false);
                   }}
                   className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-gray-300"
                 >
                   Cancel
                 </button>
+                
                 <button
                   type="submit"
                   className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-blue-600"
@@ -1357,7 +1418,6 @@ const handleUpdateStudent = async (e) => {
           </div>
         </div>
       )}
-
 
       {/* Delete Confirmation Modal */}
       {showDeleteModal && selectedStudent && (
@@ -1373,7 +1433,6 @@ const handleUpdateStudent = async (e) => {
                 <FaTimes size={24} />
               </button>
             </div>
-
 
             <div className="p-6">
               <p className="text-gray-700 mb-4">
@@ -1402,10 +1461,3 @@ const handleUpdateStudent = async (e) => {
     </div>
   );
 }
-
-
-
-
-
-
-

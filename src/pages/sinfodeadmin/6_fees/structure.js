@@ -1043,7 +1043,7 @@ const closeViewModal = () => {
                       </div>
                     ) : (
                       <div className="sf-no-courses">
-                        No courses assigned to this student
+                        Not Found
                       </div>
                     )}
                   </div>
