@@ -625,10 +625,10 @@ export default function Allstudents() {
                         {student.courses?.slice(0, 2).map((course) => (
                           <div key={course.id} className="text-sm">
                             <div className="font-medium text-gray-700">{course.course_name}</div>
-                            <div className="text-xs text-gray-500 flex items-center gap-1">
+                            {/* <div className="text-xs text-gray-500 flex items-center gap-1">
                               <FaClock className="text-gray-400" />
                               {course.batch?.batch_name} • {formatTime(course.batch?.batch_start_time)}
-                            </div>
+                            </div> */}
                           </div>
                         ))}
                         {student.courses && student.courses.length > 2 && (
@@ -640,7 +640,7 @@ export default function Allstudents() {
                     </td>
                     <td className="px-6 py-4">
                       <div className="text-sm text-gray-900">{formatDate(student.admission_date)}</div>
-                      <div className="text-xs text-gray-500">#{student.admission_number}</div>
+                      {/* <div className="text-xs text-gray-500">#{student.admission_number}</div> */}
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex flex-col gap-1">
