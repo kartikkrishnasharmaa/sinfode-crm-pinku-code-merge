@@ -435,13 +435,13 @@ const StudentFees = () => {
 
     // Check if both discount fields are being filled
     if (name === 'branch_discount_percent' && value && formData.branch_discount_amount) {
-      alert('You can only apply either percentage discount OR amount discount, not both. The amount discount will be cleared.');
+      toast.warning('You can only apply either percentage discount OR amount discount, not both. The amount discount will be cleared.');
       setFormData(prev => ({
         ...prev,
         branch_discount_amount: ''
       }));
     } else if (name === 'branch_discount_amount' && value && formData.branch_discount_percent) {
-      alert('You can only apply either percentage discount OR amount discount, not both. The percentage discount will be cleared.');
+      toast.warning('You can only apply either percentage discount OR amount discount, not both. The percentage discount will be cleared.');
       setFormData(prev => ({
         ...prev,
         branch_discount_percent: ''
