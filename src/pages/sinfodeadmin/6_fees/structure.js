@@ -1255,154 +1255,154 @@ const StudentFees = () => {
 
                 <div className="sf-form-group">
                   <label>Selected Courses & Total Fees</label>
-                <div className="sf-courses-display">
-  {selectedCourses.length > 0 ? (
-    <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-      {/* Table Header */}
-      <div className="bg-gray-50 px-4 py-3 border-b border-gray-200">
-        <h3 className="text-lg font-semibold text-gray-800">Selected Courses & Fees</h3>
-      </div>
-      
-      {/* Courses Table */}
-      <div className="overflow-x-auto">
-        <table className="w-full">
-          <thead>
-            <tr className="bg-gray-50 border-b border-gray-200">
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Course Details
-              </th>
-              <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Price
-              </th>
-            </tr>
-          </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
-            {selectedCourses.map((course, index) => (
-              <tr 
-                key={course.id} 
-                className="hover:bg-gray-50 transition-colors duration-150"
-              >
-                <td className="px-6 py-4">
-                  <div className="flex items-start space-x-3">
-                    <div className="flex-shrink-0 w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg flex items-center justify-center">
-                      <i className="fas fa-book text-white text-sm"></i>
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <h4 className="text-sm font-semibold text-gray-900 truncate">
-                        {course.course_name}
-                      </h4>
-                      <div className="mt-1 flex flex-wrap gap-2">
-                        {course.course_code && (
-                          <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                            Code: {course.course_code}
-                          </span>
-                        )}
-                        {course.batch?.batch_name && (
-                          <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                            Batch: {course.batch.batch_name}
-                          </span>
-                        )}
-                  
+                  <div className="sf-courses-display">
+                    {selectedCourses.length > 0 ? (
+                      <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+                        {/* Table Header */}
+                        <div className="bg-gray-50 px-4 py-3 border-b border-gray-200">
+                          <h3 className="text-lg font-semibold text-gray-800">Selected Courses & Fees</h3>
+                        </div>
+
+                        {/* Courses Table */}
+                        <div className="overflow-x-auto">
+                          <table className="w-full">
+                            <thead>
+                              <tr className="bg-gray-50 border-b border-gray-200">
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                  Course Details
+                                </th>
+                                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                  Price
+                                </th>
+                              </tr>
+                            </thead>
+                            <tbody className="bg-white divide-y divide-gray-200">
+                              {selectedCourses.map((course, index) => (
+                                <tr
+                                  key={course.id}
+                                  className="hover:bg-gray-50 transition-colors duration-150"
+                                >
+                                  <td className="px-6 py-4">
+                                    <div className="flex items-start space-x-3">
+                                      <div className="flex-shrink-0 w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg flex items-center justify-center">
+                                        <i className="fas fa-book text-white text-sm"></i>
+                                      </div>
+                                      <div className="flex-1 min-w-0">
+                                        <h4 className="text-sm font-semibold text-gray-900 truncate">
+                                          {course.course_name}
+                                        </h4>
+                                        <div className="mt-1 flex flex-wrap gap-2">
+                                          {course.course_code && (
+                                            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                              Code: {course.course_code}
+                                            </span>
+                                          )}
+                                          {course.batch?.batch_name && (
+                                            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                              Batch: {course.batch.batch_name}
+                                            </span>
+                                          )}
+
+                                        </div>
+                                      </div>
+                                    </div>
+                                  </td>
+                                  <td className="px-6 py-4 text-right">
+                                    <div className="flex flex-col items-end">
+                                      <span className="text-lg font-bold text-green-600">
+                                        ₹{parseFloat(course.discounted_price || 0).toLocaleString()}
+                                      </span>
+                                      {course.original_price && course.original_price !== course.discounted_price && (
+                                        <span className="text-sm text-gray-500 line-through mt-1">
+                                          ₹{parseFloat(course.original_price).toLocaleString()}
+                                        </span>
+                                      )}
+                                    </div>
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+
+                            {/* Totals Section */}
+                            <tfoot className="bg-gray-50">
+                              {/* Base Total */}
+                              <tr className="border-t border-gray-200">
+                                <td className="px-6 py-4 text-right">
+                                  <span className="text-sm font-semibold text-gray-700">Base Total:</span>
+                                </td>
+                                <td className="px-6 py-4 text-right">
+                                  <span className="text-lg font-bold text-gray-900">
+                                    ₹{calculateTotalFees().toLocaleString()}
+                                  </span>
+                                </td>
+                              </tr>
+
+                              {/* Discount Display */}
+                              {(formData.branch_discount_percent || formData.branch_discount_amount) && (
+                                <>
+                                  {/* Discount Row */}
+                                  <tr className="border-t border-gray-200 bg-yellow-50">
+                                    <td className="px-6 py-3 text-right">
+                                      <div className="flex items-center justify-end space-x-2">
+                                        <i className="fas fa-tag text-yellow-600 text-sm"></i>
+                                        <span className="text-sm font-semibold text-yellow-800">
+                                          {formData.branch_discount_percent ?
+                                            `Discount (${formData.branch_discount_percent}%)` :
+                                            'Discount Amount'
+                                          }:
+                                        </span>
+                                      </div>
+                                    </td>
+                                    <td className="px-6 py-3 text-right">
+                                      <span className="text-lg font-bold text-yellow-700">
+                                        {formData.branch_discount_percent ?
+                                          `-${formData.branch_discount_percent}%` :
+                                          `-₹${parseFloat(formData.branch_discount_amount).toLocaleString()}`
+                                        }
+                                      </span>
+                                    </td>
+                                  </tr>
+
+                                  {/* Final Total */}
+                                  <tr className="border-t border-gray-300 bg-green-50">
+                                    <td className="px-6 py-4 text-right">
+                                      <span className="text-sm font-semibold text-green-800">Final Total:</span>
+                                    </td>
+                                    <td className="px-6 py-4 text-right">
+                                      <span className="text-xl font-bold text-green-700">
+                                        ₹{finalFee.toLocaleString()}
+                                      </span>
+                                    </td>
+                                  </tr>
+
+                                  {/* Savings Info */}
+                                  <tr className="bg-green-25">
+                                    <td colSpan="2" className="px-6 py-2 text-center">
+                                      <div className="flex items-center justify-center space-x-2 text-sm text-green-700">
+                                        <i className="fas fa-piggy-bank"></i>
+                                        <span>
+                                          You save ₹{(calculateTotalFees() - finalFee).toLocaleString()}
+                                          ({((calculateTotalFees() - finalFee) / calculateTotalFees() * 100).toFixed(1)}%)
+                                        </span>
+                                      </div>
+                                    </td>
+                                  </tr>
+                                </>
+                              )}
+                            </tfoot>
+                          </table>
+                        </div>
                       </div>
-                    </div>
-                  </div>
-                </td>
-                <td className="px-6 py-4 text-right">
-                  <div className="flex flex-col items-end">
-                    <span className="text-lg font-bold text-green-600">
-                      ₹{parseFloat(course.discounted_price || 0).toLocaleString()}
-                    </span>
-                    {course.original_price && course.original_price !== course.discounted_price && (
-                      <span className="text-sm text-gray-500 line-through mt-1">
-                        ₹{parseFloat(course.original_price).toLocaleString()}
-                      </span>
+                    ) : (
+                      <div className="text-center py-12 bg-white rounded-lg border-2 border-dashed border-gray-300">
+                        <i className="fas fa-book-open text-4xl text-gray-400 mb-4"></i>
+                        <h3 className="text-lg font-medium text-gray-900 mb-2">No Courses Found</h3>
+                        <p className="text-gray-500 max-w-sm mx-auto">
+                          The selected student doesn't have any courses assigned. Please assign courses to the student first.
+                        </p>
+                      </div>
                     )}
                   </div>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-          
-          {/* Totals Section */}
-          <tfoot className="bg-gray-50">
-            {/* Base Total */}
-            <tr className="border-t border-gray-200">
-              <td className="px-6 py-4 text-right">
-                <span className="text-sm font-semibold text-gray-700">Base Total:</span>
-              </td>
-              <td className="px-6 py-4 text-right">
-                <span className="text-lg font-bold text-gray-900">
-                  ₹{calculateTotalFees().toLocaleString()}
-                </span>
-              </td>
-            </tr>
-            
-            {/* Discount Display */}
-            {(formData.branch_discount_percent || formData.branch_discount_amount) && (
-              <>
-                {/* Discount Row */}
-                <tr className="border-t border-gray-200 bg-yellow-50">
-                  <td className="px-6 py-3 text-right">
-                    <div className="flex items-center justify-end space-x-2">
-                      <i className="fas fa-tag text-yellow-600 text-sm"></i>
-                      <span className="text-sm font-semibold text-yellow-800">
-                        {formData.branch_discount_percent ? 
-                          `Discount (${formData.branch_discount_percent}%)` : 
-                          'Discount Amount'
-                        }:
-                      </span>
-                    </div>
-                  </td>
-                  <td className="px-6 py-3 text-right">
-                    <span className="text-lg font-bold text-yellow-700">
-                      {formData.branch_discount_percent ? 
-                        `-${formData.branch_discount_percent}%` : 
-                        `-₹${parseFloat(formData.branch_discount_amount).toLocaleString()}`
-                      }
-                    </span>
-                  </td>
-                </tr>
-                
-                {/* Final Total */}
-                <tr className="border-t border-gray-300 bg-green-50">
-                  <td className="px-6 py-4 text-right">
-                    <span className="text-sm font-semibold text-green-800">Final Total:</span>
-                  </td>
-                  <td className="px-6 py-4 text-right">
-                    <span className="text-xl font-bold text-green-700">
-                      ₹{finalFee.toLocaleString()}
-                    </span>
-                  </td>
-                </tr>
-                
-                {/* Savings Info */}
-                <tr className="bg-green-25">
-                  <td colSpan="2" className="px-6 py-2 text-center">
-                    <div className="flex items-center justify-center space-x-2 text-sm text-green-700">
-                      <i className="fas fa-piggy-bank"></i>
-                      <span>
-                        You save ₹{(calculateTotalFees() - finalFee).toLocaleString()} 
-                        ({((calculateTotalFees() - finalFee) / calculateTotalFees() * 100).toFixed(1)}%)
-                      </span>
-                    </div>
-                  </td>
-                </tr>
-              </>
-            )}
-          </tfoot>
-        </table>
-      </div>
-    </div>
-  ) : (
-    <div className="text-center py-12 bg-white rounded-lg border-2 border-dashed border-gray-300">
-      <i className="fas fa-book-open text-4xl text-gray-400 mb-4"></i>
-      <h3 className="text-lg font-medium text-gray-900 mb-2">No Courses Found</h3>
-      <p className="text-gray-500 max-w-sm mx-auto">
-        The selected student doesn't have any courses assigned. Please assign courses to the student first.
-      </p>
-    </div>
-  )}
-</div>
                 </div>
 
                 <div className="sf-form-group">
@@ -1558,30 +1558,44 @@ const StudentFees = () => {
 
                     {/* Multiple Courses Display */}
                     {selectedCourses.length > 1 && (
-                      <div className="sf-multiple-courses">
-                        <strong>Courses:</strong>
-                        <div className="sf-courses-list-view">
-                          {selectedCourses.map((course, index) => (
-                            <div key={course.id} className="sf-course-item-view">
-                              <div className="sf-course-info-view">
-                                <div className="sf-course-name-view">
-                                  {course.course_name} ({course.course_code})
-                                </div>
-                                <div className="sf-course-price-view">
-                                  ₹{parseFloat(course.discounted_price || course.price || 0).toLocaleString()}
-                                </div>
-                              </div>
-                              {index < selectedCourses.length - 1 && <hr className="sf-course-divider" />}
-                            </div>
-                          ))}
-                          <div className="sf-total-courses-fee">
-                            <strong>Total Courses Fee: </strong>
-                            ₹{selectedCourses.reduce((total, course) =>
-                              total + parseFloat(course.discounted_price || course.price || 0), 0
-                            ).toLocaleString()}
-                          </div>
+                      <div className="mt-6">
+                        <div className="overflow-x-auto">
+                          <table className="min-w-full border border-gray-300 rounded-lg overflow-hidden">
+                            <thead className="bg-gray-100">
+                              <tr>
+                                <th className="px-4 py-2 text-left text-sm font-medium text-gray-700 border-b">#</th>
+                                <th className="px-4 py-2 text-left text-sm font-medium text-gray-700 border-b">Course Name</th>
+                                <th className="px-4 py-2 text-right text-sm font-medium text-gray-700 border-b">Price (₹)</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {selectedCourses.map((course, index) => (
+                                <tr key={course.id} className={index % 2 === 0 ? "bg-white" : "bg-gray-50"}>
+                                  <td className="px-4 py-2 text-sm text-gray-600 border-b">{index + 1}</td>
+                                  <td className="px-4 py-2 text-sm text-gray-800 border-b">{course.course_name}</td>
+                                  <td className="px-4 py-2 text-sm text-gray-800 text-right border-b">
+                                    ₹{parseFloat(course.discounted_price || course.price || 0).toLocaleString()}
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                            <tfoot className="bg-gray-100">
+                              <tr>
+                                <td colSpan="2" className="px-4 py-3 text-right font-semibold text-gray-800 border-t">
+                                  Total Courses Fee:
+                                </td>
+                                <td className="px-4 py-3 text-right font-semibold text-gray-900 border-t">
+                                  ₹{selectedCourses.reduce(
+                                    (total, course) => total + parseFloat(course.discounted_price || course.price || 0),
+                                    0
+                                  ).toLocaleString()}
+                                </td>
+                              </tr>
+                            </tfoot>
+                          </table>
                         </div>
                       </div>
+
                     )}
                   </div>
                 </div>
@@ -1591,7 +1605,7 @@ const StudentFees = () => {
                     <p><strong>Total Fee:</strong> ₹{parseFloat(viewFee.total_fee || 0).toLocaleString()}</p>
                     <p><strong>Paid Amount:</strong> ₹{parseFloat(viewFee.paid_amount || 0).toLocaleString()}</p>
                     <p><strong>Pending Amount:</strong> ₹{parseFloat(viewFee.pending_amount || 0).toLocaleString()}</p>
-                    <p><strong>Status:</strong>
+                    <p><strong>Overall Status:</strong>
                       <span className={getFeeStatusClass(viewFee)}>
                         {getFeeStatusText(viewFee)}
                       </span>
