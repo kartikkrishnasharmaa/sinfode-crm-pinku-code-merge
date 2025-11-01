@@ -145,21 +145,21 @@ export default function Allstudents() {
       const response = await axios.get(`/students/show/${studentId}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      
+
       const updatedStudent = response.data;
-      
+
       // Update the students state with fresh data
-      setStudents(prevStudents => 
-        prevStudents.map(student => 
+      setStudents(prevStudents =>
+        prevStudents.map(student =>
           student.id === studentId ? updatedStudent : student
         )
       );
-      
+
       // Update selected student if it's the same one
       if (selectedStudent && selectedStudent.id === studentId) {
         setSelectedStudent(updatedStudent);
       }
-      
+
       return updatedStudent;
     } catch (error) {
       console.error("Error refreshing student data:", error);
@@ -183,14 +183,14 @@ export default function Allstudents() {
     const studentData = await fetchStudent(id);
     if (studentData) {
       setSelectedStudent(studentData);
-      
+
       // Initialize form data with proper formatting for date inputs
       const formattedData = {
         ...studentData,
         dob: studentData.dob ? studentData.dob.split('T')[0] : '',
         admission_date: studentData.admission_date ? studentData.admission_date.split('T')[0] : ''
       };
-      
+
       setEditFormData(formattedData);
       setPhotoPreview(studentData.photo_url || "");
       setRemovePhotoFlag(false);
@@ -249,8 +249,8 @@ export default function Allstudents() {
 
   // Get batches for a specific course
   const getBatchesForCourse = (courseId) => {
-    return batches.filter(batch => 
-      batch.course_id == courseId || 
+    return batches.filter(batch =>
+      batch.course_id == courseId ||
       (batch.courses && batch.courses.some(course => course.id == courseId))
     );
   };
@@ -300,10 +300,10 @@ export default function Allstudents() {
   const handleUpdateStudent = async (e) => {
     e.preventDefault();
     setIsLoading(true);
-    
+
     try {
       const token = localStorage.getItem("token");
-      
+
       // Always use FormData to handle both photo and other data
       const formData = new FormData();
 
@@ -347,7 +347,7 @@ export default function Allstudents() {
         selectedEditCourses.forEach(courseId => {
           formData.append("course_ids[]", courseId.toString());
           console.log("Appended course:", courseId);
-          
+
           const batchId = courseBatches[courseId];
           if (batchId && batchId !== '') {
             formData.append("batch_ids[]", batchId.toString());
@@ -387,8 +387,8 @@ export default function Allstudents() {
 
       // Make the API request with FormData
       const response = await axios.post(
-        `/students/update/${selectedStudent.id}`, 
-        formData, 
+        `/students/update/${selectedStudent.id}`,
+        formData,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -403,10 +403,10 @@ export default function Allstudents() {
       if (response.data) {
         // Refresh the student data from server to get all updated fields
         await fetchStudents(); // Refresh the entire list
-        
+
         // Also refresh the specific student
         const refreshedStudent = await refreshStudentData(selectedStudent.id);
-        
+
         if (refreshedStudent) {
           setSelectedStudent(refreshedStudent);
         }
@@ -415,25 +415,25 @@ export default function Allstudents() {
         setEditPhoto(null);
         setPhotoPreview("");
         setRemovePhotoFlag(false);
-        
+
         toast.success("Student updated successfully!");
       } else {
         throw new Error("Update failed - no response data");
       }
-      
+
     } catch (error) {
       console.error("=== UPDATE ERROR ===");
       console.error("Error details:", error);
-      
+
       if (error.response) {
         console.error("Error response data:", error.response.data);
         console.error("Error response status:", error.response.status);
-        
+
         // Show detailed validation errors
         if (error.response.data.errors) {
           const validationErrors = error.response.data.errors;
           console.error("Validation errors:", validationErrors);
-          
+
           // Display each validation error
           Object.entries(validationErrors).forEach(([field, messages]) => {
             if (Array.isArray(messages)) {
@@ -455,7 +455,7 @@ export default function Allstudents() {
         toast.error("Failed to update student. Please try again.");
       }
     }
-    
+
     setIsLoading(false);
   };
 
@@ -484,7 +484,7 @@ export default function Allstudents() {
         setPhotoPreview(e.target.result);
       };
       reader.readAsDataURL(file);
-      
+
       toast.info('New photo selected. Click Update to save changes.');
     }
   };
@@ -516,12 +516,12 @@ export default function Allstudents() {
       await axios.delete(`/students/destroy/${selectedStudent.id}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      
+
       // Remove student from state immediately
-      setStudents(prevStudents => 
+      setStudents(prevStudents =>
         prevStudents.filter(student => student.id !== selectedStudent.id)
       );
-      
+
       setShowDeleteModal(false);
       toast.success("Student deleted successfully!");
     } catch (error) {
@@ -546,7 +546,7 @@ export default function Allstudents() {
       "Branch": student.branch?.branch_name,
       "Courses": student.courses?.map(c => c.course_name).join(", ") || "N/A",
       "Batches": student.courses?.map(c => c.batch?.batch_name).filter(Boolean).join(", ") || "N/A",
-      "Batch Timings": student.courses?.map(c => 
+      "Batch Timings": student.courses?.map(c =>
         c.batch ? formatBatchTiming(c.batch.batch_start_time, c.batch.batch_end_time) : "N/A"
       ).filter(timing => timing !== "N/A").join(" | ") || "N/A",
     }));
@@ -578,12 +578,12 @@ export default function Allstudents() {
 
   const formatTimeToIST = (timeString) => {
     if (!timeString) return "N/A";
-    
+
     try {
       const [hours, minutes] = timeString.split(':');
       const date = new Date();
       date.setHours(parseInt(hours), parseInt(minutes), 0);
-      
+
       return date.toLocaleTimeString('en-IN', {
         hour: '2-digit',
         minute: '2-digit',
@@ -600,7 +600,7 @@ export default function Allstudents() {
     if (!startTime && !endTime) return "Timing not set";
     if (!startTime) return `Till ${formatTimeToIST(endTime)}`;
     if (!endTime) return `From ${formatTimeToIST(startTime)}`;
-    
+
     return `${formatTimeToIST(startTime)} - ${formatTimeToIST(endTime)}`;
   };
 
@@ -648,7 +648,7 @@ export default function Allstudents() {
         pauseOnHover
         theme="light"
       />
-      
+
       {/* Header */}
       <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-6 gap-4">
         <h1 className="text-2xl md:text-3xl font-nunito font-semibold">
@@ -858,7 +858,7 @@ export default function Allstudents() {
           {filteredStudents.map((student) => (
             <div
               key={student.id}
-              className="bg-white rounded-2xl mt-5 shadow hover:shadow-lg transition p-6 flex flex-col items-center text-center"
+              className="bg-white rounded-2xl mt-7 shadow hover:shadow-lg transition p-6 flex flex-col items-center text-center"
             >
               <div className="w-20 h-20 rounded-full overflow-hidden border-4 border-white shadow-md -mt-12 mb-3">
                 <img
@@ -1064,7 +1064,7 @@ export default function Allstudents() {
               {/* Basic Information */}
               <div className="bg-white shadow-lg rounded-xl p-6 mb-6">
                 <h2 className="text-xl font-semibold mb-4 text-gray-800 border-b pb-2">Personal Information</h2>
-                
+
                 {/* Photo Upload Section - Updated with better styling */}
                 <div className="flex flex-col md:flex-row items-center gap-6 mb-6 p-4 bg-gray-50 rounded-lg">
                   <div className="flex-shrink-0">
@@ -1086,10 +1086,13 @@ export default function Allstudents() {
                       )}
                     </div>
                   </div>
-                  
+
                   <div className="flex-grow">
                     <label className="block text-sm font-medium mb-2 text-gray-700">
                       Student Photo
+                    </label>
+                    <label className="block text-sm font-medium mb-2 text-gray-700">
+                      NOTE :  Student Photo  (Upload Dummy Icon Photo if Student Photo not available)
                     </label>
                     <div className="flex flex-col sm:flex-row gap-3">
                       <input
@@ -1272,16 +1275,15 @@ export default function Allstudents() {
                     {selectedEditCourses.length} course(s) selected
                   </span>
                 </div>
-                
+
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                   {courses.map((course) => (
-                    <div 
-                      key={course.id} 
-                      className={`border-2 rounded-xl p-4 transition-all duration-200 ${
-                        selectedEditCourses.includes(course.id) 
-                          ? 'border-blue-500 bg-blue-50 shadow-md' 
+                    <div
+                      key={course.id}
+                      className={`border-2 rounded-xl p-4 transition-all duration-200 ${selectedEditCourses.includes(course.id)
+                          ? 'border-blue-500 bg-blue-50 shadow-md'
                           : 'border-gray-200 hover:border-gray-300 hover:shadow-sm'
-                      }`}
+                        }`}
                     >
                       <div className="flex items-start space-x-3">
                         <input
@@ -1292,13 +1294,13 @@ export default function Allstudents() {
                           className="mt-1 w-5 h-5 text-blue-600 rounded focus:ring-blue-500 border-gray-300"
                         />
                         <div className="flex-1 min-w-0">
-                          <label 
+                          <label
                             htmlFor={`edit-course-${course.id}`}
                             className="font-semibold text-gray-900 cursor-pointer hover:text-blue-600 block text-sm"
                           >
                             {course.course_name}
                           </label>
-                          
+
                           <div className="mt-2 space-y-1">
                             <p className="text-xs text-gray-600">
                               <span className="font-medium">Code:</span> {course.course_code}
@@ -1307,12 +1309,11 @@ export default function Allstudents() {
                               <span className="font-medium">Duration:</span> {course.duration} months
                             </p>
                             <p className="text-xs text-gray-600">
-                              <span className="font-medium">Mode:</span> 
-                              <span className={`ml-1 px-2 py-0.5 rounded text-xs ${
-                                course.mode === 'Online' ? 'bg-green-100 text-green-800' :
-                                course.mode === 'Offline' ? 'bg-blue-100 text-blue-800' :
-                                'bg-purple-100 text-purple-800'
-                              }`}>
+                              <span className="font-medium">Mode:</span>
+                              <span className={`ml-1 px-2 py-0.5 rounded text-xs ${course.mode === 'Online' ? 'bg-green-100 text-green-800' :
+                                  course.mode === 'Offline' ? 'bg-blue-100 text-blue-800' :
+                                    'bg-purple-100 text-purple-800'
+                                }`}>
                                 {course.mode}
                               </span>
                             </p>
@@ -1326,7 +1327,7 @@ export default function Allstudents() {
                               ₹{course.discounted_price || course.actual_price || "0"}
                             </span>
                           </div>
-                          
+
                           {/* Batch selection for selected courses */}
                           {selectedEditCourses.includes(course.id) && (
                             <div className="mt-4 pt-3 border-t border-gray-200">
@@ -1342,7 +1343,7 @@ export default function Allstudents() {
                                 <option value="">Choose a batch</option>
                                 {getBatchesForCourse(course.id).map((batch) => (
                                   <option key={batch.id} value={batch.id}>
-                                    {batch.batch_name} 
+                                    {batch.batch_name}
                                     {batch.batch_start_time && ` (${formatTime(batch.batch_start_time)})`}
                                   </option>
                                 ))}
@@ -1354,7 +1355,7 @@ export default function Allstudents() {
                     </div>
                   ))}
                 </div>
-                
+
                 {/* Selected Courses Summary */}
                 {selectedEditCourses.length > 0 && (
                   <div className="mt-6 p-6 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-200">
@@ -1405,7 +1406,7 @@ export default function Allstudents() {
                 >
                   Cancel
                 </button>
-                
+
                 <button
                   type="submit"
                   className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-blue-600"
