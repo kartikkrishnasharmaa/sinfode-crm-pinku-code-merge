@@ -1082,8 +1082,17 @@ const StudentFees = () => {
                       ₹{parseFloat(fee.pending_amount || 0).toLocaleString()}
                     </td>
                     <td>
-                      <span className={getFeeStatusClass(fee)}>
-                        {getFeeStatusText(fee)}
+                      <span
+                        className={`px-3 py-1 rounded-full text-white text-sm font-medium ${fee.status === 'paid'
+                            ? 'bg-green-500'
+                            : fee.status === 'unpaid'
+                              ? 'bg-red-500'
+                              : 'bg-yellow-500'
+                          }`}
+                      >
+                        {fee.status
+                          ? fee.status.charAt(0).toUpperCase() + fee.status.slice(1)
+                          : 'N/A'}
                       </span>
                     </td>
                     <td>
@@ -1605,11 +1614,20 @@ const StudentFees = () => {
                     <p><strong>Total Fee:</strong> ₹{parseFloat(viewFee.total_fee || 0).toLocaleString()}</p>
                     <p><strong>Paid Amount:</strong> ₹{parseFloat(viewFee.paid_amount || 0).toLocaleString()}</p>
                     <p><strong>Pending Amount:</strong> ₹{parseFloat(viewFee.pending_amount || 0).toLocaleString()}</p>
-                    <p><strong>Overall Status:</strong>
-                      <span className={getFeeStatusClass(viewFee)}>
-                        {getFeeStatusText(viewFee)}
+                    <p className="text-sm">
+                      <strong className="mr-2">Overall Status:</strong>
+                      <span
+                        className={`px-3 py-1 rounded-full text-white text-sm font-medium ${viewFee.status === 'paid'
+                          ? 'bg-green-500'
+                          : viewFee.status === 'pending'
+                            ? 'bg-red-500'
+                            : 'bg-yellow-500'
+                          }`}
+                      >
+                        {viewFee.status.charAt(0).toUpperCase() + viewFee.status.slice(1)}
                       </span>
                     </p>
+
 
                     {/* Display discount information if available */}
                     {feeStructureDetails && (
@@ -1648,10 +1666,16 @@ const StudentFees = () => {
                             <td>{installment.due_date ? new Date(installment.due_date).toLocaleDateString() : 'N/A'}</td>
                             <td>₹{parseFloat(installment.amount || 0).toLocaleString()}</td>
                             <td>
-                              <span className={`sf-badge ${installment.status === 'paid' ? 'sf-badge-paid' : 'sf-badge-pending'}`}>
+                              <span
+                                className={`px-3 py-1 rounded-full text-white text-sm font-medium ${installment.status === 'paid'
+                                  ? 'bg-green-500'
+                                  : 'bg-red-500'
+                                  }`}
+                              >
                                 {installment.status}
                               </span>
                             </td>
+
                           </tr>
                         ))}
                       </tbody>
