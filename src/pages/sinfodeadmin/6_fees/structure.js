@@ -383,7 +383,7 @@ const StudentFees = () => {
     const enteredDiscount = parseFloat(discountPercent);
 
     if (enteredDiscount < minDiscount || enteredDiscount > maxDiscount) {
-      alert(`Branch discount must be between ${minDiscount}% and ${maxDiscount}% for ${student.full_name}'s branch (${branch.branchName}).`);
+      toast.warning(`Branch discount must be between ${minDiscount}% and ${maxDiscount}% for ${student.full_name}'s branch (${branch.branchName}).`);
       return false;
     }
 
@@ -422,7 +422,7 @@ const StudentFees = () => {
     const enteredDiscount = parseFloat(discountPercent);
 
     if (enteredDiscount < minDiscount || enteredDiscount > maxDiscount) {
-      alert(`Branch discount must be between ${minDiscount}% and ${maxDiscount}% for this branch.`);
+      toast.warning(`Branch discount must be between ${minDiscount}% and ${maxDiscount}% for this branch.`);
       return false;
     }
 
@@ -464,7 +464,7 @@ const StudentFees = () => {
       else if (name === 'branch_discount_amount') {
         const branch = branchesMap[selectedStudent.branch_id];
         if (branch && branch.discount_amount && parseFloat(value) > parseFloat(branch.discount_amount)) {
-          alert(`Branch discount amount cannot exceed ₹${branch.discount_amount} for this branch.`);
+          toast.warning(`Branch discount amount cannot exceed ₹${branch.discount_amount} for this branch.`);
           setFormData(prev => ({
             ...prev,
             [name]: ''
@@ -678,12 +678,12 @@ const StudentFees = () => {
 
     // NEW: Check if both discount fields are filled
     if (checkBothDiscountsFilled(formData.branch_discount_percent, formData.branch_discount_amount)) {
-      alert('Please use either percentage discount OR amount discount, not both.');
+      toast.warning('Please use either percentage discount OR amount discount, not both.');
       return;
     }
 
     if (selectedCourses.length === 0) {
-      alert("Selected student doesn't have any courses assigned");
+      toast.warning("Selected student doesn't have any courses assigned");
       return;
     }
 
@@ -699,7 +699,7 @@ const StudentFees = () => {
     if (formData.branch_discount_amount && selectedStudent.branch_id) {
       const branch = branchesMap[selectedStudent.branch_id];
       if (branch && branch.discount_amount && parseFloat(formData.branch_discount_amount) > parseFloat(branch.discount_amount)) {
-        alert(`Branch discount amount cannot exceed ₹${branch.discount_amount} for this branch.`);
+        toast.warning(`Branch discount amount cannot exceed ₹${branch.discount_amount} for this branch.`);
         return;
       }
     }
@@ -777,13 +777,13 @@ const StudentFees = () => {
       if (error.response) {
         console.error('Error response data:', error.response.data);
         console.error('Error response status:', error.response.status);
-        alert(`Error creating fee structure: ${error.response.data.message || 'Please try again.'}`);
+        toast.warning(`Error creating fee structure: ${error.response.data.message || 'Please try again.'}`);
       } else if (error.request) {
         console.error('Error request:', error.request);
-        alert('Network error. Please check your connection and try again.');
+        toast.warning('Network error. Please check your connection and try again.');
       } else {
         console.error('Error message:', error.message);
-        alert('Error creating fee structure. Please try again.');
+        toast.warning('Error creating fee structure. Please try again.');
       }
     }
   };
@@ -806,7 +806,7 @@ const StudentFees = () => {
       closePaymentModal();
     } catch (error) {
       console.error("Error updating payment:", error);
-      alert("Error recording payment. Please try again.");
+      toast.warning("Error recording payment. Please try again.");
     }
   };
 
