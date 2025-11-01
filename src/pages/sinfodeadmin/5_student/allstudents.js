@@ -19,6 +19,10 @@ import {
   FaClock,
   FaChalkboardTeacher,
   FaFileExport,
+  FaChevronLeft,
+  FaChevronRight,
+  FaAngleDoubleLeft,
+  FaAngleDoubleRight,
 } from "react-icons/fa";
 import { HiDotsVertical } from "react-icons/hi";
 import { useNavigate } from "react-router-dom";
@@ -46,6 +50,10 @@ export default function Allstudents() {
   const [sortField, setSortField] = useState("created_at");
   const [sortOrder, setSortOrder] = useState("desc");
   const [dateFilter, setDateFilter] = useState({ from: "", to: "" });
+
+  // Pagination states
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
 
   // New states for course selection in edit modal
   const [selectedEditCourses, setSelectedEditCourses] = useState([]);
@@ -124,6 +132,11 @@ export default function Allstudents() {
     fetchCourses();
     fetchBatches();
   }, []);
+
+  // Reset to first page when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [selectedBranch, search, dateFilter, sortField, sortOrder]);
 
   const fetchStudent = async (id) => {
     try {
@@ -604,6 +617,7 @@ export default function Allstudents() {
     return `${formatTimeToIST(startTime)} - ${formatTimeToIST(endTime)}`;
   };
 
+  // Filter and sort students
   const filteredStudents = students
     .filter(s =>
       (selectedBranch === "" || s.branch_id === parseInt(selectedBranch)) &&
@@ -625,6 +639,46 @@ export default function Allstudents() {
       return new Date(valB) - new Date(valA);
     });
 
+  // Pagination calculations
+  const totalStudents = filteredStudents.length;
+  const totalPages = Math.ceil(totalStudents / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const currentStudents = filteredStudents.slice(startIndex, endIndex);
+
+  // Pagination handlers
+  const goToPage = (page) => {
+    if (page >= 1 && page <= totalPages) {
+      setCurrentPage(page);
+    }
+  };
+
+  const handleItemsPerPageChange = (e) => {
+    setItemsPerPage(Number(e.target.value));
+    setCurrentPage(1); // Reset to first page when items per page changes
+  };
+
+  // Generate page numbers for pagination
+  const getPageNumbers = () => {
+    const pages = [];
+    const maxVisiblePages = 5;
+    
+    if (totalPages <= maxVisiblePages) {
+      for (let i = 1; i <= totalPages; i++) {
+        pages.push(i);
+      }
+    } else {
+      const startPage = Math.max(1, currentPage - 2);
+      const endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
+      
+      for (let i = startPage; i <= endPage; i++) {
+        pages.push(i);
+      }
+    }
+    
+    return pages;
+  };
+
   const formatDate = (dateString) => {
     if (!dateString) return "N/A";
     return new Date(dateString).toLocaleDateString("en-US", {
@@ -632,6 +686,106 @@ export default function Allstudents() {
       month: "short",
       day: "numeric",
     });
+  };
+
+  // Professional Pagination Component
+  const Pagination = () => {
+    if (totalPages <= 1) return null;
+
+    return (
+      <div className="flex flex-col sm:flex-row items-center justify-between mt-6 px-4 py-3 bg-white border border-gray-200 rounded-lg shadow-sm">
+        {/* Items per page selector */}
+        <div className="flex items-center space-x-2 mb-4 sm:mb-0">
+          <span className="text-sm text-gray-700">Show</span>
+          <select
+            value={itemsPerPage}
+            onChange={handleItemsPerPageChange}
+            className="border border-gray-300 rounded-md px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+          >
+            <option value={5}>5</option>
+            <option value={10}>10</option>
+            <option value={20}>20</option>
+            <option value={50}>50</option>
+          </select>
+          <span className="text-sm text-gray-700">students per page</span>
+        </div>
+
+        {/* Page info */}
+        <div className="text-sm text-gray-700 mb-4 sm:mb-0">
+          Showing {startIndex + 1} to {Math.min(endIndex, totalStudents)} of {totalStudents} students
+        </div>
+
+        {/* Page navigation */}
+        <div className="flex items-center space-x-1">
+          {/* First Page */}
+          <button
+            onClick={() => goToPage(1)}
+            disabled={currentPage === 1}
+            className={`p-2 rounded-md ${
+              currentPage === 1
+                ? "text-gray-400 cursor-not-allowed"
+                : "text-gray-600 hover:bg-gray-100 hover:text-gray-800"
+            }`}
+          >
+            <FaAngleDoubleLeft size={16} />
+          </button>
+
+          {/* Previous Page */}
+          <button
+            onClick={() => goToPage(currentPage - 1)}
+            disabled={currentPage === 1}
+            className={`p-2 rounded-md ${
+              currentPage === 1
+                ? "text-gray-400 cursor-not-allowed"
+                : "text-gray-600 hover:bg-gray-100 hover:text-gray-800"
+            }`}
+          >
+            <FaChevronLeft size={16} />
+          </button>
+
+          {/* Page Numbers */}
+          {getPageNumbers().map((page) => (
+            <button
+              key={page}
+              onClick={() => goToPage(page)}
+              className={`min-w-[40px] h-10 px-3 rounded-md text-sm font-medium ${
+                currentPage === page
+                  ? "bg-blue-600 text-white"
+                  : "text-gray-600 hover:bg-gray-100 hover:text-gray-800"
+              }`}
+            >
+              {page}
+            </button>
+          ))}
+
+          {/* Next Page */}
+          <button
+            onClick={() => goToPage(currentPage + 1)}
+            disabled={currentPage === totalPages}
+            className={`p-2 rounded-md ${
+              currentPage === totalPages
+                ? "text-gray-400 cursor-not-allowed"
+                : "text-gray-600 hover:bg-gray-100 hover:text-gray-800"
+            }`}
+          >
+            <FaChevronRight size={16} />
+          </button>
+
+          {/* Last Page */}
+          <button
+            onClick={() => goToPage(totalPages)}
+            disabled={currentPage === totalPages}
+            className={`p-2 rounded-md ${
+              currentPage === totalPages
+                ? "text-gray-400 cursor-not-allowed"
+                : "text-gray-600 hover:bg-gray-100 hover:text-gray-800"
+            }`}
+          >
+            <FaAngleDoubleRight size={16} />
+          </button>
+        </div>
+      </div>
+    );
   };
 
   return (
@@ -775,7 +929,7 @@ export default function Allstudents() {
 
             {/* Table Rows */}
             <div className="space-y-3">
-              {filteredStudents.map((student) => (
+              {currentStudents.map((student) => (
                 <div
                   key={student.id}
                   className="bg-white shadow-sm hover:shadow-md transition rounded-xl p-4 grid grid-cols-12 gap-4 items-center text-sm md:text-base"
@@ -855,7 +1009,7 @@ export default function Allstudents() {
       ) : (
         // Card View
         <div className="grid mt-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredStudents.map((student) => (
+          {currentStudents.map((student) => (
             <div
               key={student.id}
               className="bg-white rounded-2xl mt-7 shadow hover:shadow-lg transition p-6 flex flex-col items-center text-center"
@@ -912,6 +1066,9 @@ export default function Allstudents() {
           ))}
         </div>
       )}
+
+      {/* Pagination Component */}
+      <Pagination />
 
       {/* View Student Modal */}
       {showViewModal && selectedStudent && (
