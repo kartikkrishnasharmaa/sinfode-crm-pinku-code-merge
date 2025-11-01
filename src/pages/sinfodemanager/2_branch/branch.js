@@ -514,27 +514,7 @@ export default function Branch() {
                         </div>
                       </div>
 
-                      <div>
-                        <h4 className="text-sm font-medium text-gray-500 mb-2">FEE STRUCTURE</h4>
-                        <div className="space-y-3">
-                          <div className="flex items-center justify-between">
-                            <span className="text-sm font-medium text-gray-700">Admission Fee</span>
-                            <span className="text-sm text-gray-600">{formatCurrency(branch.admission_fee)}</span>
-                          </div>
-                          <div className="flex items-center justify-between">
-                            <span className="text-sm font-medium text-gray-700">Monthly Fee</span>
-                            <span className="text-sm text-gray-600">{formatCurrency(branch.monthly_fee)}</span>
-                          </div>
-                          <div className="flex items-center justify-between">
-                            <span className="text-sm font-medium text-gray-700">Annual Fee</span>
-                            <span className="text-sm text-gray-600">{formatCurrency(branch.annual_fee)}</span>
-                          </div>
-                          <div className="flex items-center justify-between">
-                            <span className="text-sm font-medium text-gray-700">Other Fees</span>
-                            <span className="text-sm text-gray-600">{formatCurrency(branch.other_fees)}</span>
-                          </div>
-                        </div>
-                      </div>
+              
                     </div>
 
                     <div className="mt-4 pt-4 border-t border-gray-200">
