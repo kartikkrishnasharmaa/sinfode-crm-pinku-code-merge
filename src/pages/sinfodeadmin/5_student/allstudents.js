@@ -662,7 +662,7 @@ export default function Allstudents() {
   const getPageNumbers = () => {
     const pages = [];
     const maxVisiblePages = 5;
-    
+
     if (totalPages <= maxVisiblePages) {
       for (let i = 1; i <= totalPages; i++) {
         pages.push(i);
@@ -670,12 +670,12 @@ export default function Allstudents() {
     } else {
       const startPage = Math.max(1, currentPage - 2);
       const endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
-      
+
       for (let i = startPage; i <= endPage; i++) {
         pages.push(i);
       }
     }
-    
+
     return pages;
   };
 
@@ -721,11 +721,10 @@ export default function Allstudents() {
           <button
             onClick={() => goToPage(1)}
             disabled={currentPage === 1}
-            className={`p-2 rounded-md ${
-              currentPage === 1
+            className={`p-2 rounded-md ${currentPage === 1
                 ? "text-gray-400 cursor-not-allowed"
                 : "text-gray-600 hover:bg-gray-100 hover:text-gray-800"
-            }`}
+              }`}
           >
             <FaAngleDoubleLeft size={16} />
           </button>
@@ -734,11 +733,10 @@ export default function Allstudents() {
           <button
             onClick={() => goToPage(currentPage - 1)}
             disabled={currentPage === 1}
-            className={`p-2 rounded-md ${
-              currentPage === 1
+            className={`p-2 rounded-md ${currentPage === 1
                 ? "text-gray-400 cursor-not-allowed"
                 : "text-gray-600 hover:bg-gray-100 hover:text-gray-800"
-            }`}
+              }`}
           >
             <FaChevronLeft size={16} />
           </button>
@@ -748,11 +746,10 @@ export default function Allstudents() {
             <button
               key={page}
               onClick={() => goToPage(page)}
-              className={`min-w-[40px] h-10 px-3 rounded-md text-sm font-medium ${
-                currentPage === page
+              className={`min-w-[40px] h-10 px-3 rounded-md text-sm font-medium ${currentPage === page
                   ? "bg-blue-600 text-white"
                   : "text-gray-600 hover:bg-gray-100 hover:text-gray-800"
-              }`}
+                }`}
             >
               {page}
             </button>
@@ -762,11 +759,10 @@ export default function Allstudents() {
           <button
             onClick={() => goToPage(currentPage + 1)}
             disabled={currentPage === totalPages}
-            className={`p-2 rounded-md ${
-              currentPage === totalPages
+            className={`p-2 rounded-md ${currentPage === totalPages
                 ? "text-gray-400 cursor-not-allowed"
                 : "text-gray-600 hover:bg-gray-100 hover:text-gray-800"
-            }`}
+              }`}
           >
             <FaChevronRight size={16} />
           </button>
@@ -775,11 +771,10 @@ export default function Allstudents() {
           <button
             onClick={() => goToPage(totalPages)}
             disabled={currentPage === totalPages}
-            className={`p-2 rounded-md ${
-              currentPage === totalPages
+            className={`p-2 rounded-md ${currentPage === totalPages
                 ? "text-gray-400 cursor-not-allowed"
                 : "text-gray-600 hover:bg-gray-100 hover:text-gray-800"
-            }`}
+              }`}
           >
             <FaAngleDoubleRight size={16} />
           </button>
@@ -1122,6 +1117,18 @@ export default function Allstudents() {
                       <FaPhone className="mr-2 text-blue-500" />
                       <span>{selectedStudent.contact_number}</span>
                     </div>
+                    <div className="flex items-center text-gray-700">
+                      <span>Status: </span>
+                      <span
+                        className={`ml-2 px-2 py-1 rounded-full text-white text-sm ${selectedStudent.enrollment_status === "Active"
+                            ? "bg-green-500"
+                            : "bg-red-500"
+                          }`}
+                      >
+                        {selectedStudent.enrollment_status}
+                      </span>
+                    </div>
+
                   </div>
                 </div>
               </div>
@@ -1438,8 +1445,8 @@ export default function Allstudents() {
                     <div
                       key={course.id}
                       className={`border-2 rounded-xl p-4 transition-all duration-200 ${selectedEditCourses.includes(course.id)
-                          ? 'border-blue-500 bg-blue-50 shadow-md'
-                          : 'border-gray-200 hover:border-gray-300 hover:shadow-sm'
+                        ? 'border-blue-500 bg-blue-50 shadow-md'
+                        : 'border-gray-200 hover:border-gray-300 hover:shadow-sm'
                         }`}
                     >
                       <div className="flex items-start space-x-3">
@@ -1468,8 +1475,8 @@ export default function Allstudents() {
                             <p className="text-xs text-gray-600">
                               <span className="font-medium">Mode:</span>
                               <span className={`ml-1 px-2 py-0.5 rounded text-xs ${course.mode === 'Online' ? 'bg-green-100 text-green-800' :
-                                  course.mode === 'Offline' ? 'bg-blue-100 text-blue-800' :
-                                    'bg-purple-100 text-purple-800'
+                                course.mode === 'Offline' ? 'bg-blue-100 text-blue-800' :
+                                  'bg-purple-100 text-purple-800'
                                 }`}>
                                 {course.mode}
                               </span>
