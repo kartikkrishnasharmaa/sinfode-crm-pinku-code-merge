@@ -139,108 +139,121 @@ function AddStudent() {
     }
   };
 
-// Handle form submission
-const handleSubmit = async (e) => {
-  e.preventDefault();
-  setLoading(true);
+  // Handle form submission - FIXED VERSION
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
 
-  try {
-    // Validation (keep your existing validation code)
-    if (contactNumber.length !== 10) {
-      toast.error("Contact number must be exactly 10 digits");
-      setLoading(false);
-      return;
-    }
-    if (guardianContact && guardianContact.length !== 10) {
-      toast.error("Guardian contact must be exactly 10 digits if provided");
-      setLoading(false);
-      return;
-    }
-    if (selectedCourses.length === 0) {
-      toast.error("Please select at least one course");
-      setLoading(false);
-      return;
-    }
-
-    // Check if all selected courses have batches assigned
-    const missingBatches = selectedCourses.filter(courseId => !courseBatches[courseId]);
-    if (missingBatches.length > 0) {
-      toast.error("Please select batches for all selected courses");
-      setLoading(false);
-      return;
-    }
-
-    const token = localStorage.getItem("token");
-    const formData = new FormData();
-
-    // Basic student information
-    formData.append("full_name", fullName);
-    formData.append("dob", dob);
-    formData.append("gender", gender);
-    formData.append("contact_number", contactNumber);
-    formData.append("email", email);
-    formData.append("address", address);
-    if (photo) formData.append("photo", photo);
-    formData.append("guardian_name", guardianName);
-    formData.append("guardian_contact", guardianContact);
-    formData.append("admission_date", admissionDate);
-    formData.append("branch_id", branchId);
-
-    // FIXED: Course and batch data - use the field names expected by API
-    // Convert selectedCourses array to course_ids array
-    selectedCourses.forEach(courseId => {
-      formData.append("course_ids[]", courseId);
-    });
-
-    // Convert batch selections to batch_ids array
-    selectedCourses.forEach(courseId => {
-      if (courseBatches[courseId]) {
-        formData.append("batch_ids[]", courseBatches[courseId]);
+    try {
+      // Validation
+      if (contactNumber.length !== 10) {
+        toast.error("Contact number must be exactly 10 digits");
+        setLoading(false);
+        return;
       }
-    });
+      if (guardianContact && guardianContact.length !== 10) {
+        toast.error("Guardian contact must be exactly 10 digits if provided");
+        setLoading(false);
+        return;
+      }
+      if (selectedCourses.length === 0) {
+        toast.error("Please select at least one course");
+        setLoading(false);
+        return;
+      }
 
-    // Fee information
-    formData.append("course_fee", totalFee);
-    formData.append("final_fee", totalFee);
+      // Check if all selected courses have batches assigned
+      const missingBatches = selectedCourses.filter(courseId => !courseBatches[courseId]);
+      if (missingBatches.length > 0) {
+        toast.error("Please select batches for all selected courses");
+        setLoading(false);
+        return;
+      }
 
-    console.log("Submitting form data:");
-    console.log("Course IDs:", selectedCourses);
-    console.log("Batch IDs:", selectedCourses.map(courseId => courseBatches[courseId]));
-    console.log("Total Fee:", totalFee);
+      const token = localStorage.getItem("token");
+      
+      // Create the data object exactly as Postman expects
+      const requestData = {
+        full_name: fullName,
+        dob: dob,
+        gender: gender,
+        contact_number: contactNumber,
+        email: email,
+        address: address,
+        guardian_name: guardianName,
+        guardian_contact: guardianContact,
+        admission_date: admissionDate,
+        branch_id: branchId,
+        course_ids: selectedCourses, // Direct array - same as Postman
+        batch_ids: selectedCourses.map(courseId => courseBatches[courseId]), // Direct array - same as Postman
+        course_fee: totalFee,
+        final_fee: totalFee
+      };
 
-    // Log form data for debugging
-    for (let [key, value] of formData.entries()) {
-      console.log(`${key}:`, value);
+      console.log("Submitting data:", requestData);
+
+      // If photo is selected, use FormData, otherwise use JSON
+      if (photo) {
+        const formData = new FormData();
+        
+        // Append all basic fields
+        Object.keys(requestData).forEach(key => {
+          if (Array.isArray(requestData[key])) {
+            // For arrays, append each item individually with [] notation
+            requestData[key].forEach(value => {
+              formData.append(`${key}[]`, value);
+            });
+          } else {
+            formData.append(key, requestData[key]);
+          }
+        });
+        
+        // Append photo
+        formData.append("photo", photo);
+
+        // Log form data for debugging
+        console.log("FormData entries:");
+        for (let [key, value] of formData.entries()) {
+          console.log(`${key}:`, value);
+        }
+
+        const response = await axios.post("/students/create", formData, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "multipart/form-data",
+          },
+        });
+        console.log("API Response:", response.data);
+      } else {
+        // Without photo, send as JSON
+        const response = await axios.post("/students/create", requestData, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        });
+        console.log("API Response:", response.data);
+      }
+
+      toast.success("Student created successfully!");
+      resetForm();
+
+    } catch (error) {
+      console.error("Error creating student:", error);
+      if (error.response?.data?.message) {
+        toast.error(`❌ ${error.response.data.message}`);
+      } else if (error.response?.data?.errors) {
+        Object.values(error.response.data.errors).flat().forEach((msg) => 
+          toast.error(`❌ ${msg}`)
+        );
+      } else {
+        toast.error("❌ Failed to create student");
+      }
+    } finally {
+      setLoading(false);
     }
+  };
 
-    const response = await axios.post("/students/create", formData, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-        "Content-Type": "multipart/form-data",
-      },
-    });
-
-    console.log("API Response:", response.data);
-    toast.success("Student created successfully!");
-
-    // Reset form after successful submission
-    resetForm();
-
-  } catch (error) {
-    console.error("Error creating student:", error);
-    if (error.response?.data?.message) {
-      toast.error(`❌ ${error.response.data.message}`);
-    } else if (error.response?.data?.errors) {
-      Object.values(error.response.data.errors).flat().forEach((msg) => 
-        toast.error(`❌ ${msg}`)
-      );
-    } else {
-      toast.error("❌ Failed to create student");
-    }
-  } finally {
-    setLoading(false);
-  }
-};
   // Reset form
   const resetForm = () => {
     setFullName("");
@@ -690,3 +703,4 @@ export default function Student() {
     </SAAdminLayout>
   );
 }
+

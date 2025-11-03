@@ -57,9 +57,9 @@ const Adminsidebar = ({ isSidebarOpen, toggleSidebar, isMobile }) => {
       link: "/sinfodeadmin/staff"
     },
     {
-      name: "Inventory",
-      icon: <FaLayerGroup className="flex-shrink-0" />,
-      link: "/sinfodeadmin/inventory",
+      name: "Student",
+      icon: <FaUsers className="flex-shrink-0" />,
+      link: "/sinfodeadmin/students",
     },
     {
       name: "Courses",
@@ -71,15 +71,16 @@ const Adminsidebar = ({ isSidebarOpen, toggleSidebar, isMobile }) => {
       icon: <FaLayerGroup className="flex-shrink-0" />,
       link: "/sinfodeadmin/batch",
     },
-    {
-      name: "Student",
-      icon: <FaUsers className="flex-shrink-0" />,
-      link: "/sinfodeadmin/students",
-    },
+ 
     {
       name: "Fees",
       icon: <FaMoneyBillWave className="flex-shrink-0" />,
       link: "/sinfodeadmin/fees",
+    },
+       {
+      name: "Inventory",
+      icon: <FaLayerGroup className="flex-shrink-0" />,
+      link: "/sinfodeadmin/inventory",
     },
     {
       name: "Attendance",
