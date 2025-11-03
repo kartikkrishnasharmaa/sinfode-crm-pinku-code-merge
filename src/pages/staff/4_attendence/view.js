@@ -271,9 +271,9 @@ function ViewAttendance() {
                   <div 
                     key={index} 
                     className={`min-h-12 rounded-lg flex flex-col items-center justify-center p-1
-                      ${day.isWeekend ? 'bg-gray-100' : 'bg-white'} 
-                      ${day.status === 'Present' ? 'bg-green-900 text-white border border-green-700' : ''}
-                      ${day.status === 'Absent' ? 'bg-red-900 text-white border border-red-700' : ''}
+                      ${day.isWeekend ? 'bg-gray-200' : 'bg-white'} 
+                      ${day.status === 'Present' ? 'bg-green-900 text-green-700 border border-green-700' : ''}
+                      ${day.status === 'Absent' ? 'bg-red-900 text-red-700 border border-red-700' : ''}
                       ${!day.date ? 'invisible' : 'border'}`}
                   >
                     {day.date && (
