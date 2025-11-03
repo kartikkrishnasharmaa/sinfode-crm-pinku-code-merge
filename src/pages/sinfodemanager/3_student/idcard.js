@@ -1,60 +1,115 @@
 import React, { useState, useEffect } from "react";
 import axios from "../../../api/axiosConfig";
-import "./StudentIDCardGenerator.css"; // We'll create this CSS file
+import {
+  FaPrint,
+  FaDownload,
+  FaTimes,
+  FaSearch,
+  FaFilter,
+  FaUserGraduate,
+  FaIdCard,
+  FaCalendarAlt,
+  FaPhone,
+  FaEnvelope,
+  FaMapMarkerAlt,
+  FaUsers,
+  FaBook,
+  FaQrcode
+} from "react-icons/fa";
 
 function StudentIDCardGenerator() {
   const [branches, setBranches] = useState([]);
   const [courses, setCourses] = useState([]);
   const [students, setStudents] = useState([]);
+  const [filteredStudents, setFilteredStudents] = useState([]);
   const [selectedBranch, setSelectedBranch] = useState("");
   const [selectedCourse, setSelectedCourse] = useState("");
   const [selectedStudent, setSelectedStudent] = useState(null);
   const [showModal, setShowModal] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [loading, setLoading] = useState(false);
 
   // Get user data from localStorage
   const userData = JSON.parse(localStorage.getItem("user") || "{}");
   const userRole = userData.role;
   const branch_id = userData.branch_id;
- 
+
+  // Fetch all students
+  const fetchStudents = async () => {
+    try {
+      setLoading(true);
+      const token = localStorage.getItem("token");
+      const res = await axios.get("/students/show", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setStudents(res.data || []);
+      setFilteredStudents(res.data || []);
+    } catch (error) {
+      console.error("Error fetching students:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const fetchCourses = async () => {
-      try {
-        const token = localStorage.getItem("token");
-        const res = await axios.get("/courses/index", {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        setCourses(res.data || []);
-      } catch (error) {
-        console.error("Error fetching courses:", error);
-      }
-    };
+    fetchStudents();
     fetchCourses();
+    fetchBranches();
   }, []);
 
-  // Fetch students when course changes
+  const fetchCourses = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      const res = await axios.get("/courses/index", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setCourses(res.data || []);
+    } catch (error) {
+      console.error("Error fetching courses:", error);
+    }
+  };
+
+  const fetchBranches = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      const res = await axios.get("/branches", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setBranches(res.data || []);
+    } catch (error) {
+      console.error("Error fetching branches:", error);
+    }
+  };
+
+  // Filter students based on selections
   useEffect(() => {
-    const fetchStudents = async () => {
-      if (!selectedCourse) return;
+    let filtered = students;
 
-      try {
-        const token = localStorage.getItem("token");
-        const res = await axios.get(`/courses/${selectedCourse}/show`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
+    // Filter by course
+    if (selectedCourse) {
+      filtered = filtered.filter(student =>
+        student.courses?.some(course => course.id.toString() === selectedCourse)
+      );
+    }
 
-        setStudents(res.data.students || []);
-      } catch (error) {
-        console.error("Error fetching students:", error);
-      }
-    };
+    // Filter by branch
+    if (selectedBranch) {
+      filtered = filtered.filter(student =>
+        student.branch_id?.toString() === selectedBranch
+      );
+    }
 
-    fetchStudents();
-  }, [selectedCourse]);
+    // Filter by search term
+    if (searchTerm) {
+      filtered = filtered.filter(student =>
+        student.full_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        student.admission_number?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        student.email?.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+    }
 
-  // Filter students by branch
-  const filteredStudents = students.filter(
-    (s) => !selectedBranch || s.branch_id?.toString() === selectedBranch
-  );
+    setFilteredStudents(filtered);
+  }, [selectedCourse, selectedBranch, searchTerm, students]);
 
   // Handle Generate ID Card
   const handleGenerateIDCard = (student) => {
@@ -64,20 +119,60 @@ function StudentIDCardGenerator() {
 
   // Handle Print
   const handlePrint = () => {
-    const printContent = document.getElementById("id-card-to-print").innerHTML;
-    const originalContent = document.body.innerHTML;
+    const printContent = document.getElementById("id-card-to-print");
+    const printWindow = window.open('', '_blank');
 
-    document.body.innerHTML = printContent;
-    window.print();
-    document.body.innerHTML = originalContent;
-    window.location.reload();
+    printWindow.document.write(`
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>Student ID Card - ${selectedStudent.full_name}</title>
+          <style>
+            body { 
+              margin: 0; 
+              padding: 20px; 
+              font-family: 'Arial', sans-serif;
+              background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+              display: flex;
+              justify-content: center;
+              align-items: center;
+              min-height: 100vh;
+            }
+            .id-card-container {
+              transform: scale(1.1);
+            }
+            @media print {
+              body { 
+                background: white !important;
+                padding: 0;
+              }
+              .id-card-container {
+                transform: none !important;
+                box-shadow: none !important;
+              }
+            }
+          </style>
+        </head>
+        <body>
+          ${printContent.outerHTML}
+        </body>
+      </html>
+    `);
+
+    printWindow.document.close();
+    printWindow.focus();
+
+    setTimeout(() => {
+      printWindow.print();
+      printWindow.close();
+    }, 500);
   };
 
   // Handle Download
   const handleDownload = () => {
     // In a real implementation, this would generate a PDF
     alert(
-      `Download functionality would be implemented here for ${selectedStudent.full_name}`
+      `Download functionality would generate PDF for ${selectedStudent.full_name}`
     );
   };
 
@@ -87,146 +182,427 @@ function StudentIDCardGenerator() {
     setSelectedStudent(null);
   };
 
+  // Format date
+  const formatDate = (dateString) => {
+    if (!dateString) return 'N/A';
+    return new Date(dateString).toLocaleDateString('en-IN', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric'
+    });
+  };
+
+  // Get primary course
+  const getPrimaryCourse = (student) => {
+    return student.courses?.[0] || {};
+  };
+
   return (
-    <div className="p-4">
-      <h2 className="text-lg font-bold mb-4">Student ID Card Generator</h2>
-      <div className="bg-white shadow-md rounded-xl p-6 mb-6 flex gap-6">
-        {/* Branch Dropdown */}
-       
-
-        {/* Course Dropdown */}
-        <div className="flex-1">
-          <label className="block mb-1 font-medium">Select Course</label>
-          <select
-            value={selectedCourse}
-            className="w-full border border-gray-300 rounded px-3 py-2"
-            onChange={(e) => setSelectedCourse(e.target.value)}
-          >
-            <option value="">Select Course</option>
-            {courses.map((course) => (
-              <option key={course.id} value={course.id}>
-                {course.course_name}
-              </option>
-            ))}
-          </select>
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-6">
+      {/* Header */}
+      <div className="max-w-7xl mx-auto">
+        <div className="flex items-center gap-4 mb-8">
+          <div className="bg-white p-4 rounded-2xl shadow-lg">
+            <FaIdCard className="text-3xl text-blue-600" />
+          </div>
+          <div>
+            <h1 className="text-3xl font-bold text-gray-800 bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+              Student ID Card Generator
+            </h1>
+            <p className="text-gray-600 mt-2">Generate professional ID cards for your students</p>
+          </div>
         </div>
-      </div>
 
-      {/* Student List */}
-      {filteredStudents.length > 0 && (
-        <div className="mt-4">
-          <h3 className="font-semibold">Students List</h3>
-          <table className="border w-full mt-2">
-            <thead>
-              <tr className="bg-gray-200">
-                <th className="p-2 border">Photo</th>
-                <th className="p-2 border">Name</th>
-                <th className="p-2 border">Parent's Name</th>
-                <th className="p-2 border">Action</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredStudents.map((s) => (
-                <tr key={s.id}>
-                  <td className="p-2 border">
-                    <img
-                      src={s.photo_url}
-                      alt={s.full_name}
-                      width={50}
-                      height={50}
-                      className="rounded-full"
-                    />
-                  </td>
-                  <td className="p-2 border">{s.full_name}</td>
-                  <td className="p-2 border">{s.guardian_name}</td>
-                  <td className="p-2 border">
-                    <button
-                      onClick={() => handleGenerateIDCard(s)}
-                      className="bg-blue-500 text-white px-3 py-1 rounded"
-                    >
-                      Generate ID Card
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
-
-      {/* ID Card Modal */}
-      {showModal && selectedStudent && (
-        <div className="modal-overlay">
-          <div className="modal-content">
-            <div className="modal-header">
-              <h3>Student ID Card</h3>
-              <button className="close-btn" onClick={closeModal}>
-                ×
-              </button>
-            </div>
-
-            <div className="modal-body">
-              <div id="id-card-to-print" className="id-card">
-                <div className="card-pattern"></div>
-
-                <div className="card-header">
-                  <div className="college-logo">
-                    <img src="https://www.sinfode.com/wp-content/uploads/2022/12/digital-marketing-institute-in-sikar.webp" />
-                  </div>
-                  {/* <h1 className="college-name">SINFODE ACADEMY</h1> */}
-                  <p className="id-subtitle">Student Identity Card</p>
-                </div>
-
-                <div className="card-body mb-2">
-                  <div className="student-photo">
-                    <img
-                      src={selectedStudent.photo_url}
-                      alt={selectedStudent.full_name}
-                      width={100}
-                      height={120}
-                    />
-                  </div>
-
-                  <div className="text-white">
-                    {selectedStudent.full_name.toUpperCase()}
-                  </div>
-
-                  <div className="info-section">
-                    <div className="info-row">
-                      <span className="info-label">Father Name &nbsp;:&nbsp;</span>
-                      <span className="info-value">{selectedStudent.guardian_name}</span>
-                    </div>
-
-                    <div className="info-row">
-                      <span className="info-label">Branch &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; :&nbsp;</span>
-                      <span className="info-value">
-                        {branches.find(
-                          (b) =>
-                            b.id.toString() ===
-                            selectedStudent.branch_id?.toString()
-                        )?.branch_name || "N/A"}
-                      </span>
-                    </div>
-
-                  </div>
-                </div>
+        {/* Filters Section */}
+        <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-6 mb-8">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+            {/* Search */}
+            <div className="md:col-span-2">
+              <label className="block text-sm font-semibold text-gray-700 mb-2">Search Students</label>
+              <div className="relative">
+                <FaSearch className="absolute left-3 top-3 text-gray-400" />
+                <input
+                  type="text"
+                  placeholder="Search by name, admission number, or email..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-300"
+                />
               </div>
             </div>
 
-            <div className="modal-footer">
-              <button className="btn btn-print" onClick={handlePrint}>
-                Print
+            {/* Course Dropdown */}
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">Select Course</label>
+              <select
+                value={selectedCourse}
+                onChange={(e) => setSelectedCourse(e.target.value)}
+                className="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white transition-all duration-300 appearance-none"
+              >
+                <option value="">All Courses</option>
+                {courses.map((course) => (
+                  <option key={course.id} value={course.id}>
+                    {course.course_name}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Branch Dropdown */}
+            {userRole === "admin" && (
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">Select Branch</label>
+                <select
+                  value={selectedBranch}
+                  onChange={(e) => setSelectedBranch(e.target.value)}
+                  className="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white transition-all duration-300 appearance-none"
+                >
+                  <option value="">All Branches</option>
+                  {branches.map((branch) => (
+                    <option key={branch.id} value={branch.id}>
+                      {branch.branch_name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+          </div>
+
+          {/* Quick Stats */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="bg-blue-50 rounded-xl p-4 border border-blue-200">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-blue-600">Total Students</p>
+                  <p className="text-2xl font-bold text-gray-800">{filteredStudents.length}</p>
+                </div>
+                <FaUsers className="text-blue-500 text-xl" />
+              </div>
+            </div>
+            <div className="bg-green-50 rounded-xl p-4 border border-green-200">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-green-600">Selected Course</p>
+                  <p className="text-lg font-bold text-gray-800 truncate">
+                    {courses.find(c => c.id.toString() === selectedCourse)?.course_name || 'All Courses'}
+                  </p>
+                </div>
+                <FaBook className="text-green-500 text-xl" />
+              </div>
+            </div>
+            <div className="bg-purple-50 rounded-xl p-4 border border-purple-200">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-purple-600">Ready to Print</p>
+                  <p className="text-2xl font-bold text-gray-800">{filteredStudents.length}</p>
+                </div>
+                <FaPrint className="text-purple-500 text-xl" />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Student List */}
+        {loading ? (
+          <div className="flex justify-center items-center h-64">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+          </div>
+        ) : filteredStudents.length > 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-2 gap-6">
+            {filteredStudents.map((student, index) => (
+              <div
+                key={student.id}
+                className="bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-500 border border-gray-200 overflow-hidden group transform hover:-translate-y-2 animate-fade-in"
+                style={{ animationDelay: `${index * 100}ms` }}
+              >
+                {/* Student Header */}
+                <div className="bg-gradient-to-r from-blue-600 to-purple-600 p-6 text-white">
+                  <div className="flex items-center space-x-4">
+                    <div className="relative">
+                      <img
+                        src={student.photo_url || "https://cdn-icons-png.flaticon.com/512/149/149071.png"}
+                        alt={student.full_name}
+                        className="w-16 h-16 rounded-2xl object-cover border-4 border-white shadow-lg"
+                      />
+                      <div className={`absolute -bottom-1 -right-1 w-4 h-4 rounded-full border-2 border-white ${student.enrollment_status === "Active" ? "bg-green-500" : "bg-red-500"
+                        }`}></div>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <h3 className="font-bold text-lg truncate">{student.full_name}</h3>
+                      <p className="text-blue-100 text-sm truncate">#{student.admission_number}</p>
+                      <div className="flex items-center gap-2 mt-1">
+                        <span className="bg-white bg-opacity-20 px-2 py-1 rounded-full text-xs">
+                          {student.gender}
+                        </span>
+                        <span className={`px-2 py-1 rounded-full text-xs font-bold ${student.enrollment_status === "Active"
+                            ? "bg-green-500 text-white"
+                            : "bg-red-500 text-white"
+                          }`}>
+                          {student.enrollment_status}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Student Details */}
+                <div className="p-6">
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-3 text-sm text-gray-600">
+                      <FaEnvelope className="text-gray-400" />
+                      <span className="truncate">{student.email}</span>
+                    </div>
+                    <div className="flex items-center gap-3 text-sm text-gray-600">
+                      <FaPhone className="text-gray-400" />
+                      <span>{student.contact_number}</span>
+                    </div>
+                    <div className="flex items-center gap-3 text-sm text-gray-600">
+                      <FaCalendarAlt className="text-gray-400" />
+                      <span>Admitted: {formatDate(student.admission_date)}</span>
+                    </div>
+                  </div>
+
+                  {/* Courses */}
+                  <div className="mt-4">
+                    <h4 className="text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
+                      <FaBook className="text-gray-400" />
+                      Enrolled Courses ({student.courses?.length || 0})
+                    </h4>
+                    <div className="flex flex-wrap gap-2">
+                      {student.courses?.slice(0, 2).map((course, idx) => (
+                        <span
+                          key={course.id}
+                          className={`px-3 py-1 rounded-full text-xs font-medium ${idx === 0
+                              ? 'bg-blue-100 text-blue-800'
+                              : 'bg-green-100 text-green-800'
+                            }`}
+                        >
+                          {course.course_name}
+                        </span>
+                      ))}
+                      {student.courses && student.courses.length > 2 && (
+                        <span className="bg-gray-100 text-gray-600 px-3 py-1 rounded-full text-xs">
+                          +{student.courses.length - 2} more
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Action Button */}
+                <div className="px-6 py-4 bg-gray-50 border-t border-gray-200">
+                  <button
+                    onClick={() => handleGenerateIDCard(student)}
+                    className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white py-3 rounded-xl font-semibold transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl flex items-center justify-center gap-2"
+                  >
+                    <FaIdCard className="text-sm" />
+                    Generate ID Card
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-12 text-center">
+            <div className="max-w-md mx-auto">
+              <div className="bg-blue-50 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4">
+                <FaUserGraduate className="text-3xl text-blue-600" />
+              </div>
+              <h3 className="text-xl font-bold text-gray-800 mb-2">No Students Found</h3>
+              <p className="text-gray-600 mb-6">
+                {searchTerm || selectedCourse || selectedBranch
+                  ? "Try adjusting your search criteria or filters"
+                  : "No students available for ID card generation"
+                }
+              </p>
+              {(searchTerm || selectedCourse || selectedBranch) && (
+                <button
+                  onClick={() => {
+                    setSearchTerm("");
+                    setSelectedCourse("");
+                    setSelectedBranch("");
+                  }}
+                  className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-xl font-semibold transition-colors"
+                >
+                  Clear Filters
+                </button>
+              )}
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* ID Card Modal */}
+      {showModal && selectedStudent && (
+        <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
+          <div className="bg-white rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl border border-gray-200 transform animate-scale-in">
+            <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex justify-between items-center bg-gradient-to-r from-gray-50 to-white z-10">
+              <div className="flex items-center gap-3">
+                <div className="bg-blue-100 p-2 rounded-xl">
+                  <FaIdCard className="text-xl text-blue-600" />
+                </div>
+                <div>
+                  <h2 className="text-xl font-bold text-gray-800">Student ID Card</h2>
+                  <p className="text-gray-600 text-sm">Preview and print ID card</p>
+                </div>
+              </div>
+              <button
+                onClick={closeModal}
+                className="text-gray-500 hover:text-gray-700 transition-colors p-2 hover:bg-gray-100 rounded-xl"
+              >
+                <FaTimes size={20} />
               </button>
-              <button className="btn btn-download" onClick={handleDownload}>
-                Download
+            </div>
+
+            <div className="p-6">
+              <div id="id-card-to-print" className="id-card-container mx-auto">
+                {/* ID Card Design */}
+                <div className="bg-gradient-to-br from-blue-600 via-purple-600 to-indigo-700 rounded-3xl shadow-2xl overflow-hidden w-96 mx-auto border-8 border-white">
+                  {/* College Header */}
+                  <div className="bg-white bg-opacity-90 backdrop-blur-sm p-4 text-center border-b border-white border-opacity-20">
+                    <div className="flex items-center justify-center gap-3 mb-2">
+                      <img
+                        src="https://www.sinfode.com/wp-content/uploads/2022/12/digital-marketing-institute-in-sikar.webp"
+                        alt="College Logo"
+                        className="w-auto h-auto rounded-lg"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Student Photo and Basic Info */}
+                  <div className="p-6">
+                    <div className="flex gap-6 items-start">
+                      {/* Student Photo */}
+                      <div className="flex-shrink-0">
+                        <div className="relative">
+                          <img
+                            src={selectedStudent.photo_url || "https://cdn-icons-png.flaticon.com/512/149/149071.png"}
+                            alt={selectedStudent.full_name}
+                            className="w-24 h-28 rounded-2xl object-cover border-4 border-white shadow-lg"
+                          />
+                          <div className="absolute inset-0 border-2 border-white border-opacity-50 rounded-2xl"></div>
+                        </div>
+                        <div className="mt-2 text-center">
+                          <div className="bg-white bg-opacity-20 rounded-lg px-2 py-1">
+                            <span className="text-white text-xs font-bold">ID: #{selectedStudent.admission_number}</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Student Details */}
+                      <div className="flex-1 text-white">
+                        <h2 className="text-xl font-bold mb-2 leading-tight">
+                          {selectedStudent.full_name.toUpperCase()}
+                        </h2>
+
+                        <div className="space-y-2 text-sm">
+                          <div className="flex items-center gap-2">
+                            <FaUsers className="text-white text-opacity-80" />
+                            <span className="font-medium">Father:</span>
+                            <span>{selectedStudent.guardian_name}</span>
+                          </div>
+
+                          <div className="flex items-center gap-2">
+                            <FaMapMarkerAlt className="text-white text-opacity-80" />
+                            <span className="font-medium">Branch:</span>
+                            <span>{selectedStudent.branch?.branch_name}</span>
+                          </div>
+
+                          {selectedStudent.courses?.[0] && (
+                            <div className="flex items-center gap-2">
+                              <FaBook className="text-white text-opacity-80" />
+                              <span className="font-medium">Course:</span>
+                              <span className="truncate">
+                                {selectedStudent.courses[0].course_name.length > 17
+                                  ? selectedStudent.courses[0].course_name.slice(0, 17) + "..."
+                                  : selectedStudent.courses[0].course_name}
+                              </span>
+                            </div>
+                          )}
+
+
+                          {selectedStudent.courses?.[0]?.batch && (
+                            <div className="flex items-center gap-2">
+                              <FaCalendarAlt className="text-white text-opacity-80" />
+                              <span className="font-medium">Batch:</span>
+                              <span>{selectedStudent.courses[0].batch.batch_name}</span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* QR Code Area */}
+                    <div className="mt-6 pt-4 border-t border-white border-opacity-20">
+                      <div className="flex justify-between items-center">
+                        <div className="text-white text-xs">
+                          <div>Valid Through: {formatDate(selectedStudent.courses?.[0]?.batch?.end_date)}</div>
+                          <div className="text-white text-opacity-70">Authorized Signature</div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Footer */}
+                  <div className="bg-black bg-opacity-30 p-3 text-center">
+                    <p className="text-white text-opacity-80 text-xs">
+                      {selectedStudent.branch?.address || "Near Kalyan Circle, Front of Sanskrit College, Sikar (Rajasthan)"}
+                    </p>
+                    <p className="text-white text-opacity-60 text-xs mt-1">
+                      Contact: {selectedStudent.branch?.contact_number || "9376306970"} | Email: {selectedStudent.branch?.email || "info@sinfode.com"}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Instructions */}
+              <div className="mt-6 bg-blue-50 rounded-xl p-4 border border-blue-200">
+                <h4 className="font-semibold text-blue-800 mb-2">Printing Instructions:</h4>
+                <ul className="text-sm text-blue-700 list-disc list-inside space-y-1">
+                  <li>Ensure the ID card is centered on the page</li>
+                  <li>Use high-quality photo paper for best results</li>
+                  <li>Check printer settings for correct size (CR80 - 3.375" x 2.125")</li>
+                </ul>
+              </div>
+            </div>
+
+            <div className="sticky bottom-0 bg-white border-t border-gray-200 px-6 py-4 flex justify-end gap-3 bg-gradient-to-r from-gray-50 to-white">
+              <button
+                onClick={handleDownload}
+                className="px-6 py-3 bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white rounded-xl font-semibold transition-all duration-300 shadow-lg hover:shadow-xl flex items-center gap-2"
+              >
+                <FaDownload className="text-sm" />
+                Download PDF
               </button>
-              <button className="btn btn-close" onClick={closeModal}>
-                Close
+              <button
+                onClick={handlePrint}
+                className="px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white rounded-xl font-semibold transition-all duration-300 shadow-lg hover:shadow-xl flex items-center gap-2"
+              >
+                <FaPrint className="text-sm" />
+                Print ID Card
               </button>
             </div>
           </div>
         </div>
       )}
+
+      {/* Custom CSS for animations */}
+      <style jsx>{`
+        @keyframes fade-in {
+          from { opacity: 0; transform: translateY(20px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes scale-in {
+          from { opacity: 0; transform: scale(0.9); }
+          to { opacity: 1; transform: scale(1); }
+        }
+        .animate-fade-in {
+          animation: fade-in 0.6s ease-out forwards;
+        }
+        .animate-scale-in {
+          animation: scale-in 0.3s ease-out forwards;
+        }
+      `}</style>
     </div>
   );
 }
