@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef } from "react";
 import axios from "../../../api/axiosConfig";
-import {ToastContainer, toast } from "react-toastify";
+import { ToastContainer, toast } from "react-toastify";
 
 export default function AssignmentTable() {
   const [assignments, setAssignments] = useState([]);
@@ -53,7 +53,7 @@ export default function AssignmentTable() {
         headers: { Authorization: `Bearer ${token}` },
       });
 
-      let data = res.data.data || res.data; 
+      let data = res.data.data || res.data;
       if (!Array.isArray(data)) {
         data = [];
       }
@@ -126,17 +126,17 @@ export default function AssignmentTable() {
       const res = await axios.get(`/assignments/${assignmentId}/submissions`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      
+
       // Extract submissions from response
       const assignmentData = res.data;
       setSubmissions(assignmentData.submissions || []);
-      
+
       // Initialize statuses for each student from submissions
       const initialStatuses = {};
       (assignmentData.submissions || []).forEach(submission => {
         initialStatuses[submission.student_id] = submission.status || "pending";
       });
-      
+
       setStudentStatuses(initialStatuses);
       return assignmentData;
     } catch (error) {
@@ -191,7 +191,7 @@ export default function AssignmentTable() {
     setSelectedAssignment(assignment);
     setShowReviewModal(true);
     setReviewLoading(true);
-    
+
     try {
       // Fetch assignment submissions instead of students
       await fetchAssignmentSubmissions(assignment.id);
@@ -214,24 +214,24 @@ export default function AssignmentTable() {
   const handleBulkStatusUpdate = async () => {
     try {
       const token = localStorage.getItem("token");
-      
+
       const updates = Object.keys(studentStatuses).map(studentId => ({
         student_id: parseInt(studentId),
         status: studentStatuses[studentId]
       }));
-      
+
       const payload = {
         assignment_id: selectedAssignment.id,
         updates: updates
       };
-      
+
       const res = await axios.put("/assignments/submissions/bulk-update", payload, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      
+
       toast.success(res.data.message || "Statuses updated successfully");
       setShowReviewModal(false);
-      
+
       // Refresh assignments to show updated status
       fetchAssignments();
     } catch (error) {
@@ -243,18 +243,18 @@ export default function AssignmentTable() {
   // ✅ Handle delete assignment
   const handleDeleteAssignment = async () => {
     if (!assignmentToDelete) return;
-    
+
     try {
       const token = localStorage.getItem("token");
       const res = await axios.delete(`/assignments/delete/${assignmentToDelete.id}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      
+
       toast.error(res.data.message || "Assignment deleted successfully");
       setShowDeleteModal(false);
       setAssignmentToDelete(null);
       setOpenDropdown(null);
-      
+
       // Refresh assignment list
       fetchAssignments();
     } catch (error) {
@@ -286,10 +286,10 @@ export default function AssignmentTable() {
     if (!assignment.submissions || assignment.submissions.length === 0) {
       return { text: "No Submissions", color: "bg-gray-100 text-gray-700" };
     }
-    
+
     const total = assignment.submissions.length;
     const completed = assignment.submissions.filter(s => s.status === "Done").length;
-    
+
     if (completed === 0) {
       return { text: "Pending", color: "bg-yellow-100 text-yellow-700" };
     } else if (completed === total) {
@@ -318,8 +318,8 @@ export default function AssignmentTable() {
 
   return (
     <div className="min-h-screen bg-gray-50 p-6">
-            <ToastContainer position='top-right' autoClose={3000} hideProgressBar={false} newestOnTop={false} closeOnClick rtl={false} pauseOnFocusLoss draggable pauseOnHover />
-     
+      <ToastContainer position='top-right' autoClose={3000} hideProgressBar={false} newestOnTop={false} closeOnClick rtl={false} pauseOnFocusLoss draggable pauseOnHover />
+
       {/* Header with Button */}
       <div className="flex justify-between items-center mb-6">
         <div>
@@ -394,14 +394,23 @@ export default function AssignmentTable() {
                 assignments.map((assignment) => {
                   const details = getAssignmentDetails(assignment);
                   const status = getSubmissionStatus(assignment);
-                  
+
                   return (
                     <tr key={assignment.id} className="hover:bg-gray-50 transition-colors duration-150">
                       <td className="px-6 py-4">
                         <div>
-                          <p className="font-semibold text-gray-900">{assignment.title}</p>
-                          <p className="text-sm text-gray-500 truncate max-w-xs">{assignment.description}</p>
+                          <p className="font-semibold text-gray-900">
+                            {assignment.title.length > 20
+                              ? assignment.title.slice(0, 20) + "..."
+                              : assignment.title}
+                          </p>
+                          <p className="text-sm text-gray-500">
+                            {assignment.description.length > 50
+                              ? assignment.description.slice(0, 50) + "..."
+                              : assignment.description}
+                          </p>
                         </div>
+
                       </td>
                       <td className="px-6 py-4">
                         <div>
@@ -428,16 +437,16 @@ export default function AssignmentTable() {
                       </td>
                       <td className="px-6 py-4">
                         <div className="flex space-x-2 items-center">
-                          <button 
+                          <button
                             className="text-blue-600 hover:text-blue-800 font-medium text-sm px-3 py-1 rounded border border-blue-200 hover:bg-blue-50 transition-colors duration-200"
                             onClick={() => handleReviewClick(assignment)}
                           >
                             Review
                           </button>
-                          
+
                           {/* Dropdown Menu */}
                           <div className="relative" ref={dropdownRef}>
-                            <button 
+                            <button
                               className="text-gray-500 hover:text-gray-700 p-1 rounded hover:bg-gray-100 transition-colors duration-200"
                               onClick={() => toggleDropdown(assignment.id)}
                             >
@@ -445,7 +454,7 @@ export default function AssignmentTable() {
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z"></path>
                               </svg>
                             </button>
-                            
+
                             {openDropdown === assignment.id && (
                               <div className="absolute right-0 mt-1 w-48 bg-white rounded-md shadow-lg border border-gray-200 py-1 z-50">
                                 <button
@@ -477,7 +486,7 @@ export default function AssignmentTable() {
           <div className="bg-white rounded-lg p-6 w-full max-w-md shadow-xl">
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-xl font-bold text-gray-800">Create Assignment</h2>
-              <button 
+              <button
                 onClick={() => setShowModal(false)}
                 className="text-gray-500 hover:text-gray-700 transition-colors duration-200"
               >
@@ -486,7 +495,7 @@ export default function AssignmentTable() {
                 </svg>
               </button>
             </div>
-            
+
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Title</label>
@@ -500,7 +509,7 @@ export default function AssignmentTable() {
                   required
                 />
               </div>
-              
+
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
                 <textarea
@@ -513,7 +522,7 @@ export default function AssignmentTable() {
                   required
                 />
               </div>
-              
+
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Due Date</label>
                 <input
@@ -630,7 +639,7 @@ export default function AssignmentTable() {
               <h2 className="text-xl font-bold text-gray-800">
                 Review Submissions - {selectedAssignment?.title}
               </h2>
-              <button 
+              <button
                 onClick={() => setShowReviewModal(false)}
                 className="text-gray-500 hover:text-gray-700 transition-colors duration-200"
               >
@@ -639,7 +648,7 @@ export default function AssignmentTable() {
                 </svg>
               </button>
             </div>
-            
+
             {reviewLoading ? (
               <div className="py-8 text-center text-gray-500">Loading student data...</div>
             ) : (
@@ -652,7 +661,7 @@ export default function AssignmentTable() {
                     <span className="font-semibold">Total Submissions:</span> {submissions.length} students
                   </p>
                 </div>
-                
+
                 <div className="overflow-x-auto border border-gray-200 rounded-lg">
                   <table className="w-full">
                     <thead className="bg-gray-50 border-b border-gray-200">
@@ -699,7 +708,7 @@ export default function AssignmentTable() {
                     </tbody>
                   </table>
                 </div>
-                
+
                 <div className="flex justify-end space-x-3 mt-6 pt-4 border-t border-gray-200">
                   <button
                     onClick={() => setShowReviewModal(false)}
@@ -726,7 +735,7 @@ export default function AssignmentTable() {
           <div className="bg-white rounded-lg p-6 w-full max-w-md shadow-xl">
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-xl font-bold text-gray-800">Delete Assignment</h2>
-              <button 
+              <button
                 onClick={() => setShowDeleteModal(false)}
                 className="text-gray-500 hover:text-gray-700 transition-colors duration-200"
               >
@@ -735,7 +744,7 @@ export default function AssignmentTable() {
                 </svg>
               </button>
             </div>
-            
+
             <div className="mb-6">
               <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-4">
                 <div className="flex items-center">
@@ -750,7 +759,7 @@ export default function AssignmentTable() {
                 All associated submissions will also be permanently deleted.
               </p>
             </div>
-            
+
             <div className="flex justify-end space-x-3">
               <button
                 onClick={() => setShowDeleteModal(false)}
