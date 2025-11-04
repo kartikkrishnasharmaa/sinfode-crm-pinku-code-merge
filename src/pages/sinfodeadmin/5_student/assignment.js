@@ -1,5 +1,6 @@
 import { useEffect, useState, useRef } from "react";
 import axios from "../../../api/axiosConfig";
+import {ToastContainer, toast } from "react-toastify";
 
 export default function AssignmentTable() {
   const [assignments, setAssignments] = useState([]);
@@ -165,7 +166,7 @@ export default function AssignmentTable() {
       const res = await axios.post("/assignments", formData, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      alert(res.data.message || "Assignment created successfully");
+      toast.success(res.data.message || "Assignment created successfully");
       setShowModal(false);
       setFormData({
         title: "",
@@ -181,7 +182,7 @@ export default function AssignmentTable() {
       fetchAssignments();
     } catch (error) {
       console.error("Error creating assignment:", error);
-      alert("Error creating assignment");
+      toast.warning("Error creating assignment");
     }
   };
 
@@ -228,14 +229,14 @@ export default function AssignmentTable() {
         headers: { Authorization: `Bearer ${token}` },
       });
       
-      alert(res.data.message || "Statuses updated successfully");
+      toast.success(res.data.message || "Statuses updated successfully");
       setShowReviewModal(false);
       
       // Refresh assignments to show updated status
       fetchAssignments();
     } catch (error) {
       console.error("Error updating statuses:", error);
-      alert("Error updating statuses");
+      toast.warning("Error updating statuses");
     }
   };
 
@@ -249,7 +250,7 @@ export default function AssignmentTable() {
         headers: { Authorization: `Bearer ${token}` },
       });
       
-      alert(res.data.message || "Assignment deleted successfully");
+      toast.error(res.data.message || "Assignment deleted successfully");
       setShowDeleteModal(false);
       setAssignmentToDelete(null);
       setOpenDropdown(null);
@@ -258,7 +259,7 @@ export default function AssignmentTable() {
       fetchAssignments();
     } catch (error) {
       console.error("Error deleting assignment:", error);
-      alert("Error deleting assignment");
+      toast.warning("Error deleting assignment");
     }
   };
 
@@ -317,6 +318,8 @@ export default function AssignmentTable() {
 
   return (
     <div className="min-h-screen bg-gray-50 p-6">
+            <ToastContainer position='top-right' autoClose={3000} hideProgressBar={false} newestOnTop={false} closeOnClick rtl={false} pauseOnFocusLoss draggable pauseOnHover />
+     
       {/* Header with Button */}
       <div className="flex justify-between items-center mb-6">
         <div>
