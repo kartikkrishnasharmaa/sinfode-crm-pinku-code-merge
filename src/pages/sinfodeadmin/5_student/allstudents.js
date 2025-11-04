@@ -202,7 +202,7 @@ export default function Allstudents() {
         ...studentData,
         dob: studentData.dob ? studentData.dob.split('T')[0] : '',
         admission_date: studentData.admission_date ? studentData.admission_date.split('T')[0] : '',
-        enrollment_status : studentData.enrollment_status || 'Active'
+        enrollment_status: studentData.enrollment_status || 'Active'
       };
 
       setEditFormData(formattedData);
@@ -724,8 +724,8 @@ export default function Allstudents() {
             onClick={() => goToPage(1)}
             disabled={currentPage === 1}
             className={`p-2 rounded-md ${currentPage === 1
-                ? "text-gray-400 cursor-not-allowed"
-                : "text-gray-600 hover:bg-gray-100 hover:text-gray-800"
+              ? "text-gray-400 cursor-not-allowed"
+              : "text-gray-600 hover:bg-gray-100 hover:text-gray-800"
               }`}
           >
             <FaAngleDoubleLeft size={16} />
@@ -736,8 +736,8 @@ export default function Allstudents() {
             onClick={() => goToPage(currentPage - 1)}
             disabled={currentPage === 1}
             className={`p-2 rounded-md ${currentPage === 1
-                ? "text-gray-400 cursor-not-allowed"
-                : "text-gray-600 hover:bg-gray-100 hover:text-gray-800"
+              ? "text-gray-400 cursor-not-allowed"
+              : "text-gray-600 hover:bg-gray-100 hover:text-gray-800"
               }`}
           >
             <FaChevronLeft size={16} />
@@ -749,8 +749,8 @@ export default function Allstudents() {
               key={page}
               onClick={() => goToPage(page)}
               className={`min-w-[40px] h-10 px-3 rounded-md text-sm font-medium ${currentPage === page
-                  ? "bg-blue-600 text-white"
-                  : "text-gray-600 hover:bg-gray-100 hover:text-gray-800"
+                ? "bg-blue-600 text-white"
+                : "text-gray-600 hover:bg-gray-100 hover:text-gray-800"
                 }`}
             >
               {page}
@@ -762,8 +762,8 @@ export default function Allstudents() {
             onClick={() => goToPage(currentPage + 1)}
             disabled={currentPage === totalPages}
             className={`p-2 rounded-md ${currentPage === totalPages
-                ? "text-gray-400 cursor-not-allowed"
-                : "text-gray-600 hover:bg-gray-100 hover:text-gray-800"
+              ? "text-gray-400 cursor-not-allowed"
+              : "text-gray-600 hover:bg-gray-100 hover:text-gray-800"
               }`}
           >
             <FaChevronRight size={16} />
@@ -774,8 +774,8 @@ export default function Allstudents() {
             onClick={() => goToPage(totalPages)}
             disabled={currentPage === totalPages}
             className={`p-2 rounded-md ${currentPage === totalPages
-                ? "text-gray-400 cursor-not-allowed"
-                : "text-gray-600 hover:bg-gray-100 hover:text-gray-800"
+              ? "text-gray-400 cursor-not-allowed"
+              : "text-gray-600 hover:bg-gray-100 hover:text-gray-800"
               }`}
           >
             <FaAngleDoubleRight size={16} />
@@ -939,7 +939,12 @@ export default function Allstudents() {
                       className="w-12 h-12 rounded-full object-cover border"
                     />
                     <div>
-                      <h3 className="font-semibold text-gray-800 truncate">{student.full_name}</h3>
+                      <h3 className="font-semibold text-gray-800">
+                        {student.full_name.length > 14
+                          ? student.full_name.slice(0, 14) + "..."
+                          : student.full_name}
+                      </h3>
+
                       <p className="text-gray-500 text-xs md:text-sm">
                         {student.gender} • {formatDate(student.dob)}
                       </p>
@@ -1129,8 +1134,8 @@ export default function Allstudents() {
                       <span>Status: </span>
                       <span
                         className={`ml-2 px-2 py-1 rounded-full text-white text-sm ${selectedStudent.enrollment_status === "Active"
-                            ? "bg-green-500"
-                            : "bg-red-500"
+                          ? "bg-green-500"
+                          : "bg-red-500"
                           }`}
                       >
                         {selectedStudent.enrollment_status}
