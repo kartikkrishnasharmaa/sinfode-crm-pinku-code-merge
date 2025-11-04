@@ -631,7 +631,7 @@ function AllCourse() {
               </div>
 
               {/* Students (Optional Addition) */}
-              <div className="bg-white rounded-xl p-6 shadow-inner border border-gray-200">
+              {/* <div className="bg-white rounded-xl p-6 shadow-inner border border-gray-200">
                 <h3 className="text-xl font-semibold mb-4">Enrolled Students ({selectedCourse.students.length})</h3>
                 <div className="flex flex-wrap gap-4 max-h-40 overflow-y-auto">
                   {selectedCourse.students.map((student) => (
@@ -645,7 +645,7 @@ function AllCourse() {
                     </div>
                   ))}
                 </div>
-              </div>
+              </div> */}
             </div>
 
             {/* Footer */}

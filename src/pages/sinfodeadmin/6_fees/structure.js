@@ -1655,7 +1655,8 @@ const StudentFees = () => {
                         <tr>
                           <th>Installment #</th>
                           <th>Due Date</th>
-                          <th>Amount</th>
+                          <th>Installment Amount</th>
+                          <th>Adjusted Amount</th>
                           <th>Status</th>
                         </tr>
                       </thead>
@@ -1665,6 +1666,7 @@ const StudentFees = () => {
                             <td>{installment.installment_number}</td>
                             <td>{installment.due_date ? new Date(installment.due_date).toLocaleDateString() : 'N/A'}</td>
                             <td>₹{parseFloat(installment.amount || 0).toLocaleString()}</td>
+                            <td>₹{parseFloat(installment.adjusted_amount || 0).toLocaleString()}</td>
                             <td>
                               <span
                                 className={`px-3 py-1 rounded-full text-white text-sm font-medium ${installment.status === 'paid'
@@ -1683,6 +1685,7 @@ const StudentFees = () => {
                   </div>
                 </div>
               )}
+                    <p className='text-xl mb-6'><strong>Pending Fees Amount:</strong> ₹{parseFloat(viewFee.pending_amount || 0).toLocaleString()}</p>
 
               {/* Payment History */}
               {viewFee.payments && viewFee.payments.length > 0 && (
