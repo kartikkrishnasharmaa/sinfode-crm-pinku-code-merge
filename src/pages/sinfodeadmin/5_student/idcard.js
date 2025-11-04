@@ -1,5 +1,7 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import axios from "../../../api/axiosConfig";
+import html2canvas from "html2canvas";
+import jsPDF from "jspdf";
 import {
   FaPrint,
   FaDownload,
@@ -16,7 +18,9 @@ import {
   FaCalendarAlt,
   FaPhone,
   FaEnvelope,
-  FaMapMarkerAlt
+  FaMapMarkerAlt,
+  FaFilePdf,
+  FaImage
 } from "react-icons/fa";
 
 function StudentIDCardGenerator() {
@@ -30,6 +34,8 @@ function StudentIDCardGenerator() {
   const [showModal, setShowModal] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [loading, setLoading] = useState(false);
+  const [downloading, setDownloading] = useState(false);
+  const idCardRef = useRef(null);
 
   // Fetch all branches
   useEffect(() => {
@@ -171,15 +177,65 @@ function StudentIDCardGenerator() {
     }, 500);
   };
 
-  // Handle Download
-  const handleDownload = () => {
-    alert(`Download functionality would generate PDF for ${selectedStudent.full_name}`);
+  // Handle Download as PDF
+  const handleDownloadPDF = async () => {
+    if (!idCardRef.current) return;
+
+    setDownloading(true);
+    try {
+      const canvas = await html2canvas(idCardRef.current, {
+        scale: 3, // Higher scale for better quality
+        useCORS: true,
+        logging: false,
+        backgroundColor: null
+      });
+
+      const imgData = canvas.toDataURL('image/png', 1.0);
+      const pdf = new jsPDF('p', 'mm', [54, 85.6]); // ID card size in mm (CR80 standard)
+
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = pdf.internal.pageSize.getHeight();
+
+      pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+      pdf.save(`ID_Card_${selectedStudent.admission_number}_${selectedStudent.full_name.replace(/\s+/g, '_')}.pdf`);
+    } catch (error) {
+      console.error('Error generating PDF:', error);
+      alert('Error downloading PDF. Please try again.');
+    } finally {
+      setDownloading(false);
+    }
+  };
+
+  // Handle Download as Image
+  const handleDownloadImage = async () => {
+    if (!idCardRef.current) return;
+
+    setDownloading(true);
+    try {
+      const canvas = await html2canvas(idCardRef.current, {
+        scale: 3, // Higher scale for better quality
+        useCORS: true,
+        logging: false,
+        backgroundColor: null
+      });
+
+      const link = document.createElement('a');
+      link.download = `ID_Card_${selectedStudent.admission_number}_${selectedStudent.full_name.replace(/\s+/g, '_')}.png`;
+      link.href = canvas.toDataURL('image/png', 1.0);
+      link.click();
+    } catch (error) {
+      console.error('Error generating image:', error);
+      alert('Error downloading image. Please try again.');
+    } finally {
+      setDownloading(false);
+    }
   };
 
   // Close modal
   const closeModal = () => {
     setShowModal(false);
     setSelectedStudent(null);
+    setDownloading(false);
   };
 
   // Format date
@@ -190,11 +246,6 @@ function StudentIDCardGenerator() {
       month: '2-digit',
       year: 'numeric'
     });
-  };
-
-  // Get primary course
-  const getPrimaryCourse = (student) => {
-    return student.courses?.[0] || {};
   };
 
   // Reset filters
@@ -349,8 +400,8 @@ function StudentIDCardGenerator() {
                       <div className="flex items-center gap-2 mt-1">
 
                         <span className={`px-2 py-1 rounded-full text-xs font-bold ${student.enrollment_status === "Active"
-                            ? "bg-green-500 text-white"
-                            : "bg-red-500 text-white"
+                          ? "bg-green-500 text-white"
+                          : "bg-red-500 text-white"
                           }`}>
                           {student.enrollment_status}
                         </span>
@@ -441,7 +492,7 @@ function StudentIDCardGenerator() {
             </div>
 
             <div className="p-6">
-              <div id="id-card-to-print" className="id-card-container mx-auto">
+              <div id="id-card-to-print" ref={idCardRef} className="id-card-container mx-auto">
                 {/* ID Card Design */}
                 <div className="bg-gradient-to-br from-blue-600 via-purple-600 to-indigo-700 rounded-3xl shadow-2xl overflow-hidden w-96 mx-auto border-8 border-white">
                   {/* College Header */}
@@ -501,7 +552,7 @@ function StudentIDCardGenerator() {
                               <span className="font-medium">Course:</span>
                               <span
                                 className="truncate max-w-[120px] overflow-hidden whitespace-nowrap"
-                                title={selectedStudent.courses[0].course_name} // Tooltip full name dikhayega
+                                title={selectedStudent.courses[0].course_name}
                               >
                                 {selectedStudent.courses[0].course_name}
                               </span>
@@ -527,7 +578,7 @@ function StudentIDCardGenerator() {
                           <div>Valid Through: {formatDate(selectedStudent.courses?.[0]?.batch?.end_date)}</div>
                           <div className="text-white text-opacity-70">Authorized Signature</div>
                         </div>
-       
+
                       </div>
                     </div>
                   </div>
@@ -554,23 +605,29 @@ function StudentIDCardGenerator() {
                 </ul>
               </div>
             </div>
+            <div className="sticky bottom-0 bg-gradient-to-r from-gray-50 via-white to-gray-100 border-t border-gray-300 px-6 py-4 flex justify-end">
+              {/* Download Options Dropdown */}
+              {!downloading && (
+                <div className="flex gap-4">
+                  <button
+                    onClick={handleDownloadPDF}
+                    className="flex items-center gap-3 px-5 py-3 rounded-xl shadow-md bg-gradient-to-r from-red-100 to-red-50 hover:from-red-200 hover:to-red-100 text-gray-800 font-semibold transition-all duration-300 border border-red-200"
+                  >
+                    <FaFilePdf className="text-red-600 text-xl" />
+                    <span>Download PDF</span>
+                  </button>
 
-            <div className="sticky bottom-0 bg-white border-t border-gray-200 px-6 py-4 flex justify-end gap-3 bg-gradient-to-r from-gray-50 to-white">
-              <button
-                onClick={handleDownload}
-                className="px-6 py-3 bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white rounded-xl font-semibold transition-all duration-300 shadow-lg hover:shadow-xl flex items-center gap-2"
-              >
-                <FaDownload className="text-sm" />
-                Download PDF
-              </button>
-              <button
-                onClick={handlePrint}
-                className="px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white rounded-xl font-semibold transition-all duration-300 shadow-lg hover:shadow-xl flex items-center gap-2"
-              >
-                <FaPrint className="text-sm" />
-                Print ID Card
-              </button>
+                  <button
+                    onClick={handleDownloadImage}
+                    className="flex items-center gap-3 px-5 py-3 rounded-xl shadow-md bg-gradient-to-r from-blue-100 to-blue-50 hover:from-blue-200 hover:to-blue-100 text-gray-800 font-semibold transition-all duration-300 border border-blue-200"
+                  >
+                    <FaImage className="text-blue-600 text-xl" />
+                    <span>Download Image</span>
+                  </button>
+                </div>
+              )}
             </div>
+
           </div>
         </div>
       )}

@@ -371,7 +371,7 @@ const StudentFees = () => {
       ...prev,
       student_id: student.id
     }));
-    setStudentSearch(`${student.full_name} (${student.admission_number})`);
+    setStudentSearch(`${student.full_name} .`);
     setShowStudentDropdown(false);
   };
 
@@ -1291,7 +1291,8 @@ const StudentFees = () => {
                         <tr>
                           <th>Installment #</th>
                           <th>Due Date</th>
-                          <th>Amount</th>
+                          <th>Installment Amount</th>
+                          <th>Adjusted Amount</th>
                           <th>Status</th>
                         </tr>
                       </thead>
@@ -1301,6 +1302,7 @@ const StudentFees = () => {
                             <td>{installment.installment_number}</td>
                             <td>{installment.due_date ? new Date(installment.due_date).toLocaleDateString() : 'N/A'}</td>
                             <td>₹{parseFloat(installment.amount || 0).toLocaleString()}</td>
+                            <td>₹{parseFloat(installment.adjusted_amount || 0).toLocaleString()}</td>
                             <td>
                               <span className={`sf-badge ${getStatusClass(installment.status)}`}>
                                 {installment.status}

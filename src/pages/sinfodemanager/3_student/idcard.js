@@ -1,5 +1,7 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import axios from "../../../api/axiosConfig";
+import html2canvas from "html2canvas";
+import jsPDF from "jspdf";
 import {
   FaPrint,
   FaDownload,
@@ -14,7 +16,9 @@ import {
   FaMapMarkerAlt,
   FaUsers,
   FaBook,
-  FaQrcode
+  FaQrcode,
+  FaFilePdf,
+  FaImage
 } from "react-icons/fa";
 
 function StudentIDCardGenerator() {
@@ -28,6 +32,8 @@ function StudentIDCardGenerator() {
   const [showModal, setShowModal] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [loading, setLoading] = useState(false);
+  const [downloading, setDownloading] = useState(false);
+  const idCardRef = useRef(null);
 
   // Get user data from localStorage
   const userData = JSON.parse(localStorage.getItem("user") || "{}");
@@ -168,18 +174,65 @@ function StudentIDCardGenerator() {
     }, 500);
   };
 
-  // Handle Download
-  const handleDownload = () => {
-    // In a real implementation, this would generate a PDF
-    alert(
-      `Download functionality would generate PDF for ${selectedStudent.full_name}`
-    );
+  // Handle Download as PDF
+  const handleDownloadPDF = async () => {
+    if (!idCardRef.current) return;
+
+    setDownloading(true);
+    try {
+      const canvas = await html2canvas(idCardRef.current, {
+        scale: 3, // Higher scale for better quality
+        useCORS: true,
+        logging: false,
+        backgroundColor: null
+      });
+
+      const imgData = canvas.toDataURL('image/png', 1.0);
+      const pdf = new jsPDF('p', 'mm', [54, 85.6]); // ID card size in mm (CR80 standard)
+
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = pdf.internal.pageSize.getHeight();
+
+      pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+      pdf.save(`ID_Card_${selectedStudent.admission_number}_${selectedStudent.full_name.replace(/\s+/g, '_')}.pdf`);
+    } catch (error) {
+      console.error('Error generating PDF:', error);
+      alert('Error downloading PDF. Please try again.');
+    } finally {
+      setDownloading(false);
+    }
+  };
+
+  // Handle Download as Image
+  const handleDownloadImage = async () => {
+    if (!idCardRef.current) return;
+
+    setDownloading(true);
+    try {
+      const canvas = await html2canvas(idCardRef.current, {
+        scale: 3, // Higher scale for better quality
+        useCORS: true,
+        logging: false,
+        backgroundColor: null
+      });
+
+      const link = document.createElement('a');
+      link.download = `ID_Card_${selectedStudent.admission_number}_${selectedStudent.full_name.replace(/\s+/g, '_')}.png`;
+      link.href = canvas.toDataURL('image/png', 1.0);
+      link.click();
+    } catch (error) {
+      console.error('Error generating image:', error);
+      alert('Error downloading image. Please try again.');
+    } finally {
+      setDownloading(false);
+    }
   };
 
   // Close modal
   const closeModal = () => {
     setShowModal(false);
     setSelectedStudent(null);
+    setDownloading(false);
   };
 
   // Format date
@@ -195,6 +248,13 @@ function StudentIDCardGenerator() {
   // Get primary course
   const getPrimaryCourse = (student) => {
     return student.courses?.[0] || {};
+  };
+
+  // Reset filters
+  const resetFilters = () => {
+    setSelectedBranch("");
+    setSelectedCourse("");
+    setSearchTerm("");
   };
 
   return (
@@ -268,36 +328,47 @@ function StudentIDCardGenerator() {
             )}
           </div>
 
-          {/* Quick Stats */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="bg-blue-50 rounded-xl p-4 border border-blue-200">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-blue-600">Total Students</p>
-                  <p className="text-2xl font-bold text-gray-800">{filteredStudents.length}</p>
+          {/* Quick Stats and Actions */}
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-4 flex-1">
+              <div className="bg-blue-50 rounded-xl p-3 border border-blue-200">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-blue-600">Total Students</p>
+                    <p className="text-xl font-bold text-gray-800">{filteredStudents.length}</p>
+                  </div>
+                  <FaUsers className="text-blue-500" />
                 </div>
-                <FaUsers className="text-blue-500 text-xl" />
+              </div>
+              <div className="bg-green-50 rounded-xl p-3 border border-green-200">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-green-600">Active Students</p>
+                    <p className="text-xl font-bold text-gray-800">
+                      {filteredStudents.filter(s => s.enrollment_status === 'Active').length}
+                    </p>
+                  </div>
+                  <FaUserGraduate className="text-green-500" />
+                </div>
+              </div>
+              <div className="bg-purple-50 rounded-xl p-3 border border-purple-200">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-purple-600">Available Courses</p>
+                    <p className="text-xl font-bold text-gray-800">{courses.length}</p>
+                  </div>
+                  <FaBook className="text-purple-500" />
+                </div>
               </div>
             </div>
-            <div className="bg-green-50 rounded-xl p-4 border border-green-200">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-green-600">Selected Course</p>
-                  <p className="text-lg font-bold text-gray-800 truncate">
-                    {courses.find(c => c.id.toString() === selectedCourse)?.course_name || 'All Courses'}
-                  </p>
-                </div>
-                <FaBook className="text-green-500 text-xl" />
-              </div>
-            </div>
-            <div className="bg-purple-50 rounded-xl p-4 border border-purple-200">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-purple-600">Ready to Print</p>
-                  <p className="text-2xl font-bold text-gray-800">{filteredStudents.length}</p>
-                </div>
-                <FaPrint className="text-purple-500 text-xl" />
-              </div>
+
+            <div className="flex gap-3">
+              <button
+                onClick={resetFilters}
+                className="px-4 py-2 bg-blue-500 text-white rounded-xl hover:bg-blue-600 transition-colors font-medium"
+              >
+                Reset Filters
+              </button>
             </div>
           </div>
         </div>
@@ -417,11 +488,7 @@ function StudentIDCardGenerator() {
               </p>
               {(searchTerm || selectedCourse || selectedBranch) && (
                 <button
-                  onClick={() => {
-                    setSearchTerm("");
-                    setSelectedCourse("");
-                    setSelectedBranch("");
-                  }}
+                  onClick={resetFilters}
                   className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-xl font-semibold transition-colors"
                 >
                   Clear Filters
@@ -443,7 +510,6 @@ function StudentIDCardGenerator() {
                 </div>
                 <div>
                   <h2 className="text-xl font-bold text-gray-800">Student ID Card</h2>
-                  <p className="text-gray-600 text-sm">Preview and print ID card</p>
                 </div>
               </div>
               <button
@@ -455,7 +521,7 @@ function StudentIDCardGenerator() {
             </div>
 
             <div className="p-6">
-              <div id="id-card-to-print" className="id-card-container mx-auto">
+              <div id="id-card-to-print" ref={idCardRef} className="id-card-container mx-auto">
                 {/* ID Card Design */}
                 <div className="bg-gradient-to-br from-blue-600 via-purple-600 to-indigo-700 rounded-3xl shadow-2xl overflow-hidden w-96 mx-auto border-8 border-white">
                   {/* College Header */}
@@ -520,7 +586,6 @@ function StudentIDCardGenerator() {
                             </div>
                           )}
 
-
                           {selectedStudent.courses?.[0]?.batch && (
                             <div className="flex items-center gap-2">
                               <FaCalendarAlt className="text-white text-opacity-80" />
@@ -566,21 +631,35 @@ function StudentIDCardGenerator() {
               </div>
             </div>
 
-            <div className="sticky bottom-0 bg-white border-t border-gray-200 px-6 py-4 flex justify-end gap-3 bg-gradient-to-r from-gray-50 to-white">
-              <button
-                onClick={handleDownload}
-                className="px-6 py-3 bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white rounded-xl font-semibold transition-all duration-300 shadow-lg hover:shadow-xl flex items-center gap-2"
-              >
-                <FaDownload className="text-sm" />
-                Download PDF
-              </button>
-              <button
-                onClick={handlePrint}
-                className="px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white rounded-xl font-semibold transition-all duration-300 shadow-lg hover:shadow-xl flex items-center gap-2"
-              >
-                <FaPrint className="text-sm" />
-                Print ID Card
-              </button>
+            {/* Download and Print Options */}
+            <div className="sticky bottom-0 bg-gradient-to-r from-gray-50 via-white to-gray-100 border-t border-gray-300 px-6 py-4 flex justify-end">
+              {!downloading ? (
+                <div className="flex gap-4">
+                  {/* Download PDF Button */}
+                  <button
+                    onClick={handleDownloadPDF}
+                    className="flex items-center gap-3 px-5 py-3 rounded-xl shadow-md bg-gradient-to-r from-red-100 to-red-50 hover:from-red-200 hover:to-red-100 text-gray-800 font-semibold transition-all duration-300 border border-red-200"
+                  >
+                    <FaFilePdf className="text-red-600 text-xl" />
+                    <span>Download PDF</span>
+                  </button>
+
+                  {/* Download Image Button */}
+                  <button
+                    onClick={handleDownloadImage}
+                    className="flex items-center gap-3 px-5 py-3 rounded-xl shadow-md bg-gradient-to-r from-blue-100 to-blue-50 hover:from-blue-200 hover:to-blue-100 text-gray-800 font-semibold transition-all duration-300 border border-blue-200"
+                  >
+                    <FaImage className="text-blue-600 text-xl" />
+                    <span>Download Image</span>
+                  </button>
+
+                </div>
+              ) : (
+                <div className="flex items-center gap-2 text-gray-600">
+                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-600"></div>
+                  <span>Downloading...</span>
+                </div>
+              )}
             </div>
           </div>
         </div>

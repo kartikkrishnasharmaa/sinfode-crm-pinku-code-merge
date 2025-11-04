@@ -5,250 +5,9 @@ import { Editor } from "react-draft-wysiwyg";
 import { EditorState, convertToRaw } from "draft-js";
 import draftToHtml from "draftjs-to-html";
 import "react-draft-wysiwyg/dist/react-draft-wysiwyg.css";
-import { FaEdit, FaTrash, FaEye } from "react-icons/fa";
+import { FaEdit, FaTrash, FaEye, FaPlus, FaBook, FaList, FaUsers, FaRupeeSign, FaClock, FaLayerGroup } from "react-icons/fa";
 import Batch from "./batch";
-import Allbatch from "./allbatch";
-
-function AddCourse() {
-  const [courseName, setCourseName] = useState("");
-  const [courseCategory, setCourseCategory] = useState("");
-  const [duration, setDuration] = useState("");
-  const [mode, setMode] = useState("Online");
-  const [level, setLevel] = useState("Beginner");
-  const [editorState, setEditorState] = useState(EditorState.createEmpty());
-  const [actualprice, setAprice] = useState("");
-  const [discountprice, setDprice] = useState("");
-
-  const [staffList, setStaffList] = useState([]);
-  const [selectedStaff, setSelectedStaff] = useState("");
-
-  // Get user data from localStorage
-  const userData = JSON.parse(localStorage.getItem("user") || "{}");
-  const userBranchId = userData.branch_id;
-
-  // Staff fetch
-  const fetchStaff = async () => {
-    try {
-      const token = localStorage.getItem("token");
-      const res = await axios.get("/staff", {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      setStaffList(res.data || []);
-    } catch (error) {
-      console.error("Error fetching staff:", error);
-    }
-  };
-
-  useEffect(() => {
-    fetchStaff();
-  }, []);
-
-  // Submit handler
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-
-    const token = localStorage.getItem("token");
-    const payload = {
-      course_name: courseName,
-      course_category: courseCategory,
-      duration,
-      mode,
-      course_level: level,
-      actual_price: actualprice,
-      discounted_price: discountprice,
-      course_description: draftToHtml(
-        convertToRaw(editorState.getCurrentContent())
-      ),
-      trainer_id: selectedStaff,
-      branch_id: userBranchId, // Use user's branch ID
-    };
-
-    try {
-      const res = await axios.post("/courses/store", payload, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      alert("✅ Course created successfully!");
-      console.log("Response:", res.data);
-      // Reset form
-      setCourseName("");
-      setCourseCategory("");
-      setDuration("");
-      setMode("Online");
-      setLevel("Beginner");
-      setEditorState(EditorState.createEmpty());
-      setSelectedStaff("");
-    } catch (error) {
-      console.error("Error creating course:", error);
-      alert("❌ Failed to create course");
-    }
-  };
-
-  return (
-    <div className="p-6 w-full bg-[#F4F9FD]">
-      <h1 className="text-[30px] mb-2 font-semibold font-nunito">
-        Create Course
-      </h1>
-
-      <form className="space-y-8" onSubmit={handleSubmit}>
-        {/* 1. Basic Information */}
-        <div className="bg-white shadow-md rounded-xl p-6">
-          <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
-            <span className="text-blue-600 font-bold">1</span> Basic Information
-          </h2>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <label className="block text-sm font-medium mb-1">
-                Course Name *
-              </label>
-              <input
-                type="text"
-                value={courseName}
-                onChange={(e) => setCourseName(e.target.value)}
-                placeholder="Enter course name"
-                className="w-full border rounded-lg px-3 py-2 focus:ring focus:ring-blue-200"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium mb-1">
-                Course Category *
-              </label>
-              <select
-                value={courseCategory}
-                onChange={(e) => setCourseCategory(e.target.value)}
-                className="w-full border rounded-lg px-3 py-2"
-              >
-                <option value="">Select</option>
-                <option value="Technical">Technical</option>
-                <option value="Non-Technical">Non-Technical</option>
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium mb-1">
-                Assign Staff *
-              </label>
-              <select
-                value={selectedStaff}
-                onChange={(e) => setSelectedStaff(e.target.value)}
-                className="w-full border rounded-lg px-3 py-2"
-              >
-                <option value="">Select Staff</option>
-                {staffList.map((staff) => (
-                  <option key={staff.id} value={staff.id}>
-                    {staff.employee_name} ({staff.designation})
-                  </option>
-                ))}
-              </select>
-            </div>
-          </div>
-        </div>
-
-        {/* 2. Course Configuration */}
-        <div className="bg-white shadow-md rounded-xl p-6">
-          <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
-            <span className="text-blue-600 font-bold">2</span> Course
-            Configuration
-          </h2>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div>
-              <label className="block text-sm font-medium mb-1">
-                Duration (Months)
-              </label>
-              <input
-                type="number"
-                value={duration}
-                onChange={(e) => setDuration(e.target.value)}
-                className="w-full border rounded-lg px-3 py-2"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium mb-1">
-                Course Mode *
-              </label>
-              <select
-                value={mode}
-                onChange={(e) => setMode(e.target.value)}
-                className="w-full border rounded-lg px-3 py-2"
-              >
-                <option value="Online">Online</option>
-                <option value="Offline">Offline</option>
-                <option value="Hybrid">Hybrid</option>
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium mb-1">
-                Course Level *
-              </label>
-              <select
-                value={level}
-                onChange={(e) => setLevel(e.target.value)}
-                className="w-full border rounded-lg px-3 py-2"
-              >
-                <option value="Beginner">Beginner</option>
-                <option value="Intermediate">Intermediate</option>
-                <option value="Advanced">Advanced</option>
-              </select>
-            </div>
-            <div>
-              <label className="block text-sm font-medium mb-1">
-                Course Price (₹)
-              </label>
-              <input
-                type="number"
-                value={actualprice}
-                onChange={(e) => setAprice(e.target.value)}
-                className="w-full border rounded-lg px-3 py-2"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium mb-1">
-                Course Discount Price (₹)
-              </label>
-              <input
-                type="number"
-                value={discountprice}
-                onChange={(e) => setDprice(e.target.value)}
-                className="w-full border rounded-lg px-3 py-2"
-              />
-            </div>
-          </div>
-        </div>
-
-        {/* 3. Description */}
-        <div className="bg-white shadow-md rounded-xl p-6">
-          <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
-            <span className="text-blue-600 font-bold">3</span> Course
-            Description
-          </h2>
-          <Editor
-            editorState={editorState}
-            onEditorStateChange={setEditorState}
-            wrapperClassName="border rounded-md"
-            editorClassName="p-2 min-h-[150px]"
-            toolbar={{
-              options: ["inline", "list", "link", "history"],
-            }}
-          />
-        </div>
-
-        {/* Buttons */}
-        <div className="flex justify-end gap-4">
-          <button
-            type="submit"
-            className="bg-[#3F8CFF] hover:bg-blue-700 text-white px-4 py-2 rounded-3xl flex items-center gap-2"
-          >
-            ✨ Create Course
-          </button>
-        </div>
-      </form>
-    </div>
-  );
-}
+import Allbatch from "./allbatch";  
 
 function AllCourse() {
   const [courses, setCourses] = useState([]);
@@ -256,12 +15,11 @@ function AllCourse() {
   const [filteredCourses, setFilteredCourses] = useState([]);
   const [modalType, setModalType] = useState("");
   const [formData, setFormData] = useState({});
+  const [searchTerm, setSearchTerm] = useState("");
   
-  // Get user data from localStorage
   const userData = JSON.parse(localStorage.getItem("user") || "{}");
   const userBranchId = userData.branch_id;
 
-  // Fetch all courses for the user's branch only
   const fetchCourses = async () => {
     try {
       const token = localStorage.getItem("token");
@@ -269,12 +27,9 @@ function AllCourse() {
         headers: { Authorization: `Bearer ${token}` },
       });
       const data = res.data || [];
-      
-      // Filter courses by user's branch
       const userBranchCourses = data.filter(course => 
         course.branch_id === userBranchId
       );
-      
       setCourses(userBranchCourses);
       setFilteredCourses(userBranchCourses);
     } catch (error) {
@@ -282,7 +37,6 @@ function AllCourse() {
     }
   };
 
-  // Fetch single course for view / edit
   const fetchSingleCourse = async (id, type) => {
     try {
       const token = localStorage.getItem("token");
@@ -297,11 +51,9 @@ function AllCourse() {
     }
   };
 
-  // Update course
   const handleUpdate = async () => {
     try {
       const token = localStorage.getItem("token");
-
       const payload = {
         course_name: formData.course_name,
         discounted_price: formData.discounted_price,
@@ -321,7 +73,6 @@ function AllCourse() {
     }
   };
 
-  // Delete course
   const handleDelete = async () => {
     try {
       const token = localStorage.getItem("token");
@@ -341,283 +92,404 @@ function AllCourse() {
     fetchCourses();
   }, []);
 
-  return (
-    <div className="p-6">
-      <h1 className="text-[30px] mb-6 font-semibold font-nunito">
-        All Course Management
-      </h1>
+  useEffect(() => {
+    const filtered = courses.filter(course =>
+      course.course_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      course.course_category?.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+    setFilteredCourses(filtered);
+  }, [searchTerm, courses]);
 
-      {/* Display courses */}
+  return (
+    <div className="p-6 bg-gradient-to-br from-blue-50 to-indigo-50">
+      {/* Header Section */}
+      <div className="mb-8">
+        <h1 className="text-4xl font-bold text-gray-800 mb-2 font-nunito">
+          Course Management
+        </h1>
+        <p className="text-gray-600 text-lg">
+          Manage and monitor all your courses in one place
+        </p>
+      </div>
+
+      {/* Search and Stats Bar */}
+      <div className="bg-white rounded-2xl shadow-lg p-6 mb-8">
+        <div className="flex flex-col lg:flex-row justify-between items-center gap-6">
+          <div className="flex items-center gap-4">
+            <div className="bg-blue-100 p-3 rounded-xl">
+              <FaBook className="text-blue-600 text-2xl" />
+            </div>
+            <div>
+              <h3 className="text-2xl font-bold text-gray-800">{filteredCourses.length}</h3>
+              <p className="text-gray-600">Total Courses</p>
+            </div>
+          </div>
+          
+          <div className="flex-1 max-w-md">
+            <div className="relative">
+              <input
+                type="text"
+                placeholder="Search courses..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 pl-12 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+              />
+              <FaList className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 text-lg" />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Courses Grid */}
       {filteredCourses.length === 0 ? (
-        <p className="text-gray-600">No courses available for your branch</p>
+        <div className="bg-white rounded-2xl shadow-lg p-12 text-center">
+          <FaBook className="text-6xl text-gray-300 mx-auto mb-4" />
+          <h3 className="text-2xl font-bold text-gray-600 mb-2">No Courses Found</h3>
+          <p className="text-gray-500">Get started by creating your first course</p>
+        </div>
       ) : (
-        <div className="flex flex-wrap gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-2 gap-8">
           {filteredCourses.map((course) => (
             <div
               key={course.id}
-              className="bg-white rounded-xl shadow-md p-6 w-[500px] flex flex-col justify-between"
+              className="bg-white rounded-2xl shadow-lg overflow-hidden hover:shadow-2xl transform hover:-translate-y-2 transition-all duration-300 border border-gray-100"
             >
-              {/* Course details */}
-              <div className="mb-4">
-                {/* Level Badge */}
-                <div
-                  className={`inline-block px-2 py-1 mb-2 text-sm font-semibold rounded ${
-                    course.course_level === "Beginner"
-                      ? "bg-green-100 text-green-800"
-                      : course.course_level === "Intermediate"
-                      ? "bg-yellow-100 text-yellow-800"
-                      : "bg-red-100 text-red-800"
-                  }`}
-                >
-                  {course.course_level}
+              {/* Course Header */}
+              <div className="bg-gradient-to-r from-blue-500 to-purple-600 p-6 text-white">
+                <div className="flex justify-between items-start mb-4">
+                  <div className={`px-3 py-1 rounded-full text-sm font-semibold ${
+                    course.course_level === "Beginner" ? "bg-green-500" :
+                    course.course_level === "Intermediate" ? "bg-yellow-500" : "bg-red-500"
+                  }`}>
+                    {course.course_level}
+                  </div>
+                  <div className={`px-3 py-1 rounded-full text-sm font-semibold bg-white ${
+                    course.mode === "Online" ? "text-blue-600" :
+                    course.mode === "Offline" ? "text-purple-600" : "text-teal-600"
+                  }`}>
+                    {course.mode}
+                  </div>
                 </div>
-
-                {/* Mode Badge */}
-                <div
-                  className={`inline-block px-2 py-1 mb-2 text-sm font-semibold rounded float-right ${
-                    course.mode === "Online"
-                      ? "bg-blue-100 text-blue-800"
-                      : course.mode === "Offline"
-                      ? "bg-purple-100 text-purple-800"
-                      : "bg-teal-100 text-teal-800"
-                  }`}
-                >
-                  {course.mode}
-                </div>
-
-                <h2 className="text-xl font-semibold mb-2">
-                  {course.course_name}
-                </h2>
-
-                <p className="text-sm text-gray-600 mb-3">
-                  🎓 {course.course_category} | 🕒 {course.duration} months
+                
+                <h3 className="text-xl font-bold mb-2 line-clamp-2">{course.course_name}</h3>
+                <p className="text-blue-100 opacity-90 flex items-center gap-2">
+                  <FaLayerGroup />
+                  {course.course_category}
                 </p>
+              </div>
 
-                {/* Branch information - show if available
-                {course.branch && (
-                  <p className="text-sm text-gray-600 mb-3">
-                    🏢 {course.branch.branch_name} ({course.branch.city})
-                  </p>
-                )} */}
+              {/* Course Body */}
+              <div className="p-6">
+                <div className="space-y-3 mb-6">
+                  <div className="flex items-center gap-3 text-gray-600">
+                    <FaClock className="text-blue-500" />
+                    <span>{course.duration} months</span>
+                  </div>
+                  
+                  {course.branch && (
+                    <div className="flex items-center gap-3 text-gray-600">
+                      <FaUsers className="text-green-500" />
+                      <span>{course.branch.branch_name} ({course.branch.city})</span>
+                    </div>
+                  )}
+                </div>
 
-                {/* Price Section */}
-                <div className="flex items-center gap-3 mb-3">
-                  <span className="text-green-600 font-bold text-xl">
-                    ₹{course.discounted_price}
-                  </span>
-             
+                {/* Pricing Section */}
+                <div className="border-t pt-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <span className="text-2xl font-bold text-green-600">
+                        ₹{course.discounted_price || course.actual_price}
+                      </span>
+                      {course.discounted_price && course.actual_price && (
+                        <span className="text-sm text-gray-500 line-through ml-2">
+                          ₹{course.actual_price}
+                        </span>
+                      )}
+                    </div>
+                    {course.discounted_price && course.actual_price && (
+                      <span className="bg-red-100 text-red-600 px-2 py-1 rounded-full text-sm font-semibold">
+                        Save ₹{course.actual_price - course.discounted_price}
+                      </span>
+                    )}
+                  </div>
                 </div>
               </div>
 
               {/* Action Buttons */}
-              <div className="flex justify-end gap-4 mt-auto">
-                <button
-                  className="text-blue-600 hover:text-blue-800"
-                  onClick={() => fetchSingleCourse(course.id, "view")}
-                >
-                  <FaEye size={18} />
-                </button>
-                {/* <button
-                  className="text-yellow-600 hover:text-yellow-800"
-                  onClick={() => fetchSingleCourse(course.id, "edit")}
-                >
-                  <FaEdit size={18} />
-                </button>
-                <button
-                  className="text-red-600 hover:text-red-800"
-                  onClick={() => fetchSingleCourse(course.id, "delete")}
-                >
-                  <FaTrash size={18} />
-                </button> */}
+              <div className="border-t border-gray-100 p-4 bg-gray-50">
+                <div className="flex justify-end gap-3">
+                  <button
+                    onClick={() => fetchSingleCourse(course.id, "view")}
+                    className="bg-blue-500 hover:bg-blue-600 text-white p-3 rounded-xl transition-all duration-200 transform hover:scale-105"
+                    title="View Details"
+                  >
+                    <FaEye size={16} />
+                  </button>
+                </div>
               </div>
             </div>
           ))}
         </div>
       )}
-      
-      {/* ... modals (same as before) */}
-  {modalType === "view" && selectedCourse && (
-  <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-    <div className="bg-white rounded-2xl shadow-2xl w-[800px] max-h-[90vh] overflow-y-auto relative">
-      {/* Header */}
-      <div className="flex justify-between items-center border-b px-6 py-4 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-t-2xl">
-        <h2 className="text-2xl font-semibold">
-          📘 {selectedCourse.course_name}
-        </h2>
-        <button
-          className="bg-white/20 hover:bg-white/30 text-white px-3 py-1 rounded-md transition"
-          onClick={() => setModalType("")}
-        >
-          ✖
-        </button>
-      </div>
 
-      {/* Content */}
-      <div className="p-6 space-y-6">
-        {/* Basic Info Section */}
-        <div className="grid grid-cols-2 gap-6">
-          <div>
-            <p className="text-gray-600">
-              <strong className="font-medium text-gray-800">Course Code:</strong> {selectedCourse.course_code}
-            </p>
-            <p className="text-gray-600">
-              <strong className="font-medium text-gray-800">Category:</strong> {selectedCourse.course_category}
-            </p>
-            <p className="text-gray-600">
-              <strong className="font-medium text-gray-800">Level:</strong> {selectedCourse.course_level}
-            </p>
-            <p className="text-gray-600">
-              <strong className="font-medium text-gray-800">Mode:</strong> {selectedCourse.mode}
-            </p>
-          </div>
-          <div>
-            <p className="text-gray-600">
-              <strong className="font-medium text-gray-800">Duration:</strong> {selectedCourse.duration} months
-            </p>
-            <p className="text-gray-600">
-              <strong className="font-medium text-gray-800">Price:</strong>{" "}
-              {selectedCourse.discounted_price
-                ? `₹${selectedCourse.discounted_price}`
-                : "N/A"}
-            </p>
-            <p className="text-gray-600">
-              <strong className="font-medium text-gray-800">Branch:</strong>{" "}
-              {selectedCourse.branch?.branch_name} ({selectedCourse.branch?.city})
-            </p>
-            <p className="text-gray-600">
-              <strong className="font-medium text-gray-800">Trainer:</strong>{" "}
-              {selectedCourse.trainer?.employee_name}
-            </p>
-          </div>
-        </div>
-
-        {/* Description */}
-        <div className="border-t pt-4">
-          <h3 className="text-lg font-semibold text-gray-800 mb-2">📝 Description</h3>
-          <div
-            className="prose prose-sm max-w-none text-gray-700"
-            dangerouslySetInnerHTML={{
-              __html: selectedCourse.course_description || "<p>No description provided.</p>",
-            }}
-          />
-        </div>
-
-        {/* Students Section */}
-        {selectedCourse.students && selectedCourse.students.length > 0 && (
-          <div className="border-t pt-4">
-            <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
-              👨‍🎓 Enrolled Students ({selectedCourse.students.length})
-            </h3>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {selectedCourse.students.map((student) => (
-                <div
-                  key={student.id}
-                  className="bg-gray-50 hover:bg-gray-100 border rounded-xl p-3 flex flex-col items-center shadow-sm transition"
-                >
-                  <img
-                    src={
-                      student.photo_url ||
-                      "https://cdn-icons-png.flaticon.com/512/3135/3135715.png"
-                    }
-                    alt={student.full_name}
-                    className="w-16 h-16 rounded-full object-cover border mb-2"
-                  />
-                  <h4 className="font-semibold text-gray-800 text-sm text-center">
-                    {student.full_name}
-                  </h4>
-                  <p className="text-xs text-gray-500">{student.email}</p>
-                  <p className="text-xs text-gray-500">📞 {student.contact_number}</p>
+      {/* Enhanced View Modal */}
+      {modalType === "view" && selectedCourse && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto">
+            {/* Header */}
+            <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white p-8 rounded-t-3xl">
+              <div className="flex justify-between items-start">
+                <div>
+                  <h2 className="text-3xl font-bold mb-2">{selectedCourse.course_name}</h2>
+                  <div className="flex flex-wrap gap-3">
+                    <span className="bg-white/20 px-3 py-1 rounded-full text-sm">
+                      {selectedCourse.course_code}
+                    </span>
+                    <span className="bg-white/20 px-3 py-1 rounded-full text-sm">
+                      {selectedCourse.course_category}
+                    </span>
+                  </div>
                 </div>
-              ))}
+                <button
+                  onClick={() => setModalType("")}
+                  className="bg-white/20 hover:bg-white/30 text-white p-2 rounded-xl transition-all duration-200"
+                >
+                  ✕
+                </button>
+              </div>
+            </div>
+
+            {/* Content */}
+            <div className="p-8 space-y-8">
+              {/* Course Details Grid */}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div className="bg-blue-50 p-4 rounded-xl">
+                  <div className="flex items-center gap-3 mb-2">
+                    <div className="bg-blue-500 p-2 rounded-lg">
+                      <FaLayerGroup className="text-white text-lg" />
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-600">Level</p>
+                      <p className="font-semibold text-gray-800">{selectedCourse.course_level}</p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-green-50 p-4 rounded-xl">
+                  <div className="flex items-center gap-3 mb-2">
+                    <div className="bg-green-500 p-2 rounded-lg">
+                      <FaClock className="text-white text-lg" />
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-600">Duration</p>
+                      <p className="font-semibold text-gray-800">{selectedCourse.duration} months</p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-purple-50 p-4 rounded-xl">
+                  <div className="flex items-center gap-3 mb-2">
+                    <div className="bg-purple-500 p-2 rounded-lg">
+                      <FaUsers className="text-white text-lg" />
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-600">Mode</p>
+                      <p className="font-semibold text-gray-800">{selectedCourse.mode}</p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-orange-50 p-4 rounded-xl">
+                  <div className="flex items-center gap-3 mb-2">
+                    <div className="bg-orange-500 p-2 rounded-lg">
+                      <FaRupeeSign className="text-white text-lg" />
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-600">Price</p>
+                      <p className="font-semibold text-gray-800">₹{selectedCourse.discounted_price || selectedCourse.actual_price}</p>
+                    </div>
+                  </div>
+                </div>
+
+                {selectedCourse.branch && (
+                  <div className="bg-teal-50 p-4 rounded-xl">
+                    <div className="flex items-center gap-3 mb-2">
+                      <div className="bg-teal-500 p-2 rounded-lg">
+                        <FaUsers className="text-white text-lg" />
+                      </div>
+                      <div>
+                        <p className="text-sm text-gray-600">Branch</p>
+                        <p className="font-semibold text-gray-800">{selectedCourse.branch.branch_name}</p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {selectedCourse.trainer && (
+                  <div className="bg-pink-50 p-4 rounded-xl">
+                    <div className="flex items-center gap-3 mb-2">
+                      <div className="bg-pink-500 p-2 rounded-lg">
+                        <FaUsers className="text-white text-lg" />
+                      </div>
+                      <div>
+                        <p className="text-sm text-gray-600">Trainer</p>
+                        <p className="font-semibold text-gray-800">{selectedCourse.trainer.employee_name}</p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Description */}
+              <div className="bg-gray-50 rounded-xl p-6">
+                <h3 className="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
+                  <FaBook className="text-blue-500" />
+                  Course Description
+                </h3>
+                <div
+                  className="prose max-w-none text-gray-700"
+                  dangerouslySetInnerHTML={{
+                    __html: selectedCourse.course_description || "<p class='text-gray-500'>No description provided.</p>",
+                  }}
+                />
+              </div>
+
+              {/* Students Section */}
+              {selectedCourse.students && selectedCourse.students.length > 0 && (
+                <div className="bg-gray-50 rounded-xl p-6">
+                  <h3 className="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
+                    <FaUsers className="text-green-500" />
+                    Enrolled Students ({selectedCourse.students.length})
+                  </h3>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {selectedCourse.students.map((student) => (
+                      <div
+                        key={student.id}
+                        className="bg-white rounded-lg p-4 border border-gray-200 hover:border-blue-300 transition-all duration-200"
+                      >
+                        <div className="flex items-center gap-3">
+                          <img
+                            src={student.photo_url || "https://cdn-icons-png.flaticon.com/512/3135/3135715.png"}
+                            alt={student.full_name}
+                            className="w-12 h-12 rounded-full object-cover border-2 border-blue-200"
+                          />
+                          <div className="flex-1 min-w-0">
+                            <h4 className="font-semibold text-gray-800 truncate">{student.full_name}</h4>
+                            <p className="text-sm text-gray-500 truncate">{student.email}</p>
+                            <p className="text-xs text-gray-400">{student.contact_number}</p>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Footer */}
+            <div className="border-t p-6 bg-gray-50 rounded-b-3xl">
+              <div className="flex justify-end">
+                <button
+                  onClick={() => setModalType("")}
+                  className="bg-gradient-to-r from-gray-500 to-gray-600 hover:from-gray-600 hover:to-gray-700 text-white px-8 py-3 rounded-xl font-semibold transition-all duration-200"
+                >
+                  Close
+                </button>
+              </div>
             </div>
           </div>
-        )}
-      </div>
+        </div>
+      )}
 
-      {/* Footer */}
-      <div className="border-t p-4 text-right">
-        <button
-          onClick={() => setModalType("")}
-          className="bg-gradient-to-r from-red-500 to-pink-500 text-white px-5 py-2 rounded-lg font-medium hover:shadow-md transition"
-        >
-          Close
-        </button>
-      </div>
-    </div>
-  </div>
-)}
-
+      {/* Edit Modal */}
       {modalType === "edit" && selectedCourse && (
-        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-40">
-          <div className="bg-white p-6 rounded-xl w-[600px] shadow-lg">
-            <h2 className="text-xl font-bold mb-4">Edit Course</h2>
-            <input
-              type="text"
-              value={formData.course_name || ""}
-              onChange={(e) =>
-                setFormData({ ...formData, course_name: e.target.value })
-              }
-              className="w-full border p-2 mb-3"
-              placeholder="Course Name"
-            />
-            <input
-              type="number"
-              value={formData.discounted_price || ""}
-              onChange={(e) =>
-                setFormData({ ...formData, discounted_price: e.target.value })
-              }
-              className="w-full border p-2 mb-3"
-              placeholder="Discounted Price"
-            />
-            <input
-              type="number"
-              value={formData.actual_price || ""}
-              onChange={(e) =>
-                setFormData({ ...formData, actual_price: e.target.value })
-              }
-              className="w-full border p-2 mb-3"
-              placeholder="Actual Price"
-            />
-            <div className="flex justify-end gap-3">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md">
+            <div className="bg-gradient-to-r from-yellow-500 to-orange-500 text-white p-6 rounded-t-2xl">
+              <h2 className="text-2xl font-bold">Edit Course</h2>
+            </div>
+            <div className="p-6 space-y-4">
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">Course Name</label>
+                <input
+                  type="text"
+                  value={formData.course_name || ""}
+                  onChange={(e) => setFormData({ ...formData, course_name: e.target.value })}
+                  className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-yellow-500 focus:border-transparent transition-all duration-200"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">Discounted Price (₹)</label>
+                <input
+                  type="number"
+                  value={formData.discounted_price || ""}
+                  onChange={(e) => setFormData({ ...formData, discounted_price: e.target.value })}
+                  className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-yellow-500 focus:border-transparent transition-all duration-200"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">Actual Price (₹)</label>
+                <input
+                  type="number"
+                  value={formData.actual_price || ""}
+                  onChange={(e) => setFormData({ ...formData, actual_price: e.target.value })}
+                  className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-yellow-500 focus:border-transparent transition-all duration-200"
+                />
+              </div>
+            </div>
+            <div className="flex justify-end gap-3 p-6 border-t">
               <button
-                className="bg-gray-400 text-white px-4 py-2 rounded"
                 onClick={() => setModalType("")}
+                className="px-6 py-3 border-2 border-gray-300 text-gray-700 rounded-xl font-semibold hover:bg-gray-50 transition-all duration-200"
               >
                 Cancel
               </button>
               <button
-                className="bg-green-600 text-white px-4 py-2 rounded"
                 onClick={handleUpdate}
+                className="px-6 py-3 bg-gradient-to-r from-yellow-500 to-orange-500 text-white rounded-xl font-semibold hover:shadow-lg transition-all duration-200"
               >
-                Update
+                Update Course
               </button>
             </div>
           </div>
         </div>
       )}
 
+      {/* Delete Modal */}
       {modalType === "delete" && selectedCourse && (
-        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-40">
-          <div className="bg-white p-6 rounded-xl w-[400px] shadow-lg">
-            <h2 className="text-lg font-bold mb-4 text-red-600">
-              Confirm Delete
-            </h2>
-            <p>
-              Are you sure you want to delete course{" "}
-              <strong>{selectedCourse.course_name}</strong>?
-            </p>
-            <div className="flex justify-end gap-3 mt-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md">
+            <div className="bg-gradient-to-r from-red-500 to-pink-500 text-white p-6 rounded-t-2xl">
+              <h2 className="text-2xl font-bold">Confirm Delete</h2>
+            </div>
+            <div className="p-6">
+              <div className="flex items-center gap-4 mb-4">
+                <div className="bg-red-100 p-3 rounded-xl">
+                  <FaTrash className="text-red-500 text-2xl" />
+                </div>
+                <div>
+                  <p className="text-gray-700 font-semibold">
+                    Are you sure you want to delete this course?
+                  </p>
+                  <p className="text-gray-600 mt-1">
+                    This action cannot be undone.
+                  </p>
+                </div>
+              </div>
+            </div>
+            <div className="flex justify-end gap-3 p-6 border-t">
               <button
-                className="bg-gray-400 text-white px-4 py-2 rounded"
                 onClick={() => setModalType("")}
+                className="px-6 py-3 border-2 border-gray-300 text-gray-700 rounded-xl font-semibold hover:bg-gray-50 transition-all duration-200"
               >
                 Cancel
               </button>
               <button
-                className="bg-red-600 text-white px-4 py-2 rounded"
                 onClick={handleDelete}
+                className="px-6 py-3 bg-gradient-to-r from-red-500 to-pink-500 text-white rounded-xl font-semibold hover:shadow-lg transition-all duration-200"
               >
-                Delete
+                Delete Course
               </button>
             </div>
           </div>
@@ -632,55 +504,74 @@ export default function Course() {
 
   return (
     <SMLayout>
-      <div className="flex h-full">
-        {/* ✅ Left Sidebar */}
-        <div className="w-60 bg-white rounded-xl shadow-md p-4 space-y-3">
-          {/* <button
-            onClick={() => setActiveTab("addCourse")}
-            className={`block w-full text-left px-4 py-5 rounded-lg ${
-              activeTab === "addCourse"
-                ? "bg-blue-100 text-black"
-                : "hover:bg-blue-100 text-black"
-            }`}
-          >
-            ➕ Add Course
-          </button> */}
-
+      <div className="flex h-full bg-gradient-to-br from-gray-50 to-blue-50">
+        {/* Enhanced Sidebar */}
+        <div className="w-80 bg-white rounded-2xl shadow-xl m-4 p-6 space-y-4">
+          <div className="mb-8">
+            <h2 className="text-2xl font-bold text-gray-800 mb-2">Course Center</h2>
+            <p className="text-gray-600">Manage your learning programs</p>
+          </div>
+          
           <button
             onClick={() => setActiveTab("courseList")}
-            className={`block w-full text-left px-4 py-5 rounded-lg ${
+            className={`w-full text-left p-4 rounded-2xl transition-all duration-200 flex items-center gap-4 ${
               activeTab === "courseList"
-                ? "bg-blue-100 text-black"
-                : "hover:bg-blue-100 text-black"
+                ? "bg-gradient-to-r from-blue-500 to-purple-500 text-white shadow-lg transform -translate-y-1"
+                : "bg-white text-gray-700 hover:bg-blue-50 hover:shadow-md"
             }`}
           >
-            📋 All Courses
+            <div className={`p-3 rounded-xl ${
+              activeTab === "courseList" ? "bg-white/20" : "bg-blue-100 text-blue-600"
+            }`}>
+              <FaList className="text-lg" />
+            </div>
+            <div>
+              <div className="font-semibold">All Courses</div>
+              <div className="text-sm opacity-80">Browse all courses</div>
+            </div>
           </button>
+
           <button
             onClick={() => setActiveTab("batchManagement")}
-            className={`block w-full text-left px-4 py-5 rounded-lg ${
+            className={`w-full text-left p-4 rounded-2xl transition-all duration-200 flex items-center gap-4 ${
               activeTab === "batchManagement"
-                ? "bg-blue-100 text-black"
-                : "hover:bg-blue-100 text-black"
+                ? "bg-gradient-to-r from-blue-500 to-purple-500 text-white shadow-lg transform -translate-y-1"
+                : "bg-white text-gray-700 hover:bg-blue-50 hover:shadow-md"
             }`}
           >
-           ➕ Add Batches
+            <div className={`p-3 rounded-xl ${
+              activeTab === "batchManagement" ? "bg-white/20" : "bg-green-100 text-green-600"
+            }`}>
+              <FaPlus className="text-lg" />
+            </div>
+            <div>
+              <div className="font-semibold">Add Batches</div>
+              <div className="text-sm opacity-80">Create new batches</div>
+            </div>
           </button>
+
           <button
             onClick={() => setActiveTab("allBatches")}
-            className={`block w-full text-left px-4 py-5 rounded-lg ${
+            className={`w-full text-left p-4 rounded-2xl transition-all duration-200 flex items-center gap-4 ${
               activeTab === "allBatches"
-                ? "bg-blue-100 text-black"
-                : "hover:bg-blue-100 text-black"
+                ? "bg-gradient-to-r from-blue-500 to-purple-500 text-white shadow-lg transform -translate-y-1"
+                : "bg-white text-gray-700 hover:bg-blue-50 hover:shadow-md"
             }`}
           >
-            📋 All Batches
+            <div className={`p-3 rounded-xl ${
+              activeTab === "allBatches" ? "bg-white/20" : "bg-purple-100 text-purple-600"
+            }`}>
+              <FaUsers className="text-lg" />
+            </div>
+            <div>
+              <div className="font-semibold">All Batches</div>
+              <div className="text-sm opacity-80">Manage all batches</div>
+            </div>
           </button>
         </div>
 
-        {/* ✅ Right Content Area */}
-        <div className="flex-1 rounded-lg p-6 overflow-y-auto">
-          {activeTab === "addCourse" && <AddCourse />}
+        {/* Main Content Area */}
+        <div className="flex-1 rounded-2xl m-4 overflow-hidden">
           {activeTab === "courseList" && <AllCourse />}
           {activeTab === "batchManagement" && <Batch />}
           {activeTab === "allBatches" && <Allbatch />}

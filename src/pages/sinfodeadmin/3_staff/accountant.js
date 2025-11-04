@@ -663,11 +663,11 @@ export default function Accountant() {
           )}
         </div>
       ) : (
-        <div className="grid mt-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+        <div className="grid mt-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 gap-6">
           {filteredAndSortedAccountants.map(accountant => (
             <div
               key={accountant.id}
-              className="bg-white rounded-xl shadow hover:shadow-lg transition p-6 flex flex-col items-center text-center relative"
+              className="bg-white rounded-xl mt-5 shadow hover:shadow-lg transition p-6 flex flex-col items-center text-center relative"
             >
               <div className="w-20 h-20 rounded-full overflow-hidden border-4 border-white shadow-md -mt-12 mb-3">
                 <img

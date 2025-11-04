@@ -558,7 +558,7 @@ export default function Staff() {
         </div>
 
       ) : (
-        <div className="grid mt-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid mt-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredStaff.map((staff) => (
             <div
               key={staff.id}
