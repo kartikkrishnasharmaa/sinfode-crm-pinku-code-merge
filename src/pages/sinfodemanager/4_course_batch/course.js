@@ -571,7 +571,7 @@ export default function Course() {
         </div>
 
         {/* Main Content Area */}
-        <div className="flex-1 rounded-2xl m-4 overflow-hidden">
+        <div className="flex-1 rounded-2xl m-4">
           {activeTab === "courseList" && <AllCourse />}
           {activeTab === "batchManagement" && <Batch />}
           {activeTab === "allBatches" && <Allbatch />}
