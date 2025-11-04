@@ -594,7 +594,7 @@ export default function Allstudents() {
                   <div className="bg-gradient-to-br from-blue-50 to-purple-50 rounded-2xl p-6 text-center">
                     <div className="w-32 h-32 mx-auto rounded-full border-4 border-white shadow-lg overflow-hidden mb-4">
                       <img
-                        src={selectedStudent.photo_url || "/default-avatar.png"}
+                        src={selectedStudent.photo_url || "https://img.freepik.com/free-vector/smiling-man-with-glasses_1308-174409.jpg?semt=ais_hybrid&w=740&q=80"}
                         alt={selectedStudent.full_name}
                         className="w-full h-full object-cover"
                       />
