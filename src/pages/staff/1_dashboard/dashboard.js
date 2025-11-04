@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import axios from "../../../api/axiosConfig";
 import SAAdminLayout from "../../../layouts/StaffLayout";
-import { FaArrowDown, FaArrowUp, FaFilter, FaRupeeSign, FaPlus, FaUserPlus, FaUserTie, FaMoneyBill } from "react-icons/fa";
+import { FaArrowDown, FaArrowUp, FaFilter, FaRupeeSign, FaPlus, FaUserPlus, FaUserTie, FaMoneyBill, FaCalendarAlt, FaChevronDown } from "react-icons/fa";
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -39,47 +39,55 @@ export default function Dashboard() {
     totalLeads: 0,
     convertedLeads: 0,
   });
+  const [isYearDropdownOpen, setIsYearDropdownOpen] = useState(false);
 
   // Get user data from localStorage
   const userData = JSON.parse(localStorage.getItem("user") || "{}");
   const userBranchId = userData.branch_id;
   const userBranchName = userData.branch_name || "Your Branch";
 
-// Replace the fetchRevenueData function with this updated version
-const fetchRevenueData = async () => {
-  if (!userBranchId) return;
-  
-  setLoading(true);
-  try {
-    const token = localStorage.getItem("token");
-    const res = await axios.get("/monthly-revenue", {
-      headers: { Authorization: `Bearer ${token}` },
-      params: {
-        year: selectedYear,
-        branch_id: userBranchId
-      }
-    });
-    
-    // Find the data for the current user's branch
-    const userBranchData = res.data.branches.find(
-      branch => branch.branch_id === userBranchId
-    );
-    
-    setRevenueData(userBranchData);
-    
-    // Calculate total revenue
-    const total = userBranchData?.monthly_revenue?.reduce((sum, month) => {
-      return sum + parseFloat(month.student_fee || 0);
-    }, 0) || 0;
-    
-    setTotalRevenue(total);
-  } catch (error) {
-    console.error("Error fetching revenue data:", error);
-    alert("Failed to load revenue data");
-  } finally {
-    setLoading(false);
+  // Generate year options (from 2000 to current year + 10 years)
+  const currentYear = new Date().getFullYear();
+  const yearOptions = [];
+  for (let i = 2000; i <= currentYear + 10; i++) {
+    yearOptions.push(i);
   }
-};
+
+  // Replace the fetchRevenueData function with this updated version
+  const fetchRevenueData = async () => {
+    if (!userBranchId) return;
+    
+    setLoading(true);
+    try {
+      const token = localStorage.getItem("token");
+      const res = await axios.get("/monthly-revenue", {
+        headers: { Authorization: `Bearer ${token}` },
+        params: {
+          year: selectedYear,
+          branch_id: userBranchId
+        }
+      });
+      
+      // Find the data for the current user's branch
+      const userBranchData = res.data.branches.find(
+        branch => branch.branch_id === userBranchId
+      );
+      
+      setRevenueData(userBranchData);
+      
+      // Calculate total revenue
+      const total = userBranchData?.monthly_revenue?.reduce((sum, month) => {
+        return sum + parseFloat(month.student_fee || 0);
+      }, 0) || 0;
+      
+      setTotalRevenue(total);
+    } catch (error) {
+      console.error("Error fetching revenue data:", error);
+      alert("Failed to load revenue data");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // ✅ Fetch leads data (filtered by branch)
   const fetchLeadsData = async () => {
@@ -111,13 +119,19 @@ const fetchRevenueData = async () => {
     }
   }, [userBranchId, selectedYear]);
 
- 
-  // Generate year options (last 10 years and next 2 years)
-  const currentYear = new Date().getFullYear();
-  const yearOptions = [];
-  for (let i = currentYear - 1; i <= currentYear + 7; i++) {
-    yearOptions.push(i);
-  }
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (!event.target.closest('.year-dropdown-container')) {
+        setIsYearDropdownOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
 
   // Prepare chart data with attractive colors
   const chartData = {
@@ -252,42 +266,105 @@ const fetchRevenueData = async () => {
   return (
     <SAAdminLayout>
       <div className="p-6 bg-[#F4F9FD] min-h-screen">
-       <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6">
-                <div>
-                  <p className="text-gray-500">Welcome Back,</p>
-                  <h1 className="text-[30px] mb-2 font-nunito">Dashboard</h1>
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6">
+          <div>
+            <p className="text-gray-500">Welcome Back,</p>
+            <h1 className="text-[30px] mb-2 font-nunito">Dashboard</h1>
+          </div>
+          
+          {/* Beautiful Year Dropdown */}
+          <div className="year-dropdown-container relative mt-4 md:mt-0">
+            <button
+              onClick={() => setIsYearDropdownOpen(!isYearDropdownOpen)}
+              className="flex items-center justify-between bg-white rounded-xl shadow border border-gray-200 px-4 py-3 w-48 hover:shadow-md transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            >
+              <div className="flex items-center">
+                <FaCalendarAlt className="text-gray-500 mr-3" />
+                <span className="text-gray-700 font-medium">{selectedYear}</span>
+              </div>
+              <FaChevronDown 
+                className={`text-gray-400 transition-transform duration-200 ${isYearDropdownOpen ? 'rotate-180' : ''}`} 
+                size={12} 
+              />
+            </button>
+            
+            {/* Dropdown Menu */}
+            {isYearDropdownOpen && (
+              <div className="absolute top-full left-0 mt-2 w-48 bg-white rounded-xl shadow-lg border border-gray-200 z-50 max-h-80 overflow-hidden">
+                {/* Search Input */}
+                <div className="p-3 border-b border-gray-100">
+                  <input
+                    type="text"
+                    placeholder="Search year..."
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    onChange={(e) => {
+                      // You can implement search functionality here if needed
+                    }}
+                  />
                 </div>
                 
-                <div className="flex items-center bg-gray-100 rounded-lg px-3 py-2 mt-4 md:mt-0">
-                  <FaFilter className="text-gray-500 mr-2" />
-                  <select
-                    className="bg-transparent border-none text-sm focus:ring-0"
-                    value={selectedYear}
-                    onChange={(e) => setSelectedYear(parseInt(e.target.value))}
+                {/* Years List */}
+                <div className="max-h-60 overflow-y-auto custom-scrollbar">
+                  {yearOptions.map((year) => (
+                    <button
+                      key={year}
+                      onClick={() => {
+                        setSelectedYear(year);
+                        setIsYearDropdownOpen(false);
+                      }}
+                      className={`w-full px-4 py-3 text-left hover:bg-blue-50 transition-colors duration-150 flex items-center justify-between ${
+                        year === selectedYear 
+                          ? 'bg-blue-500 text-white hover:bg-blue-600' 
+                          : 'text-gray-700'
+                      }`}
+                    >
+                      <span className="font-medium">{year}</span>
+                      {year === selectedYear && (
+                        <div className="w-2 h-2 bg-white rounded-full"></div>
+                      )}
+                    </button>
+                  ))}
+                </div>
+                
+                {/* Quick Navigation */}
+                <div className="p-3 border-t border-gray-100 bg-gray-50 flex justify-between">
+                  <button
+                    onClick={() => {
+                      const firstYear = yearOptions[0];
+                      setSelectedYear(firstYear);
+                      setIsYearDropdownOpen(false);
+                    }}
+                    className="text-xs text-gray-500 hover:text-gray-700 px-2 py-1 rounded"
                   >
-                    {yearOptions.map(year => (
-                      <option key={year} value={year}>
-                        {year}
-                      </option>
-                    ))}
-                  </select>
+                    Oldest
+                  </button>
+                  <button
+                    onClick={() => {
+                      setSelectedYear(currentYear);
+                      setIsYearDropdownOpen(false);
+                    }}
+                    className="text-xs text-blue-500 hover:text-blue-700 px-2 py-1 rounded font-medium"
+                  >
+                    Current
+                  </button>
+                  <button
+                    onClick={() => {
+                      const lastYear = yearOptions[yearOptions.length - 1];
+                      setSelectedYear(lastYear);
+                      setIsYearDropdownOpen(false);
+                    }}
+                    className="text-xs text-gray-500 hover:text-gray-700 px-2 py-1 rounded"
+                  >
+                    Latest
+                  </button>
                 </div>
               </div>
+            )}
+          </div>
+        </div>
+
         {/* Quick Action Shortcuts */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-          {/* <a 
-            href="/staff/students" 
-            className="bg-white rounded-xl shadow p-4 flex items-center hover:shadow-md transition-shadow duration-200"
-          >
-            <div className="bg-blue-100 p-3 rounded-lg mr-4">
-              <FaUserPlus className="text-blue-600 text-xl" />
-            </div>
-            <div>
-              <h3 className="font-semibold">Add Student</h3>
-              <p className="text-sm text-gray-500">Register a new student</p>
-            </div>
-          </a> */}
-          
           <a 
             href="/staff/leads" 
             className="bg-white rounded-xl shadow p-4 flex items-center hover:shadow-md transition-shadow duration-200"
@@ -300,7 +377,6 @@ const fetchRevenueData = async () => {
               <p className="text-sm text-gray-500">Create a new lead</p>
             </div>
           </a>
-          
         </div>
         
         {/* Revenue Summary Card */}
@@ -378,14 +454,11 @@ const fetchRevenueData = async () => {
             <div className="bg-white rounded-xl shadow-lg p-6">
               <div className="flex flex-col md:flex-row md:justify-between md:items-center mb-6">
                 <h2 className="font-semibold text-xl font-nunito text-gray-800 mb-4 md:mb-0">Revenue Analytics</h2>
-                
-                {/* Year Selector */}
-             
               </div>
               
               {/* Display current branch info */}
               <div className="mb-4 text-sm text-gray-600">
-                Showing data for: <span className="font-semibold">{userBranchName}</span>
+                Showing data for: <span className="font-semibold">{userBranchName}</span> • Year: <span className="font-semibold">{selectedYear}</span>
               </div>
               
               {/* Chart Display */}
@@ -406,10 +479,27 @@ const fetchRevenueData = async () => {
                 </div>
               )}
             </div>
-
           </div>
         </div>
       </div>
+
+      {/* Custom Scrollbar Styles */}
+      <style jsx>{`
+        .custom-scrollbar::-webkit-scrollbar {
+          width: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+          background: #f1f1f1;
+          border-radius: 3px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+          background: #c1c1c1;
+          border-radius: 3px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+          background: #a8a8a8;
+        }
+      `}</style>
     </SAAdminLayout>
   );
 }

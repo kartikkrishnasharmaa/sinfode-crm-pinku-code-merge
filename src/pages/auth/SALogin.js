@@ -40,7 +40,28 @@ const Login = () => {
   const toggleNewPasswordVisibility = () => setShowNewPassword(!showNewPassword);
   const toggleConfirmPasswordVisibility = () => setShowConfirmPassword(!showConfirmPassword);
 
-  // ✅ Login
+  // ✅ Role-based navigation function
+  const navigateByRole = (user) => {
+    switch (user.role) {
+      case 'admin':
+        navigate('/sinfodeadmin/dashboard');
+        break;
+      case 'branch_manager':
+        navigate('/sinfodemanager/dashboard');
+        break;
+      case 'staff':
+        navigate('/staff/dashboard');
+        break;
+      case 'accountant':
+        navigate('/account/dashboard');
+        break;
+      default:
+        navigate('/');
+        break;
+    }
+  };
+
+  // ✅ Login - Unified for all roles
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
@@ -58,7 +79,7 @@ const Login = () => {
       toast.success('Login successful! Redirecting...', { autoClose: 2000 });
 
       setTimeout(() => {
-        navigate('/sinfodeadmin/dashboard');
+        navigateByRole(user);
       }, 2000);
 
     } catch (err) {
@@ -156,7 +177,8 @@ const Login = () => {
       {/* Right Side */}
       <div className="flex flex-col justify-center items-center w-full md:w-1/2 p-8 bg-gray-50">
         <div className="w-full max-w-md bg-white p-8 rounded-lg shadow-lg">
-          <h2 className="text-3xl font-bold text-center mb-6">ADMIN LOGIN</h2>
+          <h2 className="text-3xl font-bold text-center mb-6">SINFODE LOGIN</h2>
+          <p className="text-center text-gray-600 mb-6">Login with your credentials</p>
 
           <form onSubmit={handleSubmit} className="space-y-5">
             {/* Email */}
@@ -168,7 +190,7 @@ const Login = () => {
                 value={formData.email}
                 onChange={handleChange}
                 placeholder="Enter your email"
-                className="border border-gray-300 rounded-md w-full p-2"
+                className="border border-gray-300 rounded-md w-full p-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
                 required
               />
             </div>
@@ -183,10 +205,10 @@ const Login = () => {
                   value={formData.password}
                   onChange={handleChange}
                   placeholder="Enter your password"
-                  className="border border-gray-300 rounded-md w-full p-2 pr-10"
+                  className="border border-gray-300 rounded-md w-full p-2 pr-10 focus:outline-none focus:ring-2 focus:ring-indigo-500"
                   required
                 />
-                <button type="button" className="absolute right-3 top-1/2 -translate-y-1/2"
+                <button type="button" className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-indigo-600"
                   onClick={togglePasswordVisibility}>
                   <EyeIcon show={showPassword} />
                 </button>
@@ -207,7 +229,9 @@ const Login = () => {
 
             {/* Submit */}
             <button type="submit" disabled={isLoading}
-              className={`w-full text-white text-lg p-2 rounded-md ${isLoading ? 'bg-indigo-400' : 'bg-indigo-600 hover:bg-indigo-700'}`}>
+              className={`w-full text-white text-lg p-2 rounded-md transition ${
+                isLoading ? 'bg-indigo-400 cursor-not-allowed' : 'bg-indigo-600 hover:bg-indigo-700'
+              }`}>
               {isLoading ? 'Logging in...' : 'Login'}
             </button>
           </form>
@@ -228,15 +252,17 @@ const Login = () => {
                   value={resetData.email}
                   onChange={handleResetChange}
                   placeholder="Enter your email"
-                  className="border border-gray-300 rounded-md w-full p-2"
+                  className="border border-gray-300 rounded-md w-full p-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
                   required
                 />
               </div>
               <div className="flex justify-end space-x-3">
                 <button type="button" onClick={() => setShowForgotPassword(false)}
-                  className="px-4 py-2 border rounded-md">Cancel</button>
+                  className="px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50 transition">Cancel</button>
                 <button type="submit" disabled={isSendingResetLink}
-                  className={`px-4 py-2 text-white rounded-md ${isSendingResetLink ? 'bg-indigo-400' : 'bg-indigo-600 hover:bg-indigo-700'}`}>
+                  className={`px-4 py-2 text-white rounded-md transition ${
+                    isSendingResetLink ? 'bg-indigo-400 cursor-not-allowed' : 'bg-indigo-600 hover:bg-indigo-700'
+                  }`}>
                   {isSendingResetLink ? 'Sending...' : 'Send Reset Link'}
                 </button>
               </div>
@@ -273,10 +299,10 @@ const Login = () => {
                     value={resetData.password}
                     onChange={handleResetChange}
                     placeholder="Enter new password"
-                    className="border border-gray-300 rounded-md w-full p-2 pr-10"
+                    className="border border-gray-300 rounded-md w-full p-2 pr-10 focus:outline-none focus:ring-2 focus:ring-indigo-500"
                     required
                   />
-                  <button type="button" className="absolute right-3 top-1/2 -translate-y-1/2"
+                  <button type="button" className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-indigo-600"
                     onClick={toggleNewPasswordVisibility}>
                     <EyeIcon show={showNewPassword} />
                   </button>
@@ -293,10 +319,10 @@ const Login = () => {
                     value={resetData.password_confirmation}
                     onChange={handleResetChange}
                     placeholder="Confirm password"
-                    className="border border-gray-300 rounded-md w-full p-2 pr-10"
+                    className="border border-gray-300 rounded-md w-full p-2 pr-10 focus:outline-none focus:ring-2 focus:ring-indigo-500"
                     required
                   />
-                  <button type="button" className="absolute right-3 top-1/2 -translate-y-1/2"
+                  <button type="button" className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-indigo-600"
                     onClick={toggleConfirmPasswordVisibility}>
                     <EyeIcon show={showConfirmPassword} />
                   </button>
@@ -305,9 +331,11 @@ const Login = () => {
 
               <div className="flex justify-end space-x-3">
                 <button type="button" onClick={() => setShowResetPassword(false)}
-                  className="px-4 py-2 border rounded-md">Cancel</button>
+                  className="px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50 transition">Cancel</button>
                 <button type="submit" disabled={isResettingPassword}
-                  className={`px-4 py-2 text-white rounded-md ${isResettingPassword ? 'bg-indigo-400' : 'bg-indigo-600 hover:bg-indigo-700'}`}>
+                  className={`px-4 py-2 text-white rounded-md transition ${
+                    isResettingPassword ? 'bg-indigo-400 cursor-not-allowed' : 'bg-indigo-600 hover:bg-indigo-700'
+                  }`}>
                   {isResettingPassword ? 'Resetting...' : 'Reset Password'}
                 </button>
               </div>
@@ -317,7 +345,17 @@ const Login = () => {
       )}
 
       {/* Toast */}
-      <ToastContainer />
+      <ToastContainer 
+        position="top-right"
+        autoClose={5000}
+        hideProgressBar={false}
+        newestOnTop={false}
+        closeOnClick
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+      />
     </div>
   );
 }

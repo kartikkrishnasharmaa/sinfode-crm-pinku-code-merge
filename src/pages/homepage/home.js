@@ -96,58 +96,11 @@ const Home = () => {
                       clipRule="evenodd"
                     ></path>
                   </svg>
-                  SUPER ADMIN LOGIN
+                  SIGN IN AN ACCOUNT
                 </div>
               </a>
 
-              <a
-                href="/sinfode-manager/login"
-                className="btn-hover group px-8 py-4 bg-gradient-to-r from-green-400 to-blue-500 text-white rounded-xl font-semibold text-lg shadow-lg"
-              >
-                <div className="flex items-center justify-center">
-                  <svg
-                    className="w-5 h-5 mr-2 group-hover:scale-110 transition-transform"
-                    fill="currentColor"
-                    viewBox="0 0 20 20"
-                  >
-                    <path d="M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v3h8v-3z"></path>
-                  </svg>
-                  BRANCH MANAGER LOGIN
-                </div>
-              </a>
-
-              <a
-                href="/staff/login"
-                className="btn-hover group px-8 py-4 bg-gradient-to-r from-purple-400 to-pink-500 text-white rounded-xl font-semibold text-lg shadow-lg"
-              >
-                <div className="flex items-center justify-center">
-                  <svg
-                    className="w-5 h-5 mr-2 group-hover:rotate-12 transition-transform"
-                    fill="currentColor"
-                    viewBox="0 0 20 20"
-                  >
-                    <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                  </svg>
-                  STAFF LOGIN
-                </div>
-              </a>
-
-              <a
-                href="/account/login"
-                className="btn-hover group px-8 py-4 bg-gradient-to-r from-green-400 to-blue-500 text-white rounded-xl font-semibold text-lg shadow-lg"
-              >
-                <div className="flex items-center justify-center">
-                  <svg
-                    className="w-5 h-5 mr-2 group-hover:scale-110 transition-transform"
-                    fill="currentColor"
-                    viewBox="0 0 20 20"
-                  >
-                    <path d="M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v3h8v-3z"></path>
-                  </svg>
-                  ACCOUNTANT LOGIN
-                </div>
-              </a>
-
+              
             </div>
           </div>
         </div>

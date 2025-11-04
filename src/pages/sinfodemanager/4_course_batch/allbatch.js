@@ -30,8 +30,8 @@ function Allbatch() {
   const userData = JSON.parse(localStorage.getItem("user") || "{}");
   const userBranchId = userData.branch_id;
 
-  // Format time function
-  const formatTime = (timeString) => {
+  // Format time for display function
+  const formatTimeForDisplay = (timeString) => {
     if (!timeString) return "";
     
     // Extract hours and minutes
@@ -46,6 +46,39 @@ function Allbatch() {
     hours = hours % 12 || 12;
     
     return `${hours}:${minutes} ${period}`;
+  };
+
+  // Format time for input field (convert to 24-hour format for time input)
+  const formatTimeForInput = (timeString) => {
+    if (!timeString) return "";
+    
+    // If already in HH:MM format, return as is
+    if (timeString.match(/^\d{2}:\d{2}$/)) {
+      return timeString;
+    }
+    
+    // If in HH:MM:SS format, remove seconds
+    if (timeString.match(/^\d{2}:\d{2}:\d{2}$/)) {
+      return timeString.substring(0, 5);
+    }
+    
+    // If in 12-hour format with AM/PM, convert to 24-hour
+    const timeMatch = timeString.match(/(\d{1,2}):(\d{2})\s*(AM|PM)/i);
+    if (timeMatch) {
+      let hours = parseInt(timeMatch[1]);
+      const minutes = timeMatch[2];
+      const period = timeMatch[3].toUpperCase();
+      
+      if (period === 'PM' && hours < 12) {
+        hours += 12;
+      } else if (period === 'AM' && hours === 12) {
+        hours = 0;
+      }
+      
+      return `${hours.toString().padStart(2, '0')}:${minutes}`;
+    }
+    
+    return timeString;
   };
 
   const fetchBatches = async () => {
@@ -95,7 +128,7 @@ function Allbatch() {
     }
   };
 
-  // Open edit modal with data
+  // Open edit modal with data - FIXED TIME FORMAT ISSUE
   const handleEdit = async (id) => {
     try {
       const token = localStorage.getItem("token");
@@ -104,20 +137,20 @@ function Allbatch() {
       });
 
       const batchData = res.data.data ? res.data.data : res.data;
-
       setSelectedBatch(batchData);
       setEditForm({
         batch_name: batchData.batch_name || "",
         student_limit: batchData.student_limit || "",
         start_date: batchData.start_date || "",
         end_date: batchData.end_date || "",
-        batch_start_time: batchData.batch_start_time || "",
-        batch_end_time: batchData.batch_end_time || "",
+        // FIX: Format time for input field
+        batch_start_time: formatTimeForInput(batchData.batch_start_time) || "",
+        batch_end_time: formatTimeForInput(batchData.batch_end_time) || "",
         course_id: batchData.course_id || "",
         branch_id: batchData.branch_id || "",
-        // Store both ID and name for display/update
         course_name: batchData.course?.course_name || ""
       });
+
       setIsEditModalOpen(true);
     } catch (error) {
       console.error("Error loading batch for edit:", error);
@@ -142,13 +175,13 @@ function Allbatch() {
         course_id: editForm.course_id,
         start_date: editForm.start_date,
         end_date: editForm.end_date,
+        // Ensure time is in correct format for backend
         batch_start_time: editForm.batch_start_time,
         batch_end_time: editForm.batch_end_time,
         student_limit: parseInt(editForm.student_limit),
         branch_id: editForm.branch_id
       };
       
-      console.log("Sending update data:", updateData);
       
       const response = await axios.put(`/batches/update/${id}`, updateData, {
         headers: { Authorization: `Bearer ${token}` },
@@ -224,10 +257,10 @@ function Allbatch() {
                   📅 End Date: {batch.end_date}
                 </p>
                 <p className="text-sm text-gray-600 mb-2">
-                  ⏰ Start Time: {formatTime(batch.batch_start_time)}
+                  ⏰ Start Time: {formatTimeForDisplay(batch.batch_start_time)}
                 </p>
                 <p className="text-sm text-gray-600">
-                  ⏰ End Time: {formatTime(batch.batch_end_time)}
+                  ⏰ End Time: {formatTimeForDisplay(batch.batch_end_time)}
                 </p>
               </div>
 
@@ -273,8 +306,8 @@ function Allbatch() {
             <p>👥 Limit: {selectedBatch.student_limit}</p>
             <p>📅 Start: {selectedBatch.start_date}</p>
             <p>📅 End: {selectedBatch.end_date}</p>
-            <p>⏰ Start Time: {formatTime(selectedBatch.batch_start_time)}</p>
-            <p>⏰ End Time: {formatTime(selectedBatch.batch_end_time)}</p>
+            <p>⏰ Start Time: {formatTimeForDisplay(selectedBatch.batch_start_time)}</p>
+            <p>⏰ End Time: {formatTimeForDisplay(selectedBatch.batch_end_time)}</p>
           </div>
         </div>
       )}
