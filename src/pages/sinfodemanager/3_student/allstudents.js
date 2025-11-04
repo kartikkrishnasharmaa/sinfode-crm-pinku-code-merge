@@ -37,7 +37,7 @@ export default function Allstudents() {
   const [courses, setCourses] = useState([]);
   const [selectedBranch, setSelectedBranch] = useState("");
   const [search, setSearch] = useState("");
-  const [viewMode, setViewMode] = useState("grid");
+  const [viewMode, setViewMode] = useState("list");
   const [openMenuId, setOpenMenuId] = useState(null);
   const [userRole, setUserRole] = useState("");
   const [userBranchId, setUserBranchId] = useState(null);
@@ -339,10 +339,7 @@ export default function Allstudents() {
             <div>
               <p className="text-sm font-semibold text-gray-500 uppercase tracking-wide">Total Courses</p>
               <p className="text-3xl font-bold text-purple-600 mt-2">{totalCourses}</p>
-              <div className="flex items-center gap-1 mt-2">
-                <FaBook className="text-purple-500 text-sm" />
-                <span className="text-xs text-purple-600 font-medium">Across all students</span>
-              </div>
+     
             </div>
             <div className="bg-gradient-to-br from-purple-50 to-purple-100 p-4 rounded-2xl">
               <FaBook className="text-2xl text-purple-600" />
@@ -355,10 +352,7 @@ export default function Allstudents() {
             <div>
               <p className="text-sm font-semibold text-gray-500 uppercase tracking-wide">New This Month</p>
               <p className="text-3xl font-bold text-orange-600 mt-2">{thisMonthAdmissions}</p>
-              <div className="flex items-center gap-1 mt-2">
-                <FaCalendarAlt className="text-orange-500 text-sm" />
-                <span className="text-xs text-orange-600 font-medium">Current month admissions</span>
-              </div>
+
             </div>
             <div className="bg-gradient-to-br from-orange-50 to-orange-100 p-4 rounded-2xl">
               <FaCalendarAlt className="text-2xl text-orange-600" />
