@@ -201,7 +201,8 @@ export default function Allstudents() {
       const formattedData = {
         ...studentData,
         dob: studentData.dob ? studentData.dob.split('T')[0] : '',
-        admission_date: studentData.admission_date ? studentData.admission_date.split('T')[0] : ''
+        admission_date: studentData.admission_date ? studentData.admission_date.split('T')[0] : '',
+        enrollment_status : studentData.enrollment_status || 'Active'
       };
 
       setEditFormData(formattedData);
@@ -340,6 +341,7 @@ export default function Allstudents() {
         "admission_date": formatDateForAPI(editFormData.admission_date),
         "admission_number": editFormData.admission_number,
         "branch_id": editFormData.branch_id,
+        "enrollment_status": editFormData.enrollment_status,
         "course_fee": editTotalFee.toString(),
         "final_fee": editTotalFee.toString(),
         "_method": "PUT"
@@ -916,9 +918,10 @@ export default function Allstudents() {
             {/* Table Header */}
             <div className="grid grid-cols-12 gap-4 bg-gray-100 p-4 rounded-t-lg font-semibold text-sm md:text-base">
               <div className="col-span-3 flex items-center">Student</div>
-              <div className="col-span-2 text-gray-600 truncate hidden sm:block">Email</div>
+              {/* <div className="col-span-2 text-gray-600 truncate hidden sm:block">Email</div> */}
               <div className="col-span-2 text-gray-600 hidden md:flex items-center">Contact</div>
               <div className="col-span-2 text-gray-600 hidden md:flex items-center">Branch</div>
+              <div className="col-span-2 text-gray-600 hidden md:flex items-center">Enrollment Status</div>
               <div className="col-span-1 text-center">Actions</div>
             </div>
 
@@ -943,9 +946,9 @@ export default function Allstudents() {
                     </div>
                   </div>
 
-                  <div className="col-span-2 text-gray-600 truncate hidden sm:block">
+                  {/* <div className="col-span-2 text-gray-600 truncate hidden sm:block">
                     {student.email || "N/A"}
-                  </div>
+                  </div> */}
 
                   <div className="col-span-2 text-gray-600 hidden md:block">
                     {student.contact_number || "N/A"}
@@ -953,6 +956,11 @@ export default function Allstudents() {
 
                   <div className="col-span-2 text-gray-600 hidden md:block">
                     {student.branch?.branch_name || "N/A"}
+                  </div>
+                  <div className="col-span-2 text-gray-600 hidden md:block">
+                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${student.enrollment_status === 'Active' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                      {student.enrollment_status || "N/A"}
+                    </span>
                   </div>
 
                   <div className="col-span-1 flex justify-center relative">
@@ -1357,6 +1365,19 @@ export default function Allstudents() {
                       className="w-full border rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
                       required
                     />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-1">Enrollment Status *</label>
+                    <select
+                      name="enrollment_status"
+                      value={editFormData.enrollment_status || "Active"}
+                      onChange={handleInputChange}
+                      className="w-full border rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
+                      required
+                    >
+                      <option value="Active">Active</option>
+                      <option value="Inactive">Inactive</option>
+                    </select>
                   </div>
                 </div>
 
