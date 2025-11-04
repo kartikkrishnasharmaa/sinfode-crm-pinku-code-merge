@@ -56,7 +56,7 @@ function AddCoupan() {
         }
       );
 
-      toast.warning("Coupon created successfully!");
+      toast.success("Coupon created successfully!");
       // reset fields
       setCouponCode("");
       setDiscountValue("");
@@ -65,7 +65,7 @@ function AddCoupan() {
       setSelectedCourse("");
     } catch (error) {
       console.error("Error creating coupon:", error.response?.data || error);
-      toast.warning(error.response?.data?.message || "Failed to create coupon!");
+      toast.error(error.response?.data?.message || "Failed to create coupon!");
     }
   };
 
