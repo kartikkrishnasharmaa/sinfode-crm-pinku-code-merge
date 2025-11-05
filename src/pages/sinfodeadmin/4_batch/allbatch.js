@@ -3,6 +3,7 @@ import axios from "../../../api/axiosConfig";
 import { FaEye, FaEdit, FaTrash, FaFilter, FaTimes, FaCalendar, FaUsers, FaClock, FaBuilding, FaGraduationCap } from "react-icons/fa";
 import { ToastContainer, toast } from 'react-toastify';
 import "react-toastify/dist/ReactToastify.css";
+
 function Allbatch() {
   const [batches, setBatches] = useState([]);
   const [filteredBatches, setFilteredBatches] = useState([]);
@@ -30,12 +31,22 @@ function Allbatch() {
     branch_id: ""
   });
 
-  // Format time function
+  // Utility function to format time for HTML input
+  const formatTimeForInput = (timeString) => {
+    if (!timeString) return "";
+    // Extract just the hours and minutes (first 5 characters)
+    return timeString.substring(0, 5);
+  };
+
+  // Format time for display function
   const formatTime = (timeString) => {
     if (!timeString) return "N/A";
     
     try {
-      let timeParts = timeString.split(':');
+      // Extract just the time part (HH:MM) in case there are seconds/milliseconds
+      const timePart = timeString.split(':').slice(0, 2).join(':');
+      let timeParts = timePart.split(':');
+      
       if (timeParts.length >= 2) {
         let hours = parseInt(timeParts[0]);
         let minutes = timeParts[1];
@@ -143,8 +154,8 @@ function Allbatch() {
         student_limit: batchData.student_limit || "",
         start_date: batchData.start_date || "",
         end_date: batchData.end_date || "",
-        batch_start_time: batchData.batch_start_time || "",
-        batch_end_time: batchData.batch_end_time || "",
+        batch_start_time: formatTimeForInput(batchData.batch_start_time),
+        batch_end_time: formatTimeForInput(batchData.batch_end_time),
         course_id: batchData.course_id || "",
         branch_id: batchData.branch_id || "",
         course_name: batchData.course?.course_name || ""
