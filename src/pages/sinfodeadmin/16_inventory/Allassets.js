@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import axios from "../../../api/axiosConfig";
 import { FaEdit, FaTrash, FaDownload, FaFilter } from "react-icons/fa";
 import * as XLSX from "xlsx";
-import { ToastContainer, toast } from 'react-toastify';
+import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
 function Allassets() {
@@ -13,6 +13,7 @@ function Allassets() {
   const [staffs, setStaffs] = useState([]);
   const [branchFilter, setBranchFilter] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
+  const [deleting, setDeleting] = useState(false);
 
   // Form fields
   const [formData, setFormData] = useState({
@@ -98,7 +99,7 @@ function Allassets() {
     setShowModal(true);
   };
 
-  // ✅ Update API
+  // ✅ Update Asset
   const handleUpdate = async () => {
     try {
       const token = localStorage.getItem("token");
@@ -114,9 +115,10 @@ function Allassets() {
     }
   };
 
-  // ✅ Delete API
+  // ✅ Delete Asset (Improved Error Handling)
   const handleDelete = async (id) => {
     if (!window.confirm("Are you sure you want to delete this asset?")) return;
+    setDeleting(true);
     try {
       const token = localStorage.getItem("token");
       await axios.delete(`/assets/${id}/delete`, {
@@ -126,21 +128,33 @@ function Allassets() {
       fetchAssets();
     } catch (error) {
       console.error("Error deleting asset:", error);
-      toast.error("Failed to delete asset");
+
+      // ⚠️ Handle foreign key constraint error (linked records)
+      if (error.response?.data?.message?.includes("Integrity constraint violation")) {
+        toast.error(
+          "Cannot delete this asset —because it is in transfer history record."
+        );
+      } else {
+        toast.error(
+          error.response?.data?.message || "Failed to delete asset. Please try again."
+        );
+      }
+    } finally {
+      setDeleting(false);
     }
   };
 
   // ✅ Export to Excel
   const exportToExcel = () => {
     const worksheet = XLSX.utils.json_to_sheet(
-      assets.map(asset => ({
+      assets.map((asset) => ({
         "Asset Name": asset.asset_name,
         "Asset Code": asset.asset_code,
         "Purchase Date": asset.purchase_date,
         "Status": asset.current_status,
         "Quantity": asset.quantity_available,
         "Branch": asset.branch ? asset.branch.branch_name : "N/A",
-        "Assigned Staff": asset.staff ? asset.staff.employee_name : "N/A"
+        "Assigned Staff": asset.staff ? asset.staff.employee_name : "N/A",
       }))
     );
     const workbook = XLSX.utils.book_new();
@@ -149,14 +163,14 @@ function Allassets() {
     toast.success("Assets exported successfully!");
   };
 
-  // ✅ Filter assets based on selected branch and status
-  const filteredAssets = assets.filter(asset => {
+  // ✅ Filter logic
+  const filteredAssets = assets.filter((asset) => {
     const branchMatch = branchFilter ? asset.branch_id == branchFilter : true;
     const statusMatch = statusFilter ? asset.current_status === statusFilter : true;
     return branchMatch && statusMatch;
   });
 
-  // ✅ Get status badge class
+  // ✅ Status badge styling
   const getStatusClass = (status) => {
     switch (status) {
       case "in_use":
@@ -172,23 +186,11 @@ function Allassets() {
 
   return (
     <div className="p-6 bg-gray-50 min-h-screen">
-      {/* Toast Container */}
-      <ToastContainer
-        position="top-right"
-        autoClose={3000}
-        hideProgressBar={false}
-        newestOnTop={false}
-        closeOnClick
-        rtl={false}
-        pauseOnFocusLoss
-        draggable
-        pauseOnHover
-        theme="light"
-      />
-      
+      <ToastContainer position="top-right" autoClose={3000} theme="light" />
+
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6">
         <h1 className="text-3xl font-bold text-gray-800 mb-4 md:mb-0">All Assets</h1>
-        
+
         <div className="flex flex-wrap gap-3">
           <button
             onClick={exportToExcel}
@@ -220,7 +222,7 @@ function Allassets() {
               ))}
             </select>
           </div>
-          
+
           <div className="w-full md:w-1/3">
             <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
             <select
@@ -234,7 +236,7 @@ function Allassets() {
               <option value="maintenance">Maintenance</option>
             </select>
           </div>
-          
+
           <div className="w-full md:w-1/3 flex items-end">
             <button
               onClick={() => {
@@ -249,6 +251,7 @@ function Allassets() {
         </div>
       </div>
 
+      {/* Asset Cards */}
       {filteredAssets.length === 0 ? (
         <div className="bg-white rounded-xl shadow-md p-8 text-center">
           <p className="text-gray-500 text-lg">No assets found.</p>
@@ -271,10 +274,8 @@ function Allassets() {
               key={asset.id}
               className="bg-white shadow-lg rounded-xl p-6 border border-gray-100 hover:shadow-xl transition-all duration-300 relative overflow-hidden"
             >
-              {/* Decorative element */}
               <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-400 to-purple-500"></div>
-              
-              {/* Action Icons */}
+
               <div className="absolute top-4 right-4 flex space-x-3">
                 <FaEdit
                   className="text-blue-600 cursor-pointer hover:scale-110 transition-transform"
@@ -282,16 +283,29 @@ function Allassets() {
                   title="Edit Asset"
                 />
                 <FaTrash
-                  className="text-red-600 cursor-pointer hover:scale-110 transition-transform"
-                  onClick={() => handleDelete(asset.id)}
+                  className={`text-red-600 cursor-pointer hover:scale-110 transition-transform ${
+                    deleting ? "opacity-50 cursor-not-allowed" : ""
+                  }`}
+                  onClick={() => !deleting && handleDelete(asset.id)}
                   title="Delete Asset"
                 />
               </div>
 
               <div className="flex items-start mb-4">
                 <div className="bg-blue-100 p-3 rounded-lg mr-4">
-                  <svg className="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
+                  <svg
+                    className="w-8 h-8 text-blue-600"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"
+                    />
                   </svg>
                 </div>
                 <div>
@@ -313,21 +327,25 @@ function Allassets() {
 
               <div className="mb-4">
                 <p className="text-gray-500 text-sm">Status</p>
-                <span className={`inline-block px-3 py-1 rounded-full text-xs font-semibold ${getStatusClass(asset.current_status)}`}>
+                <span
+                  className={`inline-block px-3 py-1 rounded-full text-xs font-semibold ${getStatusClass(
+                    asset.current_status
+                  )}`}
+                >
                   {asset.current_status.replace("_", " ").toUpperCase()}
                 </span>
               </div>
 
-              {/* Branch Info */}
               {asset.branch && (
                 <div className="mb-3 p-3 bg-gray-50 rounded-lg">
                   <p className="text-gray-500 text-sm mb-1">Branch</p>
                   <p className="text-gray-800 font-medium">{asset.branch.branch_name}</p>
-                  <p className="text-gray-600 text-sm">{asset.branch.city}, {asset.branch.state}</p>
+                  <p className="text-gray-600 text-sm">
+                    {asset.branch.city}, {asset.branch.state}
+                  </p>
                 </div>
               )}
 
-              {/* Staff Info */}
               {asset.staff && (
                 <div className="p-3 bg-blue-50 rounded-lg">
                   <p className="text-gray-500 text-sm mb-1">Assigned To</p>
@@ -347,6 +365,7 @@ function Allassets() {
             <h2 className="text-xl font-bold mb-4 text-gray-800">Update Asset</h2>
 
             <div className="space-y-4">
+              {/* Form Inputs */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Asset Name</label>
                 <input
@@ -440,7 +459,10 @@ function Allassets() {
                 <select
                   value={formData.assigned_staff_id}
                   onChange={(e) =>
-                    setFormData({ ...formData, assigned_staff_id: e.target.value })
+                    setFormData({
+                      ...formData,
+                      assigned_staff_id: e.target.value,
+                    })
                   }
                   className="w-full border border-gray-300 p-3 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
                 >
@@ -454,16 +476,16 @@ function Allassets() {
               </div>
             </div>
 
-            <div className="flex justify-end space-x-3 mt-6">
+            <div className="mt-6 flex justify-end gap-3">
               <button
-                className="px-4 py-2 bg-gray-300 text-gray-800 rounded-lg hover:bg-gray-400 transition-colors"
                 onClick={() => setShowModal(false)}
+                className="px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded-lg"
               >
                 Cancel
               </button>
               <button
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
                 onClick={handleUpdate}
+                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg"
               >
                 Update
               </button>
