@@ -30,50 +30,36 @@ function Allbatch() {
   const userData = JSON.parse(localStorage.getItem("user") || "{}");
   const userBranchId = userData.branch_id;
 
-  // Format time for display function
-  const formatTimeForDisplay = (timeString) => {
-    if (!timeString) return "";
-    
-    const timeParts = timeString.split(':');
-    if (timeParts.length < 2) return timeString;
-    
-    let hours = parseInt(timeParts[0]);
-    const minutes = timeParts[1];
-    const period = hours >= 12 ? 'PM' : 'AM';
-    
-    hours = hours % 12 || 12;
-    
-    return `${hours}:${minutes} ${period}`;
-  };
-
-  // Format time for input field
+  // Utility function to format time for HTML input
   const formatTimeForInput = (timeString) => {
     if (!timeString) return "";
+    // Extract just the hours and minutes (first 5 characters)
+    return timeString.substring(0, 5);
+  };
+
+  // Format time for display function
+  const formatTimeForDisplay = (timeString) => {
+    if (!timeString) return "N/A";
     
-    if (timeString.match(/^\d{2}:\d{2}$/)) {
+    try {
+      // Extract just the time part (HH:MM) in case there are seconds/milliseconds
+      const timePart = timeString.split(':').slice(0, 2).join(':');
+      let timeParts = timePart.split(':');
+      
+      if (timeParts.length >= 2) {
+        let hours = parseInt(timeParts[0]);
+        let minutes = timeParts[1];
+        const period = hours >= 12 ? 'PM' : 'AM';
+        
+        hours = hours % 12 || 12;
+        
+        return `${hours}:${minutes} ${period}`;
+      }
+      return timeString;
+    } catch (error) {
+      console.error("Error formatting time:", error);
       return timeString;
     }
-    
-    if (timeString.match(/^\d{2}:\d{2}:\d{2}$/)) {
-      return timeString.substring(0, 5);
-    }
-    
-    const timeMatch = timeString.match(/(\d{1,2}):(\d{2})\s*(AM|PM)/i);
-    if (timeMatch) {
-      let hours = parseInt(timeMatch[1]);
-      const minutes = timeMatch[2];
-      const period = timeMatch[3].toUpperCase();
-      
-      if (period === 'PM' && hours < 12) {
-        hours += 12;
-      } else if (period === 'AM' && hours === 12) {
-        hours = 0;
-      }
-      
-      return `${hours.toString().padStart(2, '0')}:${minutes}`;
-    }
-    
-    return timeString;
   };
 
   const fetchBatches = async () => {
@@ -136,8 +122,8 @@ function Allbatch() {
         student_limit: batchData.student_limit || "",
         start_date: batchData.start_date || "",
         end_date: batchData.end_date || "",
-        batch_start_time: formatTimeForInput(batchData.batch_start_time) || "",
-        batch_end_time: formatTimeForInput(batchData.batch_end_time) || "",
+        batch_start_time: formatTimeForInput(batchData.batch_start_time),
+        batch_end_time: formatTimeForInput(batchData.batch_end_time),
         course_id: batchData.course_id || "",
         branch_id: batchData.branch_id || "",
         course_name: batchData.course?.course_name || ""
@@ -403,6 +389,17 @@ function Allbatch() {
                   </div>
                 </div>
 
+                <div className="bg-green-50 p-4 rounded-xl">
+                  <div className="flex items-center gap-3 mb-2">
+                    <div className="bg-green-500 p-2 rounded-lg">
+                      <FaBuilding className="text-white text-lg" />
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-600">Branch</p>
+                      <p className="font-semibold text-gray-800">{selectedBatch.branch?.branch_name}</p>
+                    </div>
+                  </div>
+                </div>
 
                 <div className="bg-purple-50 p-4 rounded-xl">
                   <div className="flex items-center gap-3 mb-2">
