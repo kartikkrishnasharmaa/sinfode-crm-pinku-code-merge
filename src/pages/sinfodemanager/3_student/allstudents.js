@@ -932,60 +932,12 @@ export default function Allstudents() {
                             {selectedStudent.courses?.length || 0}
                           </span>
                         </div>
-                        <div className="flex justify-between items-center py-2">
-                          <span className="text-gray-600 font-medium">Student Since:</span>
-                          <span className="font-bold text-gray-800">
-                            {Math.floor((new Date() - new Date(selectedStudent.admission_date)) / (1000 * 60 * 60 * 24))} days
-                          </span>
-                        </div>
+             
                       </div>
                     </div>
 
                     {/* Quick Actions */}
    
-                    {/* Courses Information */}
-                    <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm md:col-span-2">
-                      <h4 className="font-bold text-gray-800 mb-4 flex items-center gap-3">
-                        <div className="bg-indigo-100 p-2 rounded-lg">
-                          <FaBook className="text-indigo-600" />
-                        </div>
-                        Enrolled Courses & Batches
-                      </h4>
-                      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                        {selectedStudent.courses?.map((course) => (
-                          <div key={course.id} className="border border-gray-200 rounded-2xl p-4 hover:shadow-md transition-shadow bg-gradient-to-br from-gray-50 to-white">
-                            <div className="flex justify-between items-start mb-3">
-                              <div>
-                                <h5 className="font-bold text-gray-800 text-lg">{course.course_name}</h5>
-                                <p className="text-sm text-gray-600">{course.course_code} • {course.duration} months</p>
-                              </div>
-                              <span className="bg-gradient-to-r from-green-500 to-green-600 text-white px-3 py-1.5 rounded-full text-sm font-bold shadow-sm">
-                                ₹{course.discounted_price || course.actual_price || '0'}
-                              </span>
-                            </div>
-
-                            {course.batch && (
-                              <div className="bg-blue-50 rounded-xl p-3 border border-blue-100">
-                                <div className="flex justify-between items-center text-sm">
-                                  <div>
-                                    <span className="font-bold text-gray-700">Batch:</span>
-                                    <span className="ml-2 text-gray-600 font-medium">{course.batch.batch_name}</span>
-                                  </div>
-                                  <div className="text-right">
-                                    <div className="text-gray-600 font-medium">
-                                      {formatTime(course.batch.batch_start_time)} - {formatTime(course.batch.batch_end_time)}
-                                    </div>
-                                    <div className="text-xs text-gray-500">
-                                      {formatDate(course.batch.start_date)} to {formatDate(course.batch.end_date)}
-                                    </div>
-                                  </div>
-                                </div>
-                              </div>
-                            )}
-                          </div>
-                        ))}
-                      </div>
-                    </div>
                   </div>
                 </div>
               </div>
