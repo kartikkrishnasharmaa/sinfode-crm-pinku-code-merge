@@ -6,15 +6,15 @@ import Reminder from "./remider";
 
 export default function Fees() {
   const [activeTab, setActiveTab] = useState("fees");
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   return (
     <SAAdminLayout>
-      <div className="flex h-full">
-        {/* Toggle Button for Sidebar */}
+      <div className="flex flex-col md:flex-row h-screen bg-gray-50 relative overflow-hidden">
+        {/* Mobile Sidebar Toggle */}
         <button
           onClick={() => setSidebarOpen(!sidebarOpen)}
-          className="absolute top-[75px] left-4 z-50 text-gray p-2 rounded-md md:hidden"
+          className="md:hidden fixed top-20 left-4 z-50 bg-white shadow-lg p-2 rounded-md text-gray-700 hover:bg-gray-100 transition"
           aria-label="Toggle Sidebar"
         >
           {sidebarOpen ? "❌" : "☰"}
@@ -22,53 +22,63 @@ export default function Fees() {
 
         {/* Sidebar */}
         <div
-          className={`${
-            sidebarOpen ? "block" : "hidden"
-          } w-60 bg-white rounded-xl shadow-md p-4 space-y-3 fixed md:static h-full z-0`}
+          className={`fixed md:static top-0 left-0 h-full w-64 bg-white shadow-lg rounded-r-xl transform transition-transform duration-300 ease-in-out z-40
+            ${sidebarOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"}`}
         >
-          <button
-            onClick={() => setActiveTab("fees")}
-            className={`block w-full text-left px-4 py-5 rounded-lg ${
-              activeTab === "fees"
-                ? "bg-blue-100 text-black"
-                : "hover:bg-blue-100 text-black"
-            }`}
-          >
-            💰 Fees Structure
-          </button>
+          <div className="pt-24 md:pt-6 p-4 space-y-3 overflow-y-auto h-full">
+            <button
+              onClick={() => setActiveTab("fees")}
+              className={`block w-full text-left px-4 py-3 rounded-lg font-medium transition
+                ${
+                  activeTab === "fees"
+                    ? "bg-blue-100 text-blue-800"
+                    : "hover:bg-blue-50 text-gray-700"
+                }`}
+            >
+              💰 Fees Structure
+            </button>
 
-          <button
-            onClick={() => setActiveTab("collection")}
-            className={`block w-full text-left px-4 py-5 rounded-lg ${
-              activeTab === "collection"
-                ? "bg-blue-100 text-black"
-                : "hover:bg-blue-100 text-black"
-            }`}
-          >
-            💰 Fees Collection
-          </button>
+            <button
+              onClick={() => setActiveTab("collection")}
+              className={`block w-full text-left px-4 py-3 rounded-lg font-medium transition
+                ${
+                  activeTab === "collection"
+                    ? "bg-blue-100 text-blue-800"
+                    : "hover:bg-blue-50 text-gray-700"
+                }`}
+            >
+              💳 Fees Collection
+            </button>
 
-          <button
-            onClick={() => setActiveTab("reminder")}
-            className={`block w-full text-left px-4 py-5 rounded-lg ${
-              activeTab === "reminder"
-                ? "bg-blue-100 text-black"
-                : "hover:bg-blue-100 text-black"
-            }`}
-          >
-            ⏰ Fee Reminder
-          </button>
+            <button
+              onClick={() => setActiveTab("reminder")}
+              className={`block w-full text-left px-4 py-3 rounded-lg font-medium transition
+                ${
+                  activeTab === "reminder"
+                    ? "bg-blue-100 text-blue-800"
+                    : "hover:bg-blue-50 text-gray-700"
+                }`}
+            >
+              ⏰ Fee Reminder
+            </button>
+          </div>
         </div>
 
-        {/* Content */}
-        <div
-          className={`flex-1 rounded-lg p-6 overflow-y-auto transition-all duration-300 ${
-            sidebarOpen ? "md:ml-60 lg:ml-4" : "md:ml-0"
-          }`}
-        >
-          {activeTab === "fees" && <FeesStructure />}
-          {activeTab === "collection" && <Collection />}
-          {activeTab === "reminder" && <Reminder />}
+        {/* Overlay for Mobile */}
+        {sidebarOpen && (
+          <div
+            className="fixed inset-0 bg-black bg-opacity-30 z-30 md:hidden"
+            onClick={() => setSidebarOpen(false)}
+          ></div>
+        )}
+
+        {/* Main Content */}
+        <div className="flex-1 p-4 md:p-6 overflow-y-auto mt-24 md:mt-0">
+          <div className="bg-white rounded-xl shadow-sm p-4 md:p-6">
+            {activeTab === "fees" && <FeesStructure />}
+            {activeTab === "collection" && <Collection />}
+            {activeTab === "reminder" && <Reminder />}
+          </div>
         </div>
       </div>
     </SAAdminLayout>
