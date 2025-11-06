@@ -3,7 +3,6 @@ import axios from "../../../api/axiosConfig";
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
 import {
-  FaPrint,
   FaDownload,
   FaTimes,
   FaSearch,
@@ -126,110 +125,91 @@ function StudentIDCardGenerator() {
     setShowModal(true);
   };
 
-  // Handle Print
-  const handlePrint = () => {
-    const printContent = document.getElementById("id-card-to-print");
-    const printWindow = window.open('', '_blank');
+ // Handle Download as PDF
+const handleDownloadPDF = async () => {
+  if (!idCardRef.current) return;
 
-    printWindow.document.write(`
-      <!DOCTYPE html>
-      <html>
-        <head>
-          <title>Student ID Card - ${selectedStudent.full_name}</title>
-          <style>
-            body { 
-              margin: 0; 
-              padding: 20px; 
-              font-family: 'Arial', sans-serif;
-              background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-              display: flex;
-              justify-content: center;
-              align-items: center;
-              min-height: 100vh;
-            }
-            .id-card-container {
-              transform: scale(1.1);
-            }
-            @media print {
-              body { 
-                background: white !important;
-                padding: 0;
-              }
-              .id-card-container {
-                transform: none !important;
-                box-shadow: none !important;
-              }
-            }
-          </style>
-        </head>
-        <body>
-          ${printContent.outerHTML}
-        </body>
-      </html>
-    `);
+  setDownloading(true);
+  try {
+    const canvas = await html2canvas(idCardRef.current, {
+      scale: 3,
+      useCORS: true,
+      logging: false,
+      backgroundColor: null
+    });
 
-    printWindow.document.close();
-    printWindow.focus();
+    const imgData = canvas.toDataURL('image/png', 1.0);
+    
+    // CR80 standard ID card size: 3.375" x 2.125" converted to mm
+    const pdf = new jsPDF({
+      orientation: 'landscape',
+      unit: 'mm',
+      format: [85.6, 54] // Width: 85.6mm, Height: 54mm (CR80 standard)
+    });
 
-    setTimeout(() => {
-      printWindow.print();
-      printWindow.close();
-    }, 500);
-  };
+    const pdfWidth = pdf.internal.pageSize.getWidth();
+    const pdfHeight = pdf.internal.pageSize.getHeight();
 
-  // Handle Download as PDF
-  const handleDownloadPDF = async () => {
-    if (!idCardRef.current) return;
+    // Add image to fill entire PDF page
+    pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+    pdf.save(`ID_Card_${selectedStudent.admission_number}_${selectedStudent.full_name.replace(/\s+/g, '_')}.pdf`);
+  } catch (error) {
+    console.error('Error generating PDF:', error);
+    alert('Error downloading PDF. Please try again.');
+  } finally {
+    setDownloading(false);
+  }
+};
 
-    setDownloading(true);
-    try {
-      const canvas = await html2canvas(idCardRef.current, {
-        scale: 3, // Higher scale for better quality
-        useCORS: true,
-        logging: false,
-        backgroundColor: null
-      });
+// Handle Download as Image
+const handleDownloadImage = async () => {
+  if (!idCardRef.current) return;
 
-      const imgData = canvas.toDataURL('image/png', 1.0);
-      const pdf = new jsPDF('p', 'mm', [54, 85.6]); // ID card size in mm (CR80 standard)
+  setDownloading(true);
+  try {
+    const canvas = await html2canvas(idCardRef.current, {
+      scale: 3,
+      useCORS: true,
+      logging: false,
+      backgroundColor: null
+    });
 
-      const pdfWidth = pdf.internal.pageSize.getWidth();
-      const pdfHeight = pdf.internal.pageSize.getHeight();
-
-      pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
-      pdf.save(`ID_Card_${selectedStudent.admission_number}_${selectedStudent.full_name.replace(/\s+/g, '_')}.pdf`);
-    } catch (error) {
-      console.error('Error generating PDF:', error);
-      alert('Error downloading PDF. Please try again.');
-    } finally {
-      setDownloading(false);
-    }
-  };
+    const link = document.createElement('a');
+    link.download = `ID_Card_${selectedStudent.admission_number}_${selectedStudent.full_name.replace(/\s+/g, '_')}.png`;
+    link.href = canvas.toDataURL('image/png', 1.0);
+    link.click();
+  } catch (error) {
+    console.error('Error generating image:', error);
+    alert('Error downloading image. Please try again.');
+  } finally {
+    setDownloading(false);
+  }
+};
 
   // Handle Download as Image
-  const handleDownloadImage = async () => {
-    if (!idCardRef.current) return;
+  // const handleDownloadImage = async () => {
+  //   if (!idCardRef.current) return;
 
-    setDownloading(true);
-    try {
-      const canvas = await html2canvas(idCardRef.current, {
-        scale: 3, // Higher scale for better quality
-        useCORS: true,
-        logging: false,
-        backgroundColor: null
-      });
+  //   setDownloading(true);
+  //   try {
+  //     const canvas = await html2canvas(idCardRef.current, {
+  //       scale: 3, // Higher scale for better quality
+  //       useCORS: true,
+  //       logging: false,
+  //       backgroundColor: null
+  //     });
 
-      const link = document.createElement('a');
-      link.download = `ID_Card_${selectedStudent.admission_number}_${selectedStudent.full_name.replace(/\s+/g, '_')}.png`;
-      link.href = canvas.toDataURL('image/png', 1.0);
-      link.click();
-    } catch (error) {
-      console.error('Error generating image:', error);
-      alert('Error downloading image. Please try again.');
-    } finally {
-      setDownloading(false);
-    }
-  };
+  //     const link = document.createElement('a');
+  //     link.download = `ID_Card_${selectedStudent.admission_number}_${selectedStudent.full_name.replace(/\s+/g, '_')}.png`;
+  //     link.href = canvas.toDataURL('image/png', 1.0);
+  //     link.click();
+  //   } catch (error) {
+  //     console.error('Error generating image:', error);
+  //     alert('Error downloading image. Please try again.');
+  //   } finally {
+  //     setDownloading(false);
+  //   }
+  // };
 
   // Close modal
   const closeModal = () => {
@@ -480,7 +460,6 @@ function StudentIDCardGenerator() {
                 </div>
                 <div>
                   <h2 className="text-xl font-bold text-gray-800">Student ID Card</h2>
-                  <p className="text-gray-600 text-sm">Preview and print ID card</p>
                 </div>
               </div>
               <button
@@ -492,109 +471,7 @@ function StudentIDCardGenerator() {
             </div>
 
             <div className="p-6">
-              <div id="id-card-to-print" ref={idCardRef} className="id-card-container mx-auto">
-                {/* ID Card Design */}
-                <div className="bg-gradient-to-br from-blue-600 via-purple-600 to-indigo-700 rounded-3xl shadow-2xl overflow-hidden w-96 mx-auto border-8 border-white">
-                  {/* College Header */}
-                  <div className="bg-white bg-opacity-90 backdrop-blur-sm p-4 text-center border-b border-white border-opacity-20">
-                    <div className="flex items-center justify-center gap-3 mb-2">
-                      <img
-                        src="https://www.sinfode.com/wp-content/uploads/2022/12/digital-marketing-institute-in-sikar.webp"
-                        alt="College Logo"
-                        className="w-auto h-auto rounded-lg"
-                      />
-
-                    </div>
-                  </div>
-
-                  {/* Student Photo and Basic Info */}
-                  <div className="p-6">
-                    <div className="flex gap-6 items-start">
-                      {/* Student Photo */}
-                      <div className="flex-shrink-0">
-                        <div className="relative">
-                          <img
-                            src={selectedStudent.photo_url || "https://cdn-icons-png.flaticon.com/512/149/149071.png"}
-                            alt={selectedStudent.full_name}
-                            className="w-24 h-28 rounded-2xl object-cover border-4 border-white shadow-lg"
-                          />
-                          <div className="absolute inset-0 border-2 border-white border-opacity-50 rounded-2xl"></div>
-                        </div>
-                        <div className="mt-2 text-center">
-                          <div className="bg-white bg-opacity-20 rounded-lg px-2 py-1">
-                            <span className="text-white text-xs font-bold">ID: #{selectedStudent.admission_number}</span>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Student Details */}
-                      <div className="flex-1 text-white">
-                        <h2 className="text-xl font-bold mb-2 leading-tight">
-                          {selectedStudent.full_name.toUpperCase()}
-                        </h2>
-
-                        <div className="space-y-2 text-sm">
-                          <div className="flex items-center gap-2">
-                            <FaUsers className="text-white text-opacity-80" />
-                            <span className="font-medium">Father:</span>
-                            <span>{selectedStudent.guardian_name}</span>
-                          </div>
-
-                          <div className="flex items-center gap-2">
-                            <FaMapMarkerAlt className="text-white text-opacity-80" />
-                            <span className="font-medium">Branch:</span>
-                            <span>{selectedStudent.branch?.branch_name}</span>
-                          </div>
-
-                          {selectedStudent.courses?.[0] && (
-                            <div className="flex items-center gap-2">
-                              <FaBook className="text-white text-opacity-80" />
-                              <span className="font-medium">Course:</span>
-                              <span
-                                className="truncate max-w-[120px] overflow-hidden whitespace-nowrap"
-                                title={selectedStudent.courses[0].course_name}
-                              >
-                                {selectedStudent.courses[0].course_name}
-                              </span>
-                            </div>
-                          )}
-
-
-                          {selectedStudent.courses?.[0]?.batch && (
-                            <div className="flex items-center gap-2">
-                              <FaCalendarAlt className="text-white text-opacity-80" />
-                              <span className="font-medium">Batch:</span>
-                              <span>{selectedStudent.courses[0].batch.batch_name}</span>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* QR Code Area */}
-                    <div className="mt-6 pt-4 border-t border-white border-opacity-20">
-                      <div className="flex justify-between items-center">
-                        <div className="text-white text-xs">
-                          <div>Valid Through: {formatDate(selectedStudent.courses?.[0]?.batch?.end_date)}</div>
-                          <div className="text-white text-opacity-70">Authorized Signature</div>
-                        </div>
-
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Footer */}
-                  <div className="bg-black bg-opacity-30 p-3 text-center">
-                    <p className="text-white text-opacity-80 text-xs">
-                      {selectedStudent.branch?.address || "Near Kalyan Circle, Front of Sanskrit College, Sikar (Rajasthan)"}
-                    </p>
-                    <p className="text-white text-opacity-60 text-xs mt-1">
-                      Contact: {selectedStudent.branch?.contact_number || "9376306970"} | Email: {selectedStudent.branch?.email || "info@sinfode.com"}
-                    </p>
-                  </div>
-                </div>
-              </div>
-
+          
               {/* Instructions */}
               <div className="mt-6 bg-blue-50 rounded-xl p-4 border border-blue-200">
                 <h4 className="font-semibold text-blue-800 mb-2">Printing Instructions:</h4>
