@@ -2,6 +2,9 @@ import React, { useState, useEffect } from 'react';
 import axios from "../../../api/axiosConfig";
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
+import { toast, ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
+
 
 const Collection = () => {
   const [showModal, setShowModal] = useState(false);
@@ -221,7 +224,7 @@ const Collection = () => {
       // Optional: Refetch to ensure data consistency
       // await fetchAllData();
 
-      alert("Payment deleted successfully!");
+      toast.success("Payment deleted successfully!");
     } catch (error) {
       console.error("Error deleting payment:", error);
 
@@ -240,7 +243,7 @@ const Collection = () => {
         }
       }
 
-      alert("Error deleting payment. Please try again.");
+      toast.error("Error deleting payment. Please try again.");
     }
   };
 
@@ -492,7 +495,7 @@ const generateReceipt = (payment, feeRecord) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!selectedStudent) {
-      alert("Please select a student");
+      toast.error("Please select a student");
       return;
     }
     try {
@@ -513,30 +516,30 @@ const generateReceipt = (payment, feeRecord) => {
 
       // Refresh all data
       await fetchAllData();
-      alert("Fee record saved successfully!");
+      toast.success("Fee record saved successfully!");
       closeModal();
     } catch (error) {
       console.error("Error saving fee data:", error);
-      alert("Error saving fee data. Please try again.");
+      toast.error("Error saving fee data. Please try again.");
     }
   };
 
   const handlePaymentSubmit = async (e) => {
     e.preventDefault();
     if (!selectedFeeRecord) {
-      alert("No fee record selected");
+      toast.error("No fee record selected");
       return;
     }
 
     // Validate amount
     const amountPaid = parseFloat(paymentForm.amount_paid);
     if (amountPaid <= 0) {
-      alert("Please enter a valid payment amount");
+      toast.error("Please enter a valid payment amount");
       return;
     }
 
     if (amountPaid > selectedFeeRecord.pending_amount) {
-      alert(`Payment amount cannot exceed pending amount of ${formatCurrency(selectedFeeRecord.pending_amount)}`);
+      toast.error(`Payment amount cannot exceed pending amount of ${formatCurrency(selectedFeeRecord.pending_amount)}`);
       return;
     }
 
@@ -557,7 +560,7 @@ const generateReceipt = (payment, feeRecord) => {
 
       // If we get here, payment was successful
       await fetchAllData();
-      alert("Payment recorded successfully!");
+      toast.success("Payment recorded successfully!");
       closePaymentModal();
 
     } catch (error) {
@@ -583,17 +586,17 @@ const generateReceipt = (payment, feeRecord) => {
 
           // If the pending amount decreased by the paid amount (or close to it), payment was successful
           if (Math.abs(paidDifference - amountPaid) < 1) { // Allow for small rounding differences
-            alert("Payment recorded successfully! (System updated)");
+            toast.success("Payment recorded successfully! (System updated)");
             closePaymentModal();
             return;
           }
         }
 
         // If we get here, we're not sure if payment was saved
-        alert("Payment has been recorded.");
+        toast.warn("Payment has been recorded.");
       } else {
         // Some other error
-        alert(`Error saving payment: ${error.response?.data?.message || error.message || 'Please try again.'}`);
+        toast.error(`Error saving payment: ${error.response?.data?.message || error.message || 'Please try again.'}`);
       }
     }
   };
