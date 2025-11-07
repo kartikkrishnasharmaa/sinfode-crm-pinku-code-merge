@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from "../../../api/axiosConfig";
+import { ToastContainer, toast } from 'react-toastify';
+import "react-toastify/dist/ReactToastify.css";
 
 const ExamTable = ({ refreshFlag }) => {
   const [records, setRecords] = useState([]);
@@ -13,14 +15,14 @@ const ExamTable = ({ refreshFlag }) => {
     try {
       const token = localStorage.getItem("token");
       if (!token) {
-        alert("No token found! Please login again.");
+        toast.error("No token found! Please login again.");
         return;
       }
-      
+
       const res = await axios.get("exam-marks", {
         headers: { Authorization: `Bearer ${token}` },
       });
-      
+
       // Transform API response to match table format
       const examRecords = [];
       res.data.students.forEach(student => {
@@ -42,13 +44,13 @@ const ExamTable = ({ refreshFlag }) => {
           });
         });
       });
-      
+
       setRecords(examRecords);
       setFilteredRecords(examRecords);
       setLoading(false);
     } catch (error) {
       console.error("Error fetching exam records:", error);
-      alert("Failed to load exam records");
+      toast.error("Failed to load exam records");
       setLoading(false);
     }
   };
@@ -74,21 +76,21 @@ const ExamTable = ({ refreshFlag }) => {
     if (!window.confirm("Are you sure you want to delete this exam record?")) {
       return;
     }
-    
+
     try {
       const token = localStorage.getItem("token");
       await axios.delete(`exam-marks/delete/${id}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      
+
       // Remove the deleted record from state
       setRecords(records.filter(record => record.id !== id));
       setFilteredRecords(filteredRecords.filter(record => record.id !== id));
-      
-      alert("Exam record deleted successfully!");
+
+      toast.success("Exam record deleted successfully!");
     } catch (error) {
       console.error("Error deleting exam record:", error);
-      alert("Failed to delete exam record");
+      toast.error("Failed to delete exam record");
     }
   };
 
@@ -108,7 +110,7 @@ const ExamTable = ({ refreshFlag }) => {
       // await fetchBranches();
       await fetchExamRecords();
     };
-    
+
     fetchData();
   }, [refreshFlag]);
 
@@ -127,92 +129,76 @@ const ExamTable = ({ refreshFlag }) => {
   return (
     <div>
       <div className="mb-6 flex justify-between items-center">
-      
+        <ToastContainer position="top-right" autoClose={3000} hideProgressBar />
+
       </div>
 
       <div className="sf-card rounded-lg overflow-hidden" style={{ background: '#ffffff', border: '1px solid #dddbda', boxShadow: '0 2px 4px rgba(0,0,0,0.07)' }}>
         <div className="sf-table-header px-6 py-4" style={{ background: '#f3f2f2', borderBottom: '2px solid #dddbda' }}>
           <h3 className="text-lg font-semibold text-gray-800">Exam Records</h3>
         </div>
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead className="sf-table-header" style={{ background: '#f3f2f2', borderBottom: '2px solid #dddbda' }}>
-              <tr>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Name</th>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Branch</th>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Course</th>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Exam Date</th>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Exam Name</th>
-                <th className="px-6 py-4 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">Total Marks</th>
-                <th className="px-6 py-4 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">Obtained</th>
-                <th className="px-6 py-4 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">Percentage</th>
-                <th className="px-6 py-4 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {filteredRecords.length === 0 ? (
-                <tr id="emptyState">
-                  <td colSpan="12" className="px-6 py-16 text-center">
-                    <div className="text-gray-400">
-                      <svg className="mx-auto h-16 w-16 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
-                      </svg>
-                      <h3 className="text-lg font-medium text-gray-900 mb-2">No exam records found</h3>
-                      <p className="text-gray-500">Get started by adding your first exam record.</p>
-                    </div>
-                  </td>
+        <div>
+          <div className="overflow-x-auto w-full">
+            <table className="w-full border-collapse">
+              <thead className="bg-gray-100 border-b">
+                <tr>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Name</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Course</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Exam Date</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Exam Name</th>
+                  <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">Total Marks</th>
+                  <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">Obtained</th>
+                  <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">Percentage</th>
+                  <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">Actions</th>
                 </tr>
-              ) : (
-                filteredRecords.map(record => {
-                  const gradeInfo = getGrade(record.percentage);
-                  const formattedDate = new Date(record.examDate).toLocaleDateString();
-                  
-                  return (
-                    <tr key={record.id} className="sf-table-row hover:bg-gray-50">
-                  
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm font-medium text-gray-900">{record.studentName}</div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-900">{record.branch}</div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-900">{record.course}</div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-900">{formattedDate}</div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-900">{record.examName}</div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-center">
-                        <div className="text-sm font-medium text-gray-900">{record.totalMarks}</div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-center">
-                        <div className="text-sm font-medium text-gray-900">{record.obtainedMarks}</div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-center">
-                        <span className={`sf-badge ${gradeInfo.class}`} style={{ display: 'inline-flex', alignItems: 'center', padding: '0.25rem 0.75rem', borderRadius: '0.375rem', fontSize: '0.75rem', fontWeight: '600' }}>
-                          {record.percentage.toFixed(1)}% ({gradeInfo.grade})
-                        </span>
-                      </td>
-                      
-                      <td className="px-6 py-4 whitespace-nowrap text-center">
-                        <div className="flex items-center justify-center space-x-2">
-                          <button onClick={() => deleteRecord(record.id)} 
-                            className="text-red-600 hover:text-red-900 transition-colors p-2 rounded-lg hover:bg-red-50" title="Delete Record">
+              </thead>
+
+              <tbody className="divide-y divide-gray-200 bg-white">
+                {filteredRecords.length === 0 ? (
+                  <tr>
+                    <td colSpan="9" className="px-6 py-16 text-center text-gray-500">
+                      No exam records found
+                    </td>
+                  </tr>
+                ) : (
+                  filteredRecords.map((record) => {
+                    const gradeInfo = getGrade(record.percentage);
+                    const formattedDate = new Date(record.examDate).toLocaleDateString();
+
+                    return (
+                      <tr key={record.id} className="hover:bg-gray-50">
+                        <td className="px-4 py-3 text-sm font-medium text-gray-900 truncate">{record.studentName}</td>
+                                               <td className="px-4 py-3 text-sm text-gray-900 truncate">{record.course}</td>
+                        <td className="px-4 py-3 text-sm text-gray-900">{formattedDate}</td>
+                        <td className="px-4 py-3 text-sm text-gray-900 truncate">{record.examName}</td>
+                        <td className="px-4 py-3 text-center text-sm font-medium text-gray-900">{record.totalMarks}</td>
+                        <td className="px-4 py-3 text-center text-sm font-medium text-gray-900">{record.obtainedMarks}</td>
+                        <td className="px-4 py-3 text-center">
+                          <span
+                            className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold ${gradeInfo.class}`}
+                          >
+                            {record.percentage.toFixed(1)}% ({gradeInfo.grade})
+                          </span>
+                        </td>
+                        <td className="px-4 py-3 text-center">
+                          <button
+                            onClick={() => deleteRecord(record.id)}
+                            className="text-red-600 hover:text-red-900 transition-colors p-2 rounded-lg hover:bg-red-50"
+                            title="Delete Record"
+                          >
                             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                             </svg>
                           </button>
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })
-              )}
-            </tbody>
-          </table>
+                        </td>
+                      </tr>
+                    );
+                  })
+                )}
+              </tbody>
+            </table>
+          </div>
+
         </div>
       </div>
     </div>

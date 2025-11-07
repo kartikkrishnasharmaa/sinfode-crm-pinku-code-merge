@@ -667,7 +667,7 @@ export default function Accountant() {
           {filteredAndSortedAccountants.map(accountant => (
             <div
               key={accountant.id}
-              className="bg-white rounded-xl mt-5 shadow hover:shadow-lg transition p-6 flex flex-col items-center text-center relative"
+              className="bg-blue-200 rounded-xl mt-5 shadow hover:shadow-lg transition p-6 flex flex-col items-center text-center relative"
             >
               <div className="w-20 h-20 rounded-full overflow-hidden border-4 border-white shadow-md -mt-12 mb-3">
                 <img

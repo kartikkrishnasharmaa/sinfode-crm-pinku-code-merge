@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
 import axios from "../../../api/axiosConfig";
+import { ToastContainer, toast } from 'react-toastify';
+import "react-toastify/dist/ReactToastify.css";
 
 export default function AssignmentTable() {
   const [assignments, setAssignments] = useState([]);
@@ -165,7 +167,7 @@ export default function AssignmentTable() {
       const res = await axios.post("/assignments", formData, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      alert(res.data.message || "Assignment created successfully");
+      toast.success(res.data.message || "Assignment created successfully");
       setShowModal(false);
       setFormData({
         title: "",
@@ -181,7 +183,7 @@ export default function AssignmentTable() {
       fetchAssignments();
     } catch (error) {
       console.error("Error creating assignment:", error);
-      alert("Error creating assignment");
+      toast.error("Error creating assignment");
     }
   };
 
@@ -203,11 +205,11 @@ export default function AssignmentTable() {
         headers: { Authorization: `Bearer ${token}` },
       });
 
-      alert(res.data.message || "Submission updated successfully");
+      toast.success(res.data.message || "Submission updated successfully");
       fetchAssignments(); // Refresh assignments to update status
     } catch (error) {
       console.error("Error updating submission:", error);
-      alert("Error updating submission");
+      toast.error("Error updating submission");
     }
   };
 
@@ -223,11 +225,11 @@ export default function AssignmentTable() {
         headers: { Authorization: `Bearer ${token}` },
       });
 
-      alert(res.data.message || "Assignment deleted successfully");
+      toast.success(res.data.message || "Assignment deleted successfully");
       fetchAssignments(); // Refresh assignments list
     } catch (error) {
       console.error("Error deleting assignment:", error);
-      alert("Error deleting assignment");
+      toast.error("Error deleting assignment");
     }
   };
 
@@ -240,7 +242,7 @@ export default function AssignmentTable() {
   // Get submission status text and color
   const getSubmissionStatus = (assignment) => {
     if (!assignment.submissions || assignment.submissions.length === 0) {
-      return { text: "No Submissions", color: "bg-gray-100 text-gray-700" };
+      return { text: "No Submissions", color: "bg-red-400 text-white" };
     }
 
     const total = assignment.submissions.length;
@@ -287,6 +289,7 @@ export default function AssignmentTable() {
 
   return (
     <div className="p-6 bg-gray-50 min-h-screen">
+      <ToastContainer position="top-right" autoClose={3000} hideProgressBar />
       {/* Header with Button */}
       <div className="flex justify-between items-center mb-6">
         <div>
@@ -469,13 +472,13 @@ export default function AssignmentTable() {
                                 });
                               }
                             }}
-                            className="text-blue-600 hover:text-blue-900 font-medium text-sm"
+                            className="text-white bg-blue-700 hover:bg-blue-800 px-2 rounded-md py-1 font-medium text-sm"
                           >
                             SUBMIT
                           </button>
                           <button 
                             onClick={() => handleDeleteAssignment(assignment.id)}
-                            className="text-red-600 hover:text-red-900 font-medium text-sm"
+                            className="text-white bg-red-600 hover:bg-red-700 px-2 rounded-md py-1 font-medium text-sm"
                           >
                             DELETE
                           </button>
