@@ -328,7 +328,7 @@ export default function Lead() {
   const handleReportClick = (filterType) => {
     setReportFilter(filterType);
     setActiveTab("leads");
-    
+
     // Set status filter based on report type
     switch (filterType) {
       case "converted":
@@ -355,7 +355,7 @@ export default function Lead() {
       lead.contact_number_primary.includes(searchTerm);
 
     let matchesStatus = statusFilter === "" || lead.lead_status === statusFilter;
-    
+
     // Special handling for in-progress filter
     if (statusFilter === "in-progress") {
       matchesStatus = ["Contacted", "Follow-up", "Demo Scheduled"].includes(lead.lead_status);
@@ -410,7 +410,7 @@ export default function Lead() {
       fileName = "Converted_Leads";
     } else if (statusFilter === "in-progress") {
       fileName = "In_Progress_Leads";
-      dataToExport = leads.filter(lead => 
+      dataToExport = leads.filter(lead =>
         ["Contacted", "Follow-up", "Demo Scheduled"].includes(lead.lead_status)
       );
     } else if (statusFilter === "Lost") {
@@ -460,8 +460,8 @@ export default function Lead() {
                     setStatusFilter("");
                   }}
                   className={`py-4 px-1 border-b-2 ${activeTab === "leads"
-                      ? "border-sf-blue text-sf-blue"
-                      : "border-transparent text-sf-text-light hover:text-sf-text"
+                    ? "border-sf-blue text-sf-blue"
+                    : "border-transparent text-sf-text-light hover:text-sf-text"
                     } font-medium text-sm`}
                 >
                   <i className="fas fa-users mr-2"></i>Leads
@@ -469,8 +469,8 @@ export default function Lead() {
                 <button
                   onClick={() => setActiveTab("new-lead")}
                   className={`py-4 px-1 border-b-2 ${activeTab === "new-lead"
-                      ? "border-sf-blue text-sf-blue"
-                      : "border-transparent text-sf-text-light hover:text-sf-text"
+                    ? "border-sf-blue text-sf-blue"
+                    : "border-transparent text-sf-text-light hover:text-sf-text"
                     } font-medium text-sm`}
                 >
                   <i className="fas fa-plus mr-2"></i>New Lead
@@ -478,8 +478,8 @@ export default function Lead() {
                 <button
                   onClick={() => setActiveTab("reports")}
                   className={`py-4 px-1 border-b-2 ${activeTab === "reports"
-                      ? "border-sf-blue text-sf-blue"
-                      : "border-transparent text-sf-text-light hover:text-sf-text"
+                    ? "border-sf-blue text-sf-blue"
+                    : "border-transparent text-sf-text-light hover:text-sf-text"
                     } font-medium text-sm`}
                 >
                   <i className="fas fa-chart-bar mr-2"></i>Reports
@@ -821,7 +821,26 @@ export default function Lead() {
                           <option value="Lost">Lost</option>
                         </select>
                       </div>
+                    
                       <div>
+                        <label className="block text-sm font-medium text-sf-text mb-2">
+                          Interested Course
+                        </label>
+                        <select
+                          id="course_id"
+                          value={formData.course_id}
+                          onChange={handleInputChange}
+                          className="w-full px-4 py-3 border border-sf-border rounded-lg focus:ring-2 focus:ring-sf-blue focus:border-transparent"
+                        >
+                          <option value="">--None--</option>
+                          {courses.map((course) => (
+                            <option key={course.id} value={course.id}>
+                              {course.course_name}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                        <div>
                         <label className="block text-sm font-medium text-sf-text mb-2">
                           Assigned To <span className="text-red-500">*</span>
                         </label>
@@ -856,24 +875,7 @@ export default function Lead() {
                           <option value="Low">Low</option>
                         </select>
                       </div>
-                      <div>
-                        <label className="block text-sm font-medium text-sf-text mb-2">
-                          Interested Course
-                        </label>
-                        <select
-                          id="course_id"
-                          value={formData.course_id}
-                          onChange={handleInputChange}
-                          className="w-full px-4 py-3 border border-sf-border rounded-lg focus:ring-2 focus:ring-sf-blue focus:border-transparent"
-                        >
-                          <option value="">--None--</option>
-                          {courses.map((course) => (
-                            <option key={course.id} value={course.id}>
-                              {course.course_name}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
+
                       <div>
                         <label className="block text-sm font-medium text-sf-text mb-2">
                           Budget Range
@@ -883,7 +885,7 @@ export default function Lead() {
                           id="budget_range"
                           value={formData.budget_range}
                           onChange={handleInputChange}
-                          placeholder="e.g., $1,000 - $5,000"
+                          placeholder="e.g., Rs. 1,000 - Rs. 5,000"
                           className="w-full px-4 py-3 border border-sf-border rounded-lg focus:ring-2 focus:ring-sf-blue focus:border-transparent"
                         />
                       </div>
@@ -979,7 +981,7 @@ export default function Lead() {
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                   {/* Total Leads Card */}
-                  <div 
+                  <div
                     className="bg-sf-blue-light p-6 rounded-lg cursor-pointer transition-all hover:scale-105 hover:shadow-lg"
                     onClick={() => handleReportClick("all")}
                   >
@@ -1002,7 +1004,7 @@ export default function Lead() {
                   </div>
 
                   {/* Converted Leads Card */}
-                  <div 
+                  <div
                     className="bg-green-50 p-6 rounded-lg cursor-pointer transition-all hover:scale-105 hover:shadow-lg"
                     onClick={() => handleReportClick("converted")}
                   >
@@ -1025,7 +1027,7 @@ export default function Lead() {
                   </div>
 
                   {/* In Progress Leads Card */}
-                  <div 
+                  <div
                     className="bg-yellow-50 p-6 rounded-lg cursor-pointer transition-all hover:scale-105 hover:shadow-lg"
                     onClick={() => handleReportClick("in-progress")}
                   >
@@ -1048,7 +1050,7 @@ export default function Lead() {
                   </div>
 
                   {/* Lost Leads Card */}
-                  <div 
+                  <div
                     className="bg-red-50 p-6 rounded-lg cursor-pointer transition-all hover:scale-105 hover:shadow-lg"
                     onClick={() => handleReportClick("lost")}
                   >

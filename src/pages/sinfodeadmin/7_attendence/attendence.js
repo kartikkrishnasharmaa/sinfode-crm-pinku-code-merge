@@ -4,6 +4,7 @@ import axios from "../../../api/axiosConfig";
 import AllView from "./view";
 import StaffAttendance from "./staffattendence";
 import ViewStaffAttendance from "./viewstaff";
+import { toast, ToastContainer } from "react-toastify";
 
 function AddAttendance() {
   const [branches, setBranches] = useState([])
@@ -124,7 +125,7 @@ function AddAttendance() {
 
   const saveAttendance = async () => {
     if (Object.keys(attendanceData).length === 0) {
-      alert("⚠️ Please mark attendance for at least one student");
+      toast.warn("⚠️ Please mark attendance for at least one student");
       return;
     }
 
@@ -148,11 +149,11 @@ function AddAttendance() {
         );
       }
 
-      alert("✅ Attendance saved successfully!");
+      toast.success(" Attendance saved successfully!");
       setAttendanceData({});
     } catch (err) {
       console.error(err);
-      alert("❌ Error saving attendance");
+      toast.error(" Error saving attendance");
     } finally {
       setLoading(false);
     }
@@ -164,6 +165,7 @@ function AddAttendance() {
 
   return (
     <div className="max-w-7xl mx-auto px-6 py-8">
+      <ToastContainer position="top-right" autoClose={3000} hideProgressBar />
       {/* Header */}
       <div className="bg-gradient-to-r from-indigo-600 to-cyan-500 text-white flex items-center justify-between shadow-lg border-b-4 border-indigo-600 mb-6 rounded-xl px-6 py-4">
         <div>
