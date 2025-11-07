@@ -87,6 +87,39 @@ const ExamForm = ({ formData, setFormData, setShowModal, refreshData }) => {
     fetchBatches();
   }, []);
 
+  // Fetch all students
+  useEffect(() => {
+    const fetchStudents = async () => {
+      try {
+        const token = localStorage.getItem("token");
+        const res = await axios.get("/students/show", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+
+        let studentsData = [];
+        
+        if (Array.isArray(res.data)) {
+          studentsData = res.data;
+        } else if (res.data && Array.isArray(res.data.students)) {
+          studentsData = res.data.students;
+        } else if (res.data && Array.isArray(res.data.data)) {
+          studentsData = res.data.data;
+        } else {
+          console.warn("Unexpected students API response structure:", res.data);
+          studentsData = [];
+        }
+        
+        console.log("Fetched students:", studentsData);
+        setStudents(studentsData);
+      } catch (error) {
+        console.error("Error fetching students:", error);
+        setStudents([]);
+      }
+    };
+
+    fetchStudents();
+  }, []);
+
   // Filter courses by branch
   useEffect(() => {
     if (selectedBranch) {
@@ -111,80 +144,36 @@ const ExamForm = ({ formData, setFormData, setShowModal, refreshData }) => {
     }
   }, [selectedBranch, batches]);
 
-  // Fetch students when batch changes
+  // Filter students by branch and batch
   useEffect(() => {
-    const fetchStudents = async () => {
-      if (!selectedBatch) return;
+    console.log("Filtering students with:", {
+      selectedBranch,
+      selectedBatch,
+      studentsCount: students.length
+    });
 
-      try {
-        const token = localStorage.getItem("token");
-        
-        // Try different possible endpoints
-        let res;
-        try {
-          // First try the original endpoint
-          res = await axios.get(`/batches/${selectedBatch}/students`, {
-            headers: { Authorization: `Bearer ${token}` },
-          });
-        } catch (firstError) {
-          if (firstError.response?.status === 404) {
-            // If 404, try alternative endpoints
-            try {
-              // Try a different endpoint structure
-              res = await axios.get(`/batch/${selectedBatch}/students`, {
-                headers: { Authorization: `Bearer ${token}` },
-              });
-            } catch (secondError) {
-              // Try getting all students and filter by batch
-              res = await axios.get(`/students/show`, {
-                headers: { Authorization: `Bearer ${token}` },
-              });
-              
-              // Filter students by batch
-              const studentsData = res.data.students || res.data || [];
-              const filteredStudents = studentsData.filter(
-                student => student.batch_id?.toString() === selectedBatch
-              );
-              
-              setStudents(filteredStudents);
-              return;
-            }
-          } else {
-            throw firstError;
-          }
-        }
+    let filtered = students;
 
-        // Handle different response structures
-        let studentsData = [];
-        
-        if (Array.isArray(res.data)) {
-          studentsData = res.data;
-        } else if (res.data && Array.isArray(res.data.students)) {
-          studentsData = res.data.students;
-        } else if (res.data && Array.isArray(res.data.data)) {
-          studentsData = res.data.data;
-        } else {
-          console.warn("Unexpected students API response structure:", res.data);
-          studentsData = [];
-        }
-        
-        setStudents(studentsData);
-      } catch (error) {
-        console.error("Error fetching students:", error);
-        setStudents([]);
-      }
-    };
+    // Filter by branch
+    if (selectedBranch) {
+      filtered = filtered.filter(
+        (student) => student.branch_id?.toString() === selectedBranch
+      );
+    }
 
-    fetchStudents();
-  }, [selectedBatch]);
+    // Filter by batch - check courses array for batch_id in pivot
+    if (selectedBatch) {
+      filtered = filtered.filter((student) => {
+        // Check if student has any course with the selected batch_id in pivot
+        return student.courses?.some(
+          (course) => course.pivot?.batch_id?.toString() === selectedBatch
+        );
+      });
+    }
 
-  // Filter students by branch
-  useEffect(() => {
-    const filtered = students.filter(
-      (s) => !selectedBranch || s.branch_id?.toString() === selectedBranch
-    );
+    console.log("Filtered students:", filtered);
     setFilteredStudents(filtered);
-  }, [selectedBranch, students]);
+  }, [selectedBranch, selectedBatch, students]);
 
   // Update calculations when marks change
   useEffect(() => {
@@ -286,7 +275,7 @@ const ExamForm = ({ formData, setFormData, setShowModal, refreshData }) => {
       setFormData((prev) => ({
         ...prev,
         studentId: student.id.toString(),
-        studentName: student.name || student.full_name,
+        studentName: student.full_name,
       }));
     }
   };
@@ -370,6 +359,16 @@ const ExamForm = ({ formData, setFormData, setShowModal, refreshData }) => {
   const handleButtonOut = (e) => {
     e.target.style.background = "#0176d3";
     e.target.style.transform = "translateY(0)";
+  };
+
+  // Get student's course and batch info for display
+  const getStudentInfo = (student) => {
+    if (!student.courses || student.courses.length === 0) {
+      return "No course assigned";
+    }
+    
+    const course = student.courses[0]; // Get first course
+    return `${course.course_name} - ${course.batch?.batch_name || 'No batch'}`;
   };
 
   return (
@@ -508,12 +507,29 @@ const ExamForm = ({ formData, setFormData, setShowModal, refreshData }) => {
                   disabled={!selectedBatch}
                 >
                   <option value="">Select Student</option>
-                  {filteredStudents.map((student) => (
-                    <option key={student.id} value={student.id}>
-                      {student.full_name || student.name}
+                  {filteredStudents.length === 0 && selectedBatch ? (
+                    <option value="" disabled>
+                      No students found in this batch
                     </option>
-                  ))}
+                  ) : (
+                    filteredStudents.map((student) => (
+                      <option key={student.id} value={student.id}>
+                        {student.full_name} 
+                        {student.courses && student.courses.length > 0 && (
+                          <span className="text-gray-500 text-sm">
+                            {" "}
+                            ({getStudentInfo(student)})
+                          </span>
+                        )}
+                      </option>
+                    ))
+                  )}
                 </select>
+                {selectedBatch && filteredStudents.length === 0 && (
+                  <p className="text-sm text-red-600 mt-1">
+                    No students found in the selected batch. Please check if students are enrolled in courses with this batch.
+                  </p>
+                )}
               </div>
             </div>
 
@@ -635,9 +651,9 @@ const ExamForm = ({ formData, setFormData, setShowModal, refreshData }) => {
                     </span>
                   </div>
                 </div>
-                </div>
               </div>
             </div>
+          </div>
 
           <div className="flex justify-end space-x-4 mt-8 pt-6 border-t">
             <button
@@ -679,7 +695,7 @@ const ExamForm = ({ formData, setFormData, setShowModal, refreshData }) => {
                     <path
                       className="opacity-75"
                       fill="currentColor"
-                      d="M4 12a8 8 0 018-8V0C5.373 0 极0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
                     ></path>
                   </svg>
                   <span>Processing...</span>

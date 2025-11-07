@@ -7,6 +7,7 @@ export default function AssignmentTable() {
   const [showModal, setShowModal] = useState(false);
   const [showReviewModal, setShowReviewModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [showDetailsModal, setShowDetailsModal] = useState(false); // New state for details modal
   const [staffList, setStaffList] = useState([]);
   const [courses, setCourses] = useState([]);
   const [batches, setBatches] = useState([]);
@@ -18,7 +19,7 @@ export default function AssignmentTable() {
   const [assignmentToDelete, setAssignmentToDelete] = useState(null);
   const [studentStatuses, setStudentStatuses] = useState({});
   const [submissions, setSubmissions] = useState([]);
-  const [openDropdown, setOpenDropdown] = useState(null); // Track which dropdown is open
+  const [openDropdown, setOpenDropdown] = useState(null);
 
   const dropdownRef = useRef(null);
 
@@ -127,11 +128,9 @@ export default function AssignmentTable() {
         headers: { Authorization: `Bearer ${token}` },
       });
 
-      // Extract submissions from response
       const assignmentData = res.data;
       setSubmissions(assignmentData.submissions || []);
 
-      // Initialize statuses for each student from submissions
       const initialStatuses = {};
       (assignmentData.submissions || []).forEach(submission => {
         initialStatuses[submission.student_id] = submission.status || "pending";
@@ -178,7 +177,6 @@ export default function AssignmentTable() {
         branch_id: "",
       });
 
-      // Refresh assignment list
       fetchAssignments();
     } catch (error) {
       console.error("Error creating assignment:", error);
@@ -193,13 +191,18 @@ export default function AssignmentTable() {
     setReviewLoading(true);
 
     try {
-      // Fetch assignment submissions instead of students
       await fetchAssignmentSubmissions(assignment.id);
     } catch (error) {
       console.error("Error loading review data:", error);
     } finally {
       setReviewLoading(false);
     }
+  };
+
+  // ✅ Open details modal
+  const handleViewDetails = (assignment) => {
+    setSelectedAssignment(assignment);
+    setShowDetailsModal(true);
   };
 
   // ✅ Handle student status change
@@ -231,8 +234,6 @@ export default function AssignmentTable() {
 
       toast.success(res.data.message || "Statuses updated successfully");
       setShowReviewModal(false);
-
-      // Refresh assignments to show updated status
       fetchAssignments();
     } catch (error) {
       console.error("Error updating statuses:", error);
@@ -254,8 +255,6 @@ export default function AssignmentTable() {
       setShowDeleteModal(false);
       setAssignmentToDelete(null);
       setOpenDropdown(null);
-
-      // Refresh assignment list
       fetchAssignments();
     } catch (error) {
       console.error("Error deleting assignment:", error);
@@ -279,6 +278,15 @@ export default function AssignmentTable() {
   const formatDate = (dateString) => {
     const options = { year: 'numeric', month: 'short', day: 'numeric' };
     return new Date(dateString).toLocaleDateString(undefined, options);
+  };
+
+  // Format time for display
+  const formatTime = (timeString) => {
+    if (!timeString) return 'N/A';
+    return new Date(`2000-01-01T${timeString}`).toLocaleTimeString([], { 
+      hour: '2-digit', 
+      minute: '2-digit' 
+    });
   };
 
   // Get submission status text and color
@@ -306,6 +314,24 @@ export default function AssignmentTable() {
       batchName: assignment.batch?.batch_name || `Batch ID: ${assignment.batch_id || "-"}`,
       teacherName: assignment.teacher?.employee_name || `Staff ID: ${assignment.staff_id || "-"}`
     };
+  };
+
+  // Calculate days remaining
+  const getDaysRemaining = (dueDate) => {
+    const today = new Date();
+    const due = new Date(dueDate);
+    const diffTime = due - today;
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    
+    if (diffDays < 0) {
+      return { text: `Overdue by ${Math.abs(diffDays)} days`, color: 'text-red-600', bg: 'bg-red-50' };
+    } else if (diffDays === 0) {
+      return { text: 'Due today', color: 'text-orange-600', bg: 'bg-orange-50' };
+    } else if (diffDays === 1) {
+      return { text: 'Due tomorrow', color: 'text-orange-600', bg: 'bg-orange-50' };
+    } else {
+      return { text: `${diffDays} days remaining`, color: 'text-green-600', bg: 'bg-green-50' };
+    }
   };
 
   if (loading) {
@@ -396,7 +422,11 @@ export default function AssignmentTable() {
                   const status = getSubmissionStatus(assignment);
 
                   return (
-                    <tr key={assignment.id} className="hover:bg-gray-50 transition-colors duration-150">
+                    <tr 
+                      key={assignment.id} 
+                      className="hover:bg-gray-50 transition-colors duration-150 cursor-pointer"
+                      onClick={() => handleViewDetails(assignment)}
+                    >
                       <td className="px-6 py-4">
                         <div>
                           <p className="font-semibold text-gray-900">
@@ -410,7 +440,6 @@ export default function AssignmentTable() {
                               : assignment.description}
                           </p>
                         </div>
-
                       </td>
                       <td className="px-6 py-4">
                         <div>
@@ -436,7 +465,7 @@ export default function AssignmentTable() {
                         </span>
                       </td>
                       <td className="px-6 py-4">
-                        <div className="flex space-x-2 items-center">
+                        <div className="flex space-x-2 items-center" onClick={(e) => e.stopPropagation()}>
                           <button
                             className="text-blue-600 hover:text-blue-800 font-medium text-sm px-3 py-1 rounded border border-blue-200 hover:bg-blue-50 transition-colors duration-200"
                             onClick={() => handleReviewClick(assignment)}
@@ -457,6 +486,16 @@ export default function AssignmentTable() {
 
                             {openDropdown === assignment.id && (
                               <div className="absolute right-0 mt-1 w-48 bg-white rounded-md shadow-lg border border-gray-200 py-1 z-50">
+                                <button
+                                  onClick={() => handleViewDetails(assignment)}
+                                  className="block w-full text-left px-4 py-2 text-sm text-blue-600 hover:bg-blue-50 transition-colors duration-200 flex items-center"
+                                >
+                                  <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                  </svg>
+                                  View Details
+                                </button>
                                 <button
                                   onClick={() => handleDeleteClick(assignment)}
                                   className="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors duration-200 flex items-center"
@@ -627,6 +666,234 @@ export default function AssignmentTable() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Assignment Details Modal */}
+      {showDetailsModal && selectedAssignment && (
+        <div className="fixed inset-0 flex justify-center items-center p-4 z-50 bg-black bg-opacity-50">
+          <div className="bg-white rounded-lg p-6 w-full max-w-4xl max-h-[90vh] overflow-y-auto shadow-xl">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-2xl font-bold text-gray-800">Assignment Details</h2>
+              <button
+                onClick={() => setShowDetailsModal(false)}
+                className="text-gray-500 hover:text-gray-700 transition-colors duration-200 p-1 rounded-full hover:bg-gray-100"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path>
+                </svg>
+              </button>
+            </div>
+
+            <div className="space-y-6">
+              {/* Header Section */}
+              <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-6 rounded-lg border border-blue-100">
+                <div className="flex justify-between items-start">
+                  <div>
+                    <h1 className="text-3xl font-bold text-gray-900 mb-2">{selectedAssignment.title}</h1>
+                    <p className="text-gray-600 text-lg">{selectedAssignment.description}</p>
+                  </div>
+                  <div className="text-right">
+                    <div className={`inline-flex items-center px-4 py-2 rounded-full text-sm font-semibold ${getDaysRemaining(selectedAssignment.submit_date).bg} ${getDaysRemaining(selectedAssignment.submit_date).color}`}>
+                      {getDaysRemaining(selectedAssignment.submit_date).text}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/* Assignment Information */}
+                <div className="space-y-6">
+                  <div className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm">
+                    <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                      <svg className="w-5 h-5 mr-2 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                      </svg>
+                      Assignment Information
+                    </h3>
+                    <div className="space-y-3">
+                      <div className="flex justify-between py-2 border-b border-gray-100">
+                        <span className="font-medium text-gray-600">Due Date:</span>
+                        <span className="text-gray-900">{formatDate(selectedAssignment.submit_date)}</span>
+                      </div>
+                      <div className="flex justify-between py-2 border-b border-gray-100">
+                        <span className="font-medium text-gray-600">Created:</span>
+                        <span className="text-gray-900">{formatDate(selectedAssignment.created_at)}</span>
+                      </div>
+                      <div className="flex justify-between py-2 border-b border-gray-100">
+                        <span className="font-medium text-gray-600">Last Updated:</span>
+                        <span className="text-gray-900">{formatDate(selectedAssignment.updated_at)}</span>
+                      </div>
+                      <div className="flex justify-between py-2">
+                        <span className="font-medium text-gray-600">Submissions:</span>
+                        <span className="text-gray-900">{selectedAssignment.submissions?.length || 0} students</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Teacher Information */}
+                  <div className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm">
+                    <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                      <svg className="w-5 h-5 mr-2 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+                      </svg>
+                      Teacher Information
+                    </h3>
+                    <div className="space-y-3">
+                      <div className="flex justify-between py-2 border-b border-gray-100">
+                        <span className="font-medium text-gray-600">Name:</span>
+                        <span className="text-gray-900">{selectedAssignment.teacher?.employee_name || 'N/A'}</span>
+                      </div>
+                      <div className="flex justify-between py-2 border-b border-gray-100">
+                        <span className="font-medium text-gray-600">Email:</span>
+                        <span className="text-gray-900">{selectedAssignment.teacher?.email || 'N/A'}</span>
+                      </div>
+                      <div className="flex justify-between py-2 border-b border-gray-100">
+                        <span className="font-medium text-gray-600">Contact:</span>
+                        <span className="text-gray-900">{selectedAssignment.teacher?.contact_number || 'N/A'}</span>
+                      </div>
+                      <div className="flex justify-between py-2">
+                        <span className="font-medium text-gray-600">Department:</span>
+                        <span className="text-gray-900">{selectedAssignment.teacher?.department || 'N/A'}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Course & Batch Information */}
+                <div className="space-y-6">
+                  {/* Course Information */}
+                  <div className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm">
+                    <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                      <svg className="w-5 h-5 mr-2 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path>
+                      </svg>
+                      Course Information
+                    </h3>
+                    <div className="space-y-3">
+                      <div className="flex justify-between py-2 border-b border-gray-100">
+                        <span className="font-medium text-gray-600">Course Name:</span>
+                        <span className="text-gray-900">{selectedAssignment.course?.course_name || 'N/A'}</span>
+                      </div>
+                      <div className="flex justify-between py-2 border-b border-gray-100">
+                        <span className="font-medium text-gray-600">Course Code:</span>
+                        <span className="text-gray-900">{selectedAssignment.course?.course_code || 'N/A'}</span>
+                      </div>
+                      <div className="flex justify-between py-2 border-b border-gray-100">
+                        <span className="font-medium text-gray-600">Duration:</span>
+                        <span className="text-gray-900">{selectedAssignment.course?.duration || 'N/A'} months</span>
+                      </div>
+                      <div className="flex justify-between py-2 border-b border-gray-100">
+                        <span className="font-medium text-gray-600">Mode:</span>
+                        <span className="text-gray-900">{selectedAssignment.course?.mode || 'N/A'}</span>
+                      </div>
+                      <div className="flex justify-between py-2">
+                        <span className="font-medium text-gray-600">Level:</span>
+                        <span className="text-gray-900">{selectedAssignment.course?.course_level || 'N/A'}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Batch Information */}
+                  <div className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm">
+                    <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                      <svg className="w-5 h-5 mr-2 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path>
+                      </svg>
+                      Batch Information
+                    </h3>
+                    <div className="space-y-3">
+                      <div className="flex justify-between py-2 border-b border-gray-100">
+                        <span className="font-medium text-gray-600">Batch Name:</span>
+                        <span className="text-gray-900">{selectedAssignment.batch?.batch_name || 'N/A'}</span>
+                      </div>
+                      <div className="flex justify-between py-2 border-b border-gray-100">
+                        <span className="font-medium text-gray-600">Start Date:</span>
+                        <span className="text-gray-900">{formatDate(selectedAssignment.batch?.start_date)}</span>
+                      </div>
+                      <div className="flex justify-between py-2 border-b border-gray-100">
+                        <span className="font-medium text-gray-600">End Date:</span>
+                        <span className="text-gray-900">{formatDate(selectedAssignment.batch?.end_date)}</span>
+                      </div>
+                      <div className="flex justify-between py-2 border-b border-gray-100">
+                        <span className="font-medium text-gray-600">Batch Time:</span>
+                        <span className="text-gray-900">
+                          {formatTime(selectedAssignment.batch?.batch_start_time)} - {formatTime(selectedAssignment.batch?.batch_end_time)}
+                        </span>
+                      </div>
+                      <div className="flex justify-between py-2">
+                        <span className="font-medium text-gray-600">Student Limit:</span>
+                        <span className="text-gray-900">{selectedAssignment.batch?.student_limit || 'N/A'}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Branch Information */}
+              <div className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm">
+                <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                  <svg className="w-5 h-5 mr-2 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path>
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                  </svg>
+                  Branch Information
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-3">
+                    <div className="flex justify-between py-2 border-b border-gray-100">
+                      <span className="font-medium text-gray-600">Branch Name:</span>
+                      <span className="text-gray-900">{selectedAssignment.branch?.branch_name || 'N/A'}</span>
+                    </div>
+                    <div className="flex justify-between py-2 border-b border-gray-100">
+                      <span className="font-medium text-gray-600">Branch Code:</span>
+                      <span className="text-gray-900">{selectedAssignment.branch?.branch_code || 'N/A'}</span>
+                    </div>
+                    <div className="flex justify-between py-2 border-b border-gray-100">
+                      <span className="font-medium text-gray-600">Address:</span>
+                      <span className="text-gray-900 text-right">{selectedAssignment.branch?.address || 'N/A'}</span>
+                    </div>
+                  </div>
+                  <div className="space-y-3">
+                    <div className="flex justify-between py-2 border-b border-gray-100">
+                      <span className="font-medium text-gray-600">City:</span>
+                      <span className="text-gray-900">{selectedAssignment.branch?.city || 'N/A'}</span>
+                    </div>
+                    <div className="flex justify-between py-2 border-b border-gray-100">
+                      <span className="font-medium text-gray-600">State:</span>
+                      <span className="text-gray-900">{selectedAssignment.branch?.state || 'N/A'}</span>
+                    </div>
+                    <div className="flex justify-between py-2 border-b border-gray-100">
+                      <span className="font-medium text-gray-600">Contact:</span>
+                      <span className="text-gray-900">{selectedAssignment.branch?.contact_number || 'N/A'}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex justify-end space-x-3 pt-4 border-t border-gray-200">
+                <button
+                  onClick={() => setShowDetailsModal(false)}
+                  className="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors duration-200 font-medium"
+                >
+                  Close
+                </button>
+                <button
+                  onClick={() => {
+                    setShowDetailsModal(false);
+                    handleReviewClick(selectedAssignment);
+                  }}
+                  className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200 font-medium flex items-center"
+                >
+                  <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path>
+                  </svg>
+                  Review Submissions
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}
