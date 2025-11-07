@@ -79,7 +79,7 @@ export default function Branch() {
         discount_amount: fullBranch.discount_amount || "0",
         manager_name: fullBranch.manager_name || fullBranch.managers?.[0]?.name || "",
         manager_email: fullBranch.manager_email || fullBranch.managers?.[0]?.email || "",
-        manager_password: fullBranch.manager_password || fullBranch.managers?.[0]?.plain_password ||"" ,
+        manager_password: fullBranch.manager_password || fullBranch.managers?.[0]?.plain_password || "",
       });
 
       setIsModalOpen(true);
@@ -105,7 +105,7 @@ export default function Branch() {
       setDetailsLoading(false);
     }
   };
-  
+
   const exportToExcel = () => {
     const exportData = branches.map(branch => ({
       "Branch Code": branch.branch_code,
@@ -239,9 +239,9 @@ export default function Branch() {
       if (!/^\d{0,10}$/.test(value)) return;
     }
     if (name === "discount_amount") {
-  // Prevent negative numbers
-  if (Number(value) < 0) return;
-}
+      // Prevent negative numbers
+      if (Number(value) < 0) return;
+    }
 
     // Validate pin code
     if (name === "pin_code") {
@@ -259,13 +259,13 @@ export default function Branch() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
     // Validate password if creating a new branch
     if (!editingBranchId && formData.manager_password.length < 6) {
       setPasswordError("Password must be at least 6 characters");
       return;
     }
-    
+
     setLoading(true);
     try {
       const token = localStorage.getItem("token");
@@ -336,7 +336,7 @@ export default function Branch() {
         pauseOnHover
         theme="light"
       />
-      
+
       <div className="max-w-9xl mx-auto p-6 w-full">
         {/* Header */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
@@ -369,11 +369,11 @@ export default function Branch() {
               onChange={(e) => setSearch(e.target.value)}
               className="border p-3 rounded-xl w-full shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             />
-            <svg 
-              className="absolute right-3 top-3.5 h-5 w-5 text-gray-400" 
-              fill="none" 
-              stroke="currentColor" 
-              viewBox="0 0 24 24" 
+            <svg
+              className="absolute right-3 top-3.5 h-5 w-5 text-gray-400"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
               xmlns="http://www.w3.org/2000/svg"
             >
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
@@ -647,7 +647,7 @@ export default function Branch() {
                       required
                     />
                   </div>
-                    <div>
+                  <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Max Discount (amount) *</label>
                     <input
                       name="discount_amount"
@@ -835,12 +835,12 @@ export default function Branch() {
                           {new Date(currentBranchDetails.opening_date).toLocaleDateString("en-GB")}
                         </p>
                         <p className="flex items-center gap-1">
-                          <FaPercent className="text-blue-600" />
-                          <span className="font-medium">Max Discount:</span> {currentBranchDetails.discount_range}%
-                        </p>
-                         <p className="flex items-center gap-1">
                           {/* <FaPercent className="text-blue-600" /> */}
-                          <span className="font-medium">Max Discount:</span> {currentBranchDetails.discount_amount || "0"} Rs.
+                          <span className="font-medium">Max Discount: (in %)</span> {currentBranchDetails.discount_range}%
+                        </p>
+                        <p className="flex items-center gap-1">
+                          {/* <FaPercent className="text-blue-600" /> */}
+                          <span className="font-medium">Max Discount: (in Rs.)</span> {currentBranchDetails.discount_amount || "0"} Rs.
                         </p>
                       </div>
                     </div>
@@ -869,31 +869,63 @@ export default function Branch() {
                     {currentBranchDetails.managers && currentBranchDetails.managers.length > 0 && (
                       <div className="md:col-span-2 bg-purple-50 p-5 rounded-xl shadow-sm">
                         <h3 className="text-lg font-semibold mb-4 flex items-center gap-2 text-purple-800">
-                          <FaUser /> Managers & Staff ({currentBranchDetails.managers.length})
+                          <FaUser /> All Managers & Staff ({currentBranchDetails.managers.length})
                         </h3>
                         <div className="overflow-x-auto">
-                          <table className="min-w-full">
+                          <table className="min-w-full border border-purple-100 rounded-lg overflow-hidden">
                             <thead>
-                              <tr className="bg-purple-100">
-                                <th className="px-4 py-2 text-left">Name</th>
-                                <th className="px-4 py-2 text-left">Email</th>
-                                <th className="px-4 py-2 text-left">Password</th>
-
+                              <tr className="bg-purple-100 text-purple-900">
+                                <th className="px-4 py-2 text-left font-semibold">Name</th>
+                                <th className="px-4 py-2 text-left font-semibold">Role</th>
+                                <th className="px-4 py-2 text-left font-semibold">Email</th>
+                                <th className="px-4 py-2 text-left font-semibold">Password</th>
                               </tr>
                             </thead>
                             <tbody>
-                              {currentBranchDetails.managers.map((manager, index) => (
-                                <tr key={manager.id} className={index % 2 === 0 ? 'bg-white' : 'bg-purple-50'}>
-                                  <td className="px-4 py-2">{manager.name}</td>
-                                  <td className="px-4 py-2">{manager.email}</td>
-                                  <td className="px-4 py-2">{manager.plain_password}</td>
-                                </tr>
-                              ))}
+                              {currentBranchDetails.managers.map((manager, index) => {
+                                // Color logic based on role
+                                const roleColor =
+                                  manager.role === "admin"
+                                    ? "bg-red-100 text-red-700 border border-red-300"
+                                    : manager.role === "branch_manager"
+                                      ? "bg-blue-100 text-blue-700 border border-blue-300"
+                                      : manager.role === "accountant"
+                                        ? "bg-yellow-100 text-yellow-700 border border-yellow-300"
+                                        : manager.role === "staff"
+                                          ? "bg-green-100 text-green-700 border border-green-300"
+                                          : "bg-gray-100 text-gray-700 border border-gray-300";
+
+                                return (
+                                  <tr
+                                    key={manager.id}
+                                    className={`${index % 2 === 0 ? "bg-white" : "bg-purple-50"
+                                      } hover:bg-purple-100 transition duration-200`}
+                                  >
+                                    <td className="px-4 py-2 font-medium text-gray-800">
+                                      {manager.name}
+                                    </td>
+                                    <td className="px-4 py-2">
+                                      <span
+                                        className={`px-3 py-1 rounded-full text-sm font-semibold ${roleColor}`}
+                                      >
+                                        {manager.role
+                                          .replace("_", " ")
+                                          .replace(/\b\w/g, (c) => c.toUpperCase())}
+                                      </span>
+                                    </td>
+                                    <td className="px-4 py-2 text-gray-700">{manager.email}</td>
+                                    <td className="px-4 py-2 text-gray-600">
+                                      {manager.plain_password}
+                                    </td>
+                                  </tr>
+                                );
+                              })}
                             </tbody>
                           </table>
                         </div>
                       </div>
                     )}
+
                   </div>
                 </>
               ) : (
