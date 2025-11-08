@@ -2,6 +2,8 @@ import { useState, useEffect } from "react";
 import SAAdminLayout from "../../../layouts/Sinfodeadmin";
 import axios from "../../../api/axiosConfig";
 import * as XLSX from "xlsx";
+import { ToastContainer, toast } from 'react-toastify';
+import "react-toastify/dist/ReactToastify.css";
 
 export default function Lead() {
   const [leads, setLeads] = useState([]);
@@ -12,7 +14,11 @@ export default function Lead() {
   const [staffList, setStaffList] = useState([]);
   const [courses, setCourses] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [reportFilter, setReportFilter] = useState("all"); // New state for report filtering
+  const [reportFilter, setReportFilter] = useState("all");
+  const [selectedLead, setSelectedLead] = useState(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [leadDetails, setLeadDetails] = useState(null);
+  const [loadingLeadDetails, setLoadingLeadDetails] = useState(false);
 
   // Form state
   const [formData, setFormData] = useState({
@@ -49,9 +55,27 @@ export default function Lead() {
       setLeads(response.data);
     } catch (error) {
       console.error("Error fetching leads:", error);
-      alert("Failed to load leads");
+      toast.error("Failed to load leads");
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  // Fetch single lead details
+  const fetchLeadDetails = async (leadId) => {
+    try {
+      setLoadingLeadDetails(true);
+      const token = localStorage.getItem("token");
+      const response = await axios.get(`/leads/show/${leadId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setLeadDetails(response.data);
+      setIsModalOpen(true);
+    } catch (error) {
+      console.error("Error fetching lead details:", error);
+      toast.error("Failed to load lead details");
+    } finally {
+      setLoadingLeadDetails(false);
     }
   };
 
@@ -146,7 +170,7 @@ export default function Lead() {
       });
 
       if (response.data.success) {
-        alert("Lead created successfully!");
+        toast.success("Lead created successfully!");
         // Reset form
         setFormData({
           branch_id: "",
@@ -169,7 +193,7 @@ export default function Lead() {
       }
     } catch (error) {
       console.error("Error creating lead:", error);
-      alert("Failed to create lead");
+      toast.error("Failed to create lead");
     } finally {
       setIsLoading(false);
     }
@@ -183,13 +207,13 @@ export default function Lead() {
       });
 
       if (response.data.success) {
-        alert("Lead updated successfully!");
+        toast.success("Lead updated successfully!");
         fetchLeads(); // Refresh the list
         return true;
       }
     } catch (error) {
       console.error("Error updating lead:", error);
-      alert("Failed to update lead");
+      toast.error("Failed to update lead");
       return false;
     }
   };
@@ -204,12 +228,12 @@ export default function Lead() {
       });
 
       if (response.data.success) {
-        alert("Lead deleted successfully!");
+        toast.success("Lead deleted successfully!");
         fetchLeads(); // Refresh the list
       }
     } catch (error) {
       console.error("Error deleting lead:", error);
-      alert("Failed to delete lead");
+      toast.error("Failed to delete lead");
     }
   };
 
@@ -322,6 +346,19 @@ export default function Lead() {
         </span>
       )
     );
+  };
+
+  // Handle lead row click
+  const handleLeadClick = (lead) => {
+    setSelectedLead(lead);
+    fetchLeadDetails(lead.id);
+  };
+
+  // Close modal
+  const closeModal = () => {
+    setIsModalOpen(false);
+    setLeadDetails(null);
+    setSelectedLead(null);
   };
 
   // Handle report card clicks
@@ -603,6 +640,7 @@ export default function Lead() {
                             <tr
                               key={lead.id}
                               className="hover:bg-sf-gray cursor-pointer"
+                              onClick={() => handleLeadClick(lead)}
                             >
                               <td className="px-6 py-4">
                                 <div className="flex items-center">
@@ -644,7 +682,7 @@ export default function Lead() {
                                 {lead.lead_source}
                               </td>
                               <td className="px-6 py-4 text-sm font-medium">
-                                <div className="flex space-x-2">
+                                <div className="flex space-x-2" onClick={(e) => e.stopPropagation()}>
                                   <button
                                     onClick={() => editLead(lead)}
                                     className="text-green-600 hover:text-green-800"
@@ -670,7 +708,6 @@ export default function Lead() {
             </div>
           )}
 
-          {/* New Lead Form - Same as before */}
           {/* New Lead Form */}
           {activeTab === "new-lead" && (
             <div>
@@ -1077,6 +1114,218 @@ export default function Lead() {
           )}
         </div>
       </div>
+
+      {/* Lead Details Modal */}
+      {isModalOpen && (
+        <div className="fixed inset-0 z-50 overflow-y-auto">
+          <div className="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
+            {/* Background overlay */}
+            <div 
+              className="fixed inset-0 transition-opacity bg-gray-500 bg-opacity-75"
+              onClick={closeModal}
+            ></div>
+
+            {/* Modal panel */}
+            <div className="relative inline-block w-full max-w-4xl px-4 pt-5 pb-4 overflow-hidden text-left align-bottom transition-all transform bg-white rounded-lg shadow-xl sm:my-8 sm:align-middle sm:p-6">
+              {loadingLeadDetails ? (
+                <div className="flex items-center justify-center py-12">
+                  <i className="fas fa-spinner fa-spin text-3xl text-sf-blue mr-3"></i>
+                  <span className="text-lg">Loading lead details...</span>
+                </div>
+              ) : leadDetails ? (
+                <div>
+                  {/* Modal header */}
+                  <div className="flex items-center justify-between pb-4 mb-6 border-b border-sf-border">
+                    <div className="flex items-center space-x-4">
+                      <div className="flex-shrink-0">
+                        <div className="w-12 h-12 rounded-full bg-sf-blue flex items-center justify-center">
+                          <span className="text-lg font-medium text-white">
+                            {leadDetails.full_name?.charAt(0) || 'L'}
+                          </span>
+                        </div>
+                      </div>
+                      <div>
+                        <h3 className="text-2xl font-bold text-sf-text">
+                          {leadDetails.full_name}
+                        </h3>
+                        <p className="text-sf-text-light">
+                          {leadDetails.lead_code} • {leadDetails.email_address}
+                        </p>
+                      </div>
+                    </div>
+                    <button
+                      onClick={closeModal}
+                      className="p-2 text-sf-text-light hover:text-sf-text hover:bg-sf-gray rounded-lg transition-colors"
+                    >
+                      <i className="fas fa-times text-xl"></i>
+                    </button>
+                  </div>
+
+                  {/* Lead details content */}
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    {/* Left column - Basic Information */}
+                    <div className="space-y-6">
+                      <div>
+                        <h4 className="text-lg font-semibold text-sf-text mb-4 pb-2 border-b border-sf-border">
+                          Basic Information
+                        </h4>
+                        <div className="space-y-4">
+                          <div className="flex justify-between">
+                            <span className="text-sf-text-light">Lead Code:</span>
+                            <span className="font-medium">{leadDetails.lead_code}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-sf-text-light">Primary Contact:</span>
+                            <span className="font-medium">{leadDetails.contact_number_primary}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-sf-text-light">Alternate Contact:</span>
+                            <span className="font-medium">{leadDetails.contact_number_alternate || 'N/A'}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-sf-text-light">Email:</span>
+                            <span className="font-medium">{leadDetails.email_address}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-sf-text-light">Lead Source:</span>
+                            <span className="font-medium capitalize">{leadDetails.lead_source}</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div>
+                        <h4 className="text-lg font-semibold text-sf-text mb-4 pb-2 border-b border-sf-border">
+                          Status & Priority
+                        </h4>
+                        <div className="space-y-4">
+                          <div className="flex justify-between items-center">
+                            <span className="text-sf-text-light">Status:</span>
+                            {getStatusBadge(leadDetails.lead_status)}
+                          </div>
+                          <div className="flex justify-between items-center">
+                            <span className="text-sf-text-light">Priority:</span>
+                            {getPriorityBadge(leadDetails.priority)}
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-sf-text-light">Budget Range:</span>
+                            <span className="font-medium">
+                              {leadDetails.budget_range ? `Rs. ${leadDetails.budget_range}` : 'N/A'}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Right column - Assignment & Course Information */}
+                    <div className="space-y-6">
+                      <div>
+                        <h4 className="text-lg font-semibold text-sf-text mb-4 pb-2 border-b border-sf-border">
+                          Assignment & Course
+                        </h4>
+                        <div className="space-y-4">
+                          <div className="flex justify-between">
+                            <span className="text-sf-text-light">Assigned To:</span>
+                            <span className="font-medium">
+                              {leadDetails.assigned_to?.employee_name || 'Unassigned'}
+                            </span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-sf-text-light">Designation:</span>
+                            <span className="font-medium">
+                              {leadDetails.assigned_to?.designation || 'N/A'}
+                            </span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-sf-text-light">Interested Course:</span>
+                            <span className="font-medium text-right">
+                              {leadDetails.course?.course_name || 'N/A'}
+                            </span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-sf-text-light">Course Mode:</span>
+                            <span className="font-medium">
+                              {leadDetails.course?.mode || 'N/A'}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div>
+                        <h4 className="text-lg font-semibold text-sf-text mb-4 pb-2 border-b border-sf-border">
+                          Branch & Timeline
+                        </h4>
+                        <div className="space-y-4">
+                          <div className="flex justify-between">
+                            <span className="text-sf-text-light">Branch:</span>
+                            <span className="font-medium text-right">
+                              {leadDetails.branch?.branch_name || 'N/A'}
+                            </span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-sf-text-light">Follow-up Date:</span>
+                            <span className="font-medium">
+                              {leadDetails.follow_up_datetime ? 
+                                new Date(leadDetails.follow_up_datetime).toLocaleString() : 
+                                'Not scheduled'
+                              }
+                            </span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-sf-text-light">Created On:</span>
+                            <span className="font-medium">
+                              {new Date(leadDetails.created_at).toLocaleDateString()}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Notes Section */}
+                  {leadDetails.notes && (
+                    <div className="mt-8 pt-6 border-t border-sf-border">
+                      <h4 className="text-lg font-semibold text-sf-text mb-3">Notes & Remarks</h4>
+                      <div className="bg-sf-gray rounded-lg p-4">
+                        <p className="text-sf-text whitespace-pre-wrap">{leadDetails.notes}</p>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Modal footer */}
+                  <div className="flex justify-end space-x-3 pt-6 mt-6 border-t border-sf-border">
+                    <button
+                      onClick={() => {
+                        editLead(leadDetails);
+                        closeModal();
+                      }}
+                      className="px-6 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium transition-colors flex items-center"
+                    >
+                      <i className="fas fa-edit mr-2"></i>Edit Lead
+                    </button>
+                    <button
+                      onClick={closeModal}
+                      className="px-6 py-2 border border-sf-border text-sf-text rounded-lg hover:bg-sf-gray transition-colors"
+                    >
+                      Close
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="text-center py-8">
+                  <i className="fas fa-exclamation-triangle text-3xl text-yellow-500 mb-4"></i>
+                  <p className="text-lg text-sf-text">Failed to load lead details</p>
+                  <button
+                    onClick={closeModal}
+                    className="mt-4 px-6 py-2 border border-sf-border text-sf-text rounded-lg hover:bg-sf-gray transition-colors"
+                  >
+                    Close
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       <style jsx>{`
         .bg-sf-blue {
