@@ -1,5 +1,7 @@
 import { useState, useEffect } from "react";
 import axios from "../../../api/axiosConfig";
+import { ToastContainer, toast } from 'react-toastify';
+import "react-toastify/dist/ReactToastify.css";
 
 function CreateCategory() {
   const [name, setName] = useState("");
@@ -13,7 +15,7 @@ function CreateCategory() {
       try {
         const token = localStorage.getItem("token");
         if (!token) {
-          alert("No token found! Please login again.");
+          toast.error("No token found! Please login again.");
           return;
         }
         const res = await axios.get("/branches", {
@@ -23,7 +25,7 @@ function CreateCategory() {
         setBranches(res.data); // 👈 Direct array aa raha hai
       } catch (error) {
         console.error("Error fetching branches:", error);
-        alert("Failed to load branches");
+        toast.error("Failed to load branches");
       }
     };
 
@@ -31,36 +33,47 @@ function CreateCategory() {
   }, []);
 
   // ✅ Submit Category
-const handleSubmit = async (e) => {
-  e.preventDefault();
-  try {
-    const token = localStorage.getItem("token");
-    if (!token) {
-      alert("No token found! Please login again.");
-      return;
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      const token = localStorage.getItem("token");
+      if (!token) {
+        toast.error("No token found! Please login again.");
+        return;
+      }
+
+      const payload = {
+        name: name,
+        branch_id: Number(branchId), // 👈 selected branch id
+      };
+
+      const res = await axios.post("/categories", payload, {
+        headers: { Authorization: `Bearer ${token}` }, // 👈 yeh add kiya
+      });
+
+      setMessage(`✅ Category Created: ${res.data.name}`);
+      setName("");
+      setBranchId("");
+    } catch (err) {
+      console.error(err);
+      setMessage("❌ Error creating category");
     }
-
-    const payload = {
-      name: name,
-      branch_id: Number(branchId), // 👈 selected branch id
-    };
-
-    const res = await axios.post("/categories", payload, {
-      headers: { Authorization: `Bearer ${token}` }, // 👈 yeh add kiya
-    });
-
-    setMessage(`✅ Category Created: ${res.data.name}`);
-    setName("");
-    setBranchId("");
-  } catch (err) {
-    console.error(err);
-    setMessage("❌ Error creating category");
-  }
-};
+  };
 
   return (
     <div className="items-center flex justify-center mt-10">
-      <div className="bg-white shadow-lg rounded-2xl p-8 w-full max-w-lg">
+      <ToastContainer
+        position="top-center"
+        autoClose={3000}
+        hideProgressBar={false}
+        newestOnTop={false}
+        closeOnClick
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+        theme="light"
+      />      <div className="bg-white shadow-lg rounded-2xl p-8 w-full max-w-lg">
         <h2 className="text-2xl font-bold mb-6 text-center">Create Category</h2>
 
         <form onSubmit={handleSubmit} className="space-y-4">

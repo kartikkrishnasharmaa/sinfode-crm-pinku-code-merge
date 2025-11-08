@@ -128,17 +128,15 @@ const ExamTable = ({ refreshFlag }) => {
 
   return (
     <div>
-      <div className="mb-6 flex justify-between items-center">
         <ToastContainer position="top-right" autoClose={3000} hideProgressBar />
 
-      </div>
 
-      <div className="sf-card rounded-lg overflow-hidden" style={{ background: '#ffffff', border: '1px solid #dddbda', boxShadow: '0 2px 4px rgba(0,0,0,0.07)' }}>
-        <div className="sf-table-header px-6 py-4" style={{ background: '#f3f2f2', borderBottom: '2px solid #dddbda' }}>
+      <div className="rounded-lg overflow-hidden" style={{ background: '#ffffff', border: '1px solid #dddbda', boxShadow: '0 2px 4px rgba(0,0,0,0.07)' }}>
+        <div className="sf-table-header py-4" style={{ background: '#f3f2f2', borderBottom: '2px solid #dddbda' }}>
           <h3 className="text-lg font-semibold text-gray-800">Exam Records</h3>
         </div>
         <div>
-          <div className="overflow-x-auto w-full">
+          <div className="w-full">
             <table className="w-full border-collapse">
               <thead className="bg-gray-100 border-b">
                 <tr>

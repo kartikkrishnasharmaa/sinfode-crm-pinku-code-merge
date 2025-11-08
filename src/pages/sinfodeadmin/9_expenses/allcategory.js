@@ -1,5 +1,8 @@
 import { useState, useEffect } from "react";
 import axios from "../../../api/axiosConfig";
+import { ToastContainer, toast } from 'react-toastify';
+import "react-toastify/dist/ReactToastify.css";
+
 
 function AllCategory() {
   const [categories, setCategories] = useState([]);
@@ -18,7 +21,7 @@ function AllCategory() {
       try {
         const token = localStorage.getItem("token");
         if (!token) {
-          alert("No token found! Please login again.");
+          toast.error("No token found! Please login again.");
           return;
         }
 
@@ -36,7 +39,7 @@ function AllCategory() {
         setBranches(branchesRes.data);
       } catch (error) {
         console.error("Error fetching data:", error);
-        alert("Failed to load data");
+        toast.error("Failed to load data");
       } finally {
         setLoading(false);
       }
@@ -109,10 +112,10 @@ function AllCategory() {
       );
 
       setEditModal({ isOpen: false, category: null });
-      alert("Category updated successfully!");
+      toast.success("Category updated successfully!");
     } catch (error) {
       console.error("Error updating category:", error);
-      alert("Failed to update category");
+      toast.error("Failed to update category");
     }
   };
 
@@ -128,15 +131,27 @@ function AllCategory() {
 
       setCategories(categories.filter((cat) => cat.id !== id));
       setDeleteModal({ isOpen: false, category: null });
-      alert("Category deleted successfully!");
+      toast.success("Category deleted successfully!");
     } catch (error) {
       console.error("Error deleting category:", error);
-      alert("Failed to delete category");
+      toast.error("Failed to delete category");
     }
   };
 
   return (
     <div className="bg-gray-50 p-4 md:p-6">
+        <ToastContainer
+          position="top-center"
+          autoClose={3000}
+          hideProgressBar={false}
+          newestOnTop={false}
+          closeOnClick
+          rtl={false}
+          pauseOnFocusLoss
+          draggable
+          pauseOnHover
+          theme="light"
+        />
       <div className="max-w-7xl mx-auto">
         <div className="bg-white shadow-xl rounded-2xl">
           {/* Header Section */}

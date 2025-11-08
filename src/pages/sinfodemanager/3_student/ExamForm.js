@@ -50,6 +50,7 @@ const ExamForm = ({ formData, setFormData, setShowModal, refreshData }) => {
           headers: { Authorization: `Bearer ${token}` },
         });
         const data = res.data || [];
+        console.log("Fetched courses:", data);
         setCourses(data);
         
         // Filter courses by user's branch
@@ -57,6 +58,7 @@ const ExamForm = ({ formData, setFormData, setShowModal, refreshData }) => {
           const filtered = data.filter(
             (course) => course.branch_id?.toString() === userBranchId.toString()
           );
+          console.log("Filtered courses by branch:", filtered);
           setFilteredCourses(filtered);
         } else {
           setFilteredCourses(data);
@@ -91,6 +93,7 @@ const ExamForm = ({ formData, setFormData, setShowModal, refreshData }) => {
           batchesData = [];
         }
 
+        console.log("Fetched batches:", batchesData);
         setBatches(batchesData);
         
         // Filter batches by user's branch
@@ -98,6 +101,7 @@ const ExamForm = ({ formData, setFormData, setShowModal, refreshData }) => {
           const filtered = batchesData.filter(
             (batch) => batch.branch_id?.toString() === userBranchId.toString()
           );
+          console.log("Filtered batches by branch:", filtered);
           setFilteredBatches(filtered);
         } else {
           setFilteredBatches(batchesData);
@@ -110,50 +114,15 @@ const ExamForm = ({ formData, setFormData, setShowModal, refreshData }) => {
     fetchBatches();
   }, [userBranchId]);
 
-  // Fetch students when batch changes
+  // Fetch all students
   useEffect(() => {
     const fetchStudents = async () => {
-      if (!selectedBatch) return;
-
       try {
         const token = localStorage.getItem("token");
-        
-        // Try different possible endpoints
-        let res;
-        try {
-          // First try the original endpoint
-          res = await axios.get(`/batches/${selectedBatch}/students`, {
-            headers: { Authorization: `Bearer ${token}` },
-          });
-        } catch (firstError) {
-          if (firstError.response?.status === 404) {
-            // If 404, try alternative endpoints
-            try {
-              // Try a different endpoint structure
-              res = await axios.get(`/batch/${selectedBatch}/students`, {
-                headers: { Authorization: `Bearer ${token}` },
-              });
-            } catch (secondError) {
-              // Try getting all students and filter by batch
-              res = await axios.get(`/students/show`, {
-                headers: { Authorization: `Bearer ${token}` },
-              });
-              
-              // Filter students by batch
-              const studentsData = res.data.students || res.data || [];
-              const filteredStudents = studentsData.filter(
-                student => student.batch_id?.toString() === selectedBatch
-              );
-              
-              setStudents(filteredStudents);
-              return;
-            }
-          } else {
-            throw firstError;
-          }
-        }
+        const res = await axios.get("/students/show", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
 
-        // Handle different response structures
         let studentsData = [];
         
         if (Array.isArray(res.data)) {
@@ -167,6 +136,7 @@ const ExamForm = ({ formData, setFormData, setShowModal, refreshData }) => {
           studentsData = [];
         }
         
+        console.log("Fetched students:", studentsData);
         setStudents(studentsData);
       } catch (error) {
         console.error("Error fetching students:", error);
@@ -175,15 +145,75 @@ const ExamForm = ({ formData, setFormData, setShowModal, refreshData }) => {
     };
 
     fetchStudents();
-  }, [selectedBatch]);
+  }, []);
 
-  // Filter students by user's branch
+  // Filter students by branch and batch
   useEffect(() => {
-    const filtered = students.filter(
-      (s) => !userBranchId || s.branch_id?.toString() === userBranchId.toString()
-    );
+    console.log("Filtering students with:", {
+      userBranchId,
+      selectedBatch,
+      studentsCount: students.length
+    });
+
+    let filtered = students;
+
+    // Filter by branch
+    if (userBranchId) {
+      filtered = filtered.filter(
+        (student) => student.branch_id?.toString() === userBranchId.toString()
+      );
+    }
+
+    // Filter by batch - check courses array for batch_id in pivot
+    if (selectedBatch) {
+      filtered = filtered.filter((student) => {
+        // Check if student has any course with the selected batch_id in pivot
+        return student.courses?.some(
+          (course) => course.pivot?.batch_id?.toString() === selectedBatch
+        );
+      });
+    }
+
+    console.log("Filtered students:", filtered);
     setFilteredStudents(filtered);
-  }, [userBranchId, students]);
+  }, [userBranchId, selectedBatch, students]);
+
+  // Filter courses by selected batch
+  useEffect(() => {
+    if (selectedBatch) {
+      // Find the batch to get its course_id
+      const selectedBatchObj = batches.find(batch => batch.id.toString() === selectedBatch);
+      if (selectedBatchObj && selectedBatchObj.course_id) {
+        // Filter courses to show only the course associated with this batch
+        const filtered = courses.filter(
+          (course) => course.id.toString() === selectedBatchObj.course_id.toString()
+        );
+        console.log("Filtered courses by batch:", filtered);
+        setFilteredCourses(filtered);
+        
+        // Auto-select the course if only one is available
+        if (filtered.length === 1) {
+          setSelectedCourse(filtered[0].id.toString());
+          setFormData((prev) => ({
+            ...prev,
+            course: filtered[0].id.toString(),
+          }));
+        }
+      } else {
+        // If batch doesn't have course_id, show all courses for the branch
+        const filtered = courses.filter(
+          (course) => !userBranchId || course.branch_id?.toString() === userBranchId.toString()
+        );
+        setFilteredCourses(filtered);
+      }
+    } else {
+      // When no batch is selected, show all courses for the branch
+      const filtered = courses.filter(
+        (course) => !userBranchId || course.branch_id?.toString() === userBranchId.toString()
+      );
+      setFilteredCourses(filtered);
+    }
+  }, [selectedBatch, batches, courses, userBranchId, setFormData]);
 
   // Set the user's branch in form data on component mount
   useEffect(() => {
@@ -265,7 +295,9 @@ const ExamForm = ({ formData, setFormData, setShowModal, refreshData }) => {
     setFormData((prev) => ({
       ...prev,
       batch: batchId,
+      course: "", // Reset course when batch changes
     }));
+    setSelectedCourse(""); // Reset selected course
   };
 
   const handleCourseChange = (e) => {
@@ -285,7 +317,7 @@ const ExamForm = ({ formData, setFormData, setShowModal, refreshData }) => {
       setFormData((prev) => ({
         ...prev,
         studentId: student.id.toString(),
-        studentName: student.name || student.full_name,
+        studentName: student.full_name,
       }));
     }
   };
@@ -296,6 +328,16 @@ const ExamForm = ({ formData, setFormData, setShowModal, refreshData }) => {
 
     if (formData.obtainedMarks > formData.totalMarks) {
       toast.error("Obtained marks cannot be greater than total marks!");
+      return;
+    }
+
+    if (!formData.course) {
+      toast.error("Please select a course!");
+      return;
+    }
+
+    if (!formData.studentId) {
+      toast.error("Please select a student!");
       return;
     }
 
@@ -323,7 +365,7 @@ const ExamForm = ({ formData, setFormData, setShowModal, refreshData }) => {
       });
 
       if (response.status === 200 || response.status === 201) {
-        showNotification("Exam marks recorded successfully!", "success");
+        toast.success("Exam marks recorded successfully!");
 
         // Refresh the data in parent component
         if (refreshData) {
@@ -334,22 +376,10 @@ const ExamForm = ({ formData, setFormData, setShowModal, refreshData }) => {
       }
     } catch (error) {
       console.error("Error submitting exam marks:", error);
-      showNotification(
-        "Failed to record exam marks. Please try again.",
-        "error"
-      );
+      toast.error("Failed to record exam marks. Please try again.");
     } finally {
       setIsSubmitting(false);
     }
-  };
-
-  const showNotification = (message, type) => {
-    toast(`${type === "success" ? "Success" : "Error"}: ${message}`, {
-      type: type === "success" ? "success" : "error",
-      position: "top-right",
-      autoClose: 3000,
-      hideProgressBar: true
-    });
   };
 
   // Helper function to handle input focus
@@ -374,6 +404,16 @@ const ExamForm = ({ formData, setFormData, setShowModal, refreshData }) => {
   const handleButtonOut = (e) => {
     e.target.style.background = "#0176d3";
     e.target.style.transform = "translateY(0)";
+  };
+
+  // Get student's course and batch info for display
+  const getStudentInfo = (student) => {
+    if (!student.courses || student.courses.length === 0) {
+      return "No course assigned";
+    }
+    
+    const course = student.courses[0]; // Get first course
+    return `${course.course_name} - ${course.batch?.batch_name || 'No batch'}`;
   };
 
   return (
@@ -416,31 +456,6 @@ const ExamForm = ({ formData, setFormData, setShowModal, refreshData }) => {
               <h4 className="text-lg font-medium text-gray-800 border-b pb-2">
                 Student Information
               </h4>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Course
-                </label>
-                <select
-                  id="course"
-                  required
-                  value={selectedCourse}
-                  onChange={handleCourseChange}
-                  className="w-full px-4 py-3 sf-input rounded-lg focus:outline-none"
-                  style={{
-                    border: "1px solid #dddbda",
-                    transition: "all 0.2s ease",
-                  }}
-                  onFocus={handleFocus}
-                  onBlur={handleBlur}
-                >
-                  <option value="">Select Course</option>
-                  {filteredCourses.map((course) => (
-                    <option key={course.id} value={course.id}>
-                      {course.course_name}
-                    </option>
-                  ))}
-                </select>
-              </div>
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -470,6 +485,38 @@ const ExamForm = ({ formData, setFormData, setShowModal, refreshData }) => {
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Course
+                </label>
+                <select
+                  id="course"
+                  required
+                  value={selectedCourse}
+                  onChange={handleCourseChange}
+                  className="w-full px-4 py-3 sf-input rounded-lg focus:outline-none"
+                  style={{
+                    border: "1px solid #dddbda",
+                    transition: "all 0.2s ease",
+                  }}
+                  onFocus={handleFocus}
+                  onBlur={handleBlur}
+                  disabled={!selectedBatch}
+                >
+                  <option value="">Select Course</option>
+                  {filteredCourses.map((course) => (
+                    <option key={course.id} value={course.id}>
+                      {course.course_name}
+                    </option>
+                  ))}
+                </select>
+                {selectedBatch && filteredCourses.length === 0 && (
+                  <p className="text-sm text-yellow-600 mt-1">
+                    No courses found for this batch. Please select a batch that has associated courses.
+                  </p>
+                )}
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
                   Student
                 </label>
                 <select
@@ -486,14 +533,30 @@ const ExamForm = ({ formData, setFormData, setShowModal, refreshData }) => {
                   disabled={!selectedBatch}
                 >
                   <option value="">Select Student</option>
-                  {filteredStudents.map((student) => (
-                    <option key={student.id} value={student.id}>
-                      {student.full_name || student.name}
+                  {filteredStudents.length === 0 && selectedBatch ? (
+                    <option value="" disabled>
+                      No students found in this batch
                     </option>
-                  ))}
+                  ) : (
+                    filteredStudents.map((student) => (
+                      <option key={student.id} value={student.id}>
+                        {student.full_name} 
+                        {student.courses && student.courses.length > 0 && (
+                          <span className="text-gray-500 text-sm">
+                            {" "}
+                            ({getStudentInfo(student)})
+                          </span>
+                        )}
+                      </option>
+                    ))
+                  )}
                 </select>
+                {selectedBatch && filteredStudents.length === 0 && (
+                  <p className="text-sm text-red-600 mt-1">
+                    No students found in the selected batch. Please check if students are enrolled in courses with this batch.
+                  </p>
+                )}
               </div>
-
             </div>
 
             {/* Exam Information */}
@@ -614,9 +677,9 @@ const ExamForm = ({ formData, setFormData, setShowModal, refreshData }) => {
                     </span>
                   </div>
                 </div>
-                </div>
               </div>
             </div>
+          </div>
 
           <div className="flex justify-end space-x-4 mt-8 pt-6 border-t">
             <button
@@ -658,7 +721,7 @@ const ExamForm = ({ formData, setFormData, setShowModal, refreshData }) => {
                     <path
                       className="opacity-75"
                       fill="currentColor"
-                      d="M4 12a8 8 0 018-极V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
                     ></path>
                   </svg>
                   <span>Processing...</span>
@@ -669,7 +732,7 @@ const ExamForm = ({ formData, setFormData, setShowModal, refreshData }) => {
                     className="w-5 h-5"
                     fill="none"
                     stroke="currentColor"
-                    viewBox="0 极 24 24"
+                    viewBox="0 0 24 24"
                   >
                     <path
                       strokeLinecap="round"

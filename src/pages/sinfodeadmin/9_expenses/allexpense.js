@@ -1,5 +1,8 @@
 import { useState, useEffect, useRef } from "react";
 import axios from "../../../api/axiosConfig";
+import { ToastContainer, toast } from 'react-toastify';
+import "react-toastify/dist/ReactToastify.css";
+
 
 function AllExpenses() {
   const [expenses, setExpenses] = useState([]);
@@ -50,7 +53,7 @@ function AllExpenses() {
       try {
         const token = localStorage.getItem("token");
         if (!token) {
-          alert("No token found! Please login again.");
+          toast.error("No token found! Please login again.");
           return;
         }
 
@@ -66,13 +69,13 @@ function AllExpenses() {
         if (expensesRes.data.status) {
           setExpenses(expensesRes.data.data);
         } else {
-          alert("Failed to fetch expenses");
+          toast.error("Failed to fetch expenses");
         }
 
         setBranches(branchesRes.data || []);
       } catch (error) {
         console.error("Error fetching data:", error);
-        alert("Something went wrong while fetching data");
+        toast.error("Something went wrong while fetching data");
       } finally {
         setLoading(false);
       }
@@ -129,10 +132,10 @@ function AllExpenses() {
       
       setExpenses(expenses.filter(exp => exp.id !== id));
       setShowDropdown(null);
-      alert("Expense deleted successfully!");
+      toast.success("Expense deleted successfully!");
     } catch (error) {
       console.error("Error deleting expense:", error);
-      alert("Failed to delete expense");
+      toast.error("Failed to delete expense");
     }
   };
 
