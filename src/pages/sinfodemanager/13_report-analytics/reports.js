@@ -448,7 +448,7 @@ function Report() {
                     <thead className="bg-gradient-to-r from-gray-50 to-blue-50">
                       <tr>
                         <th className="px-6 py-4 text-left text-sm font-bold text-gray-700 uppercase tracking-wider">Student</th>
-                        <th className="px-6 py-4 text-left text-sm font-bold text-gray-700 uppercase tracking-wider">Admission No.</th>
+            
                         <th className="px-6 py-4 text-left text-sm font-bold text-gray-700 uppercase tracking-wider">Course & Batch</th>
                         <th className="px-6 py-4 text-left text-sm font-bold text-gray-700 uppercase tracking-wider">Branch</th>
                         <th className="px-6 py-4 text-left text-sm font-bold text-gray-700 uppercase tracking-wider">Status</th>
@@ -484,11 +484,7 @@ function Report() {
                                 </div>
                               </div>
                             </td>
-                            <td className="px-6 py-4 whitespace-nowrap">
-                              <div className="text-sm font-semibold text-gray-900 bg-gray-100 px-3 py-1 rounded-lg inline-block">
-                                #{student.admission_number}
-                              </div>
-                            </td>
+             
                             <td className="px-6 py-4">
                               <div className="space-y-1">
                                 {student.courses?.slice(0, 2).map((course, index) => (

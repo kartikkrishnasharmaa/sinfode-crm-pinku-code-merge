@@ -34,6 +34,10 @@ function Report() {
   });
   const [loading, setLoading] = useState(false);
 
+  // State for student modal
+  const [selectedStudent, setSelectedStudent] = useState(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
   // Fetch all data on component mount
   useEffect(() => {
     fetchStudents();
@@ -90,9 +94,15 @@ function Report() {
         headers: { Authorization: `Bearer ${token}` },
       });
 
-      // Ensure array format
-      const batchesArray = Array.isArray(res.data) ? res.data :
-        res.data.data ? res.data.data : [];
+      // Handle the batch API response structure
+      let batchesArray = [];
+      if (res.data && res.data.status && Array.isArray(res.data.data)) {
+        batchesArray = res.data.data;
+      } else if (Array.isArray(res.data)) {
+        batchesArray = res.data;
+      } else if (res.data && Array.isArray(res.data.data)) {
+        batchesArray = res.data.data;
+      }
 
       setAllBatches(batchesArray);
     } catch (error) {
@@ -181,9 +191,12 @@ function Report() {
     }));
   };
 
-  // Improved filter function
+  // Fixed filter function
   const filterStudents = () => {
-    if (!studentsData.length) return;
+    if (!studentsData.length) {
+      setFilteredStudents([]);
+      return;
+    }
 
     const filtered = studentsData.filter(student => {
       // Date filter
@@ -195,18 +208,19 @@ function Report() {
         (!startDate || (admissionDate && admissionDate >= startDate)) &&
         (!endDate || (admissionDate && admissionDate <= endDate));
 
-      // Course filter (handle both object and string formats)
-      const studentCourse = student.course?.course_name || student.course_name || student.course;
-      const matchesCourse = !filters.course || studentCourse === filters.course;
+      // Course filter - check courses array
+      const matchesCourse = !filters.course || 
+        (student.courses && student.courses.length > 0 && 
+         student.courses.some(course => course.course_name === filters.course));
 
-      // Batch filter (handle both object and string formats)
-      const studentBatch = student.batch?.batch_name || student.batch_name || student.batch;
-      const matchesBatch = !filters.batch || studentBatch === filters.batch;
+      // Batch filter - check courses array for batch
+      const matchesBatch = !filters.batch || 
+        (student.courses && student.courses.length > 0 && 
+         student.courses.some(course => course.batch && course.batch.batch_name === filters.batch));
 
-      // Branch filter (handle both object and string formats)
-// In the filterStudents function, update the branch comparison:
-const studentBranch = student.branch?.branch_name || student.branch_name || student.branch || '';
-const matchesBranch = !filters.branch || studentBranch === filters.branch;
+      // Branch filter
+      const studentBranch = student.branch?.branch_name || '';
+      const matchesBranch = !filters.branch || studentBranch === filters.branch;
 
       // Status filter
       const matchesStatus = !filters.status || student.enrollment_status === filters.status;
@@ -214,9 +228,9 @@ const matchesBranch = !filters.branch || studentBranch === filters.branch;
       // Search filter
       const searchTerm = filters.search.toLowerCase();
       const matchesSearch = !filters.search ||
-        student.full_name?.toLowerCase().includes(searchTerm) ||
-        student.email?.toLowerCase().includes(searchTerm) ||
-        student.admission_number?.toLowerCase().includes(searchTerm);
+        (student.full_name && student.full_name.toLowerCase().includes(searchTerm)) ||
+        (student.email && student.email.toLowerCase().includes(searchTerm)) ||
+        (student.admission_number && student.admission_number.toLowerCase().includes(searchTerm));
 
       return matchesCourse && matchesBatch && matchesBranch &&
         matchesStatus && matchesDateRange && matchesSearch;
@@ -227,19 +241,19 @@ const matchesBranch = !filters.branch || studentBranch === filters.branch;
 
   // Get unique values for filter dropdowns from master data
   const getCourseOptions = () => {
-    return allCourses.map(course => course.course_name || course.name || course).filter(Boolean);
+    return allCourses.map(course => course.course_name).filter(Boolean);
   };
 
   const getBatchOptions = () => {
-    return allBatches.map(batch => batch.batch_name || batch.name || batch).filter(Boolean);
+    return allBatches.map(batch => batch.batch_name).filter(Boolean);
   };
 
- const getBranchOptions = () => {
-  return allBranches.map(branch => ({
-    id: branch.id || branch.branch_id,
-    name: branch.branch_name || branch.name || branch
-  })).filter(branch => branch.name);
-};
+  const getBranchOptions = () => {
+    return allBranches.map(branch => ({
+      id: branch.id || branch.branch_id,
+      name: branch.branch_name || branch.name || branch
+    })).filter(branch => branch.name);
+  };
 
   // Get unique status values from student data
   const getStatusValues = () => {
@@ -250,6 +264,17 @@ const matchesBranch = !filters.branch || studentBranch === filters.branch;
       );
 
     return statuses.sort();
+  };
+
+  // Student modal functions
+  const openStudentModal = (student) => {
+    setSelectedStudent(student);
+    setIsModalOpen(true);
+  };
+
+  const closeStudentModal = () => {
+    setSelectedStudent(null);
+    setIsModalOpen(false);
   };
 
   const showNotification = (message, type) => {
@@ -267,9 +292,13 @@ const matchesBranch = !filters.branch || studentBranch === filters.branch;
     const headers = "ID,Name,Admission Number,Email,Course,Batch,Branch,Status,Admission Date,Contact Number\n";
 
     const csvContent = filteredStudents.map(student => {
-      const course = student.course?.course_name || student.course_name || student.course || 'N/A';
-      const batch = student.batch?.batch_name || student.batch_name || student.batch || 'N/A';
-      const branch = student.branch?.branch_name || student.branch_name || student.branch || 'N/A';
+      const course = student.courses && student.courses.length > 0 
+        ? student.courses[0].course_name 
+        : 'N/A';
+      const batch = student.courses && student.courses.length > 0 && student.courses[0].batch
+        ? student.courses[0].batch.batch_name
+        : 'N/A';
+      const branch = student.branch?.branch_name || 'N/A';
 
       return `${student.id || ''},${student.full_name || ''},${student.admission_number || ''},${student.email || ''},${course},${batch},${branch},${student.enrollment_status || ''},${student.admission_date || ''},${student.contact_number || ''}`;
     }).join("\n");
@@ -501,18 +530,34 @@ const matchesBranch = !filters.branch || studentBranch === filters.branch;
                     <tbody className="bg-white divide-y divide-gray-200">
                       {filteredStudents.length > 0 ? (
                         filteredStudents.map((student) => {
-                          const course = student.course?.course_name || student.course_name || student.course || 'N/A';
-                          const batch = student.batch?.batch_name || student.batch_name || student.batch || 'N/A';
-                          const branch = student.branch?.branch_name || student.branch_name || student.branch || 'N/A';
+                          const course = student.courses && student.courses.length > 0 
+                            ? student.courses[0].course_name 
+                            : 'N/A';
+                          const batch = student.courses && student.courses.length > 0 && student.courses[0].batch
+                            ? student.courses[0].batch.batch_name
+                            : 'N/A';
+                          const branch = student.branch?.branch_name || 'N/A';
 
                           return (
-                            <tr key={student.id} className="hover:bg-gray-50">
+                            <tr 
+                              key={student.id} 
+                              className="hover:bg-gray-50 cursor-pointer transition-colors duration-150"
+                              onClick={() => openStudentModal(student)}
+                            >
                               <td className="px-6 py-4 whitespace-nowrap">
                                 <div className="flex items-center">
                                   <div className="h-10 w-10 rounded-full bg-indigo-100 flex items-center justify-center">
-                                    <span className="text-indigo-600 font-semibold">
-                                      {student.full_name ? student.full_name.charAt(0).toUpperCase() : 'S'}
-                                    </span>
+                                    {student.photo_url ? (
+                                      <img 
+                                        src={student.photo_url} 
+                                        alt={student.full_name}
+                                        className="h-10 w-10 rounded-full object-cover"
+                                      />
+                                    ) : (
+                                      <span className="text-indigo-600 font-semibold">
+                                        {student.full_name ? student.full_name.charAt(0).toUpperCase() : 'S'}
+                                      </span>
+                                    )}
                                   </div>
                                   <div className="ml-4">
                                     <div className="text-sm font-medium text-gray-900">
@@ -528,7 +573,7 @@ const matchesBranch = !filters.branch || studentBranch === filters.branch;
                                 {student.admission_number || 'N/A'}
                               </td>
                               <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                <div>{course}</div>
+                                <div className="font-medium">{course}</div>
                                 <div className="text-xs text-gray-500">{batch}</div>
                               </td>
                               <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
@@ -540,7 +585,7 @@ const matchesBranch = !filters.branch || studentBranch === filters.branch;
                                 </span>
                               </td>
                               <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                {student.admission_date || 'N/A'}
+                                {student.admission_date ? format(parseISO(student.admission_date), 'MMM dd, yyyy') : 'N/A'}
                               </td>
                             </tr>
                           );
@@ -559,6 +604,193 @@ const matchesBranch = !filters.branch || studentBranch === filters.branch;
             </div>
           )}
 
+          {/* Student Details Modal */}
+          {isModalOpen && selectedStudent && (
+            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+              <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+                {/* Modal Header */}
+                <div className="bg-gradient-to-r from-blue-500 to-purple-600 text-white p-6 rounded-t-xl">
+                  <div className="flex justify-between items-start">
+                    <div className="flex items-center space-x-4">
+                      <div className="h-16 w-16 rounded-full bg-white bg-opacity-20 flex items-center justify-center">
+                        {selectedStudent.photo_url ? (
+                          <img 
+                            src={selectedStudent.photo_url} 
+                            alt={selectedStudent.full_name}
+                            className="h-16 w-16 rounded-full object-cover border-2 border-white"
+                          />
+                        ) : (
+                          <span className="text-2xl font-bold text-white">
+                            {selectedStudent.full_name ? selectedStudent.full_name.charAt(0).toUpperCase() : 'S'}
+                          </span>
+                        )}
+                      </div>
+                      <div>
+                        <h2 className="text-2xl font-bold">{selectedStudent.full_name}</h2>
+                        <p className="text-blue-100 opacity-90">{selectedStudent.email}</p>
+                        <span className={`mt-2 px-3 py-1 text-sm font-semibold rounded-full ${getStatusClass(selectedStudent.enrollment_status)}`}>
+                          {selectedStudent.enrollment_status || 'Unknown'}
+                        </span>
+                      </div>
+                    </div>
+                    <button
+                      onClick={closeStudentModal}
+                      className="text-white hover:text-gray-200 transition-colors duration-200"
+                    >
+                      <i className="fas fa-times text-xl"></i>
+                    </button>
+                  </div>
+                </div>
+
+                {/* Modal Body */}
+                <div className="p-6 space-y-6">
+                  {/* Personal Information */}
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                      <i className="fas fa-user-circle text-blue-500 mr-2"></i>
+                      Personal Information
+                    </h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="text-sm font-medium text-gray-600">Date of Birth</label>
+                        <p className="text-gray-900">{selectedStudent.dob || 'N/A'}</p>
+                      </div>
+                      <div>
+                        <label className="text-sm font-medium text-gray-600">Gender</label>
+                        <p className="text-gray-900">{selectedStudent.gender || 'N/A'}</p>
+                      </div>
+                      <div>
+                        <label className="text-sm font-medium text-gray-600">Contact Number</label>
+                        <p className="text-gray-900">{selectedStudent.contact_number || 'N/A'}</p>
+                      </div>
+                      <div>
+                        <label className="text-sm font-medium text-gray-600">Admission Number</label>
+                        <p className="text-gray-900 font-mono">{selectedStudent.admission_number || 'N/A'}</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Guardian Information */}
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                      <i className="fas fa-users text-green-500 mr-2"></i>
+                      Guardian Information
+                    </h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="text-sm font-medium text-gray-600">Guardian Name</label>
+                        <p className="text-gray-900">{selectedStudent.guardian_name || 'N/A'}</p>
+                      </div>
+                      <div>
+                        <label className="text-sm font-medium text-gray-600">Guardian Contact</label>
+                        <p className="text-gray-900">{selectedStudent.guardian_contact || 'N/A'}</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Academic Information */}
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                      <i className="fas fa-graduation-cap text-purple-500 mr-2"></i>
+                      Academic Information
+                    </h3>
+                    <div className="space-y-4">
+                      {selectedStudent.courses && selectedStudent.courses.length > 0 ? (
+                        selectedStudent.courses.map((course, index) => (
+                          <div key={index} className="border border-gray-200 rounded-lg p-4 bg-gray-50">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                              <div>
+                                <label className="text-sm font-medium text-gray-600">Course</label>
+                                <p className="text-gray-900 font-semibold">{course.course_name}</p>
+                              </div>
+                              <div>
+                                <label className="text-sm font-medium text-gray-600">Batch</label>
+                                <p className="text-gray-900">{course.batch?.batch_name || 'N/A'}</p>
+                              </div>
+                              <div>
+                                <label className="text-sm font-medium text-gray-600">Batch Timing</label>
+                                <p className="text-gray-900">
+                                  {course.batch?.batch_start_time ? 
+                                    `${course.batch.batch_start_time.slice(0,5)} - ${course.batch.batch_end_time?.slice(0,5) || ''}` 
+                                    : 'N/A'}
+                                </p>
+                              </div>
+                              <div>
+                                <label className="text-sm font-medium text-gray-600">Duration</label>
+                                <p className="text-gray-900">{course.duration ? `${course.duration} months` : 'N/A'}</p>
+                              </div>
+                            </div>
+                          </div>
+                        ))
+                      ) : (
+                        <p className="text-gray-500 text-center py-4">No course information available</p>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Branch Information */}
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                      <i className="fas fa-building text-orange-500 mr-2"></i>
+                      Branch Information
+                    </h3>
+                    <div className="border border-gray-200 rounded-lg p-4 bg-gray-50">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <label className="text-sm font-medium text-gray-600">Branch Name</label>
+                          <p className="text-gray-900 font-semibold">{selectedStudent.branch?.branch_name || 'N/A'}</p>
+                        </div>
+                        <div>
+                          <label className="text-sm font-medium text-gray-600">Address</label>
+                          <p className="text-gray-900">{selectedStudent.branch?.address || 'N/A'}</p>
+                        </div>
+                        <div>
+                          <label className="text-sm font-medium text-gray-600">Contact</label>
+                          <p className="text-gray-900">{selectedStudent.branch?.contact_number || 'N/A'}</p>
+                        </div>
+                        <div>
+                          <label className="text-sm font-medium text-gray-600">Email</label>
+                          <p className="text-gray-900">{selectedStudent.branch?.email || 'N/A'}</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Additional Information */}
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                      <i className="fas fa-info-circle text-red-500 mr-2"></i>
+                      Additional Information
+                    </h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="text-sm font-medium text-gray-600">Admission Date</label>
+                        <p className="text-gray-900">
+                          {selectedStudent.admission_date ? format(parseISO(selectedStudent.admission_date), 'MMM dd, yyyy') : 'N/A'}
+                        </p>
+                      </div>
+                      <div>
+                        <label className="text-sm font-medium text-gray-600">Address</label>
+                        <p className="text-gray-900">{selectedStudent.address || 'N/A'}</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Modal Footer */}
+                <div className="bg-gray-50 px-6 py-4 border-t border-gray-200 rounded-b-xl flex justify-end">
+                  <button
+                    onClick={closeStudentModal}
+                    className="bg-indigo-600 text-white px-6 py-2 rounded-lg hover:bg-indigo-700 transition-colors duration-200"
+                  >
+                    Close
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Branch Performance Tab - Keep existing code */}
           {activeTab === 'performance' && (
             <div className="space-y-6">
               {/* Performance Filters */}
@@ -636,6 +868,7 @@ const matchesBranch = !filters.branch || studentBranch === filters.branch;
                   </button>
                 </div>
               </div>
+
 
               {/* Performance Dashboard */}
               {branchPerformance && (
