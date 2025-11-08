@@ -133,7 +133,13 @@ export default function AssignmentTable() {
 
       const initialStatuses = {};
       (assignmentData.submissions || []).forEach(submission => {
-        initialStatuses[submission.student_id] = submission.status || "pending";
+        // Normalize status values to match backend expectations
+        let status = submission.status || "Pending";
+        // Convert any status that's not "Done" to "Pending"
+        if (status !== "Done") {
+          status = "Pending";
+        }
+        initialStatuses[submission.student_id] = status;
       });
 
       setStudentStatuses(initialStatuses);
@@ -228,6 +234,8 @@ export default function AssignmentTable() {
         updates: updates
       };
 
+      console.log("Sending bulk update payload:", payload);
+
       const res = await axios.put("/assignments/submissions/bulk-update", payload, {
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -237,7 +245,12 @@ export default function AssignmentTable() {
       fetchAssignments();
     } catch (error) {
       console.error("Error updating statuses:", error);
-      toast.warning("Error updating statuses");
+      if (error.response) {
+        console.error("Backend validation errors:", error.response.data.errors);
+        toast.warning(`Error: ${error.response.data.message || "Invalid status value"}`);
+      } else {
+        toast.warning("Error updating statuses");
+      }
     }
   };
 
@@ -283,9 +296,9 @@ export default function AssignmentTable() {
   // Format time for display
   const formatTime = (timeString) => {
     if (!timeString) return 'N/A';
-    return new Date(`2000-01-01T${timeString}`).toLocaleTimeString([], { 
-      hour: '2-digit', 
-      minute: '2-digit' 
+    return new Date(`2000-01-01T${timeString}`).toLocaleTimeString([], {
+      hour: '2-digit',
+      minute: '2-digit'
     });
   };
 
@@ -322,7 +335,7 @@ export default function AssignmentTable() {
     const due = new Date(dueDate);
     const diffTime = due - today;
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    
+
     if (diffDays < 0) {
       return { text: `Overdue by ${Math.abs(diffDays)} days`, color: 'text-red-600', bg: 'bg-red-50' };
     } else if (diffDays === 0) {
@@ -395,8 +408,8 @@ export default function AssignmentTable() {
           <table className="w-full">
             <thead className="bg-gray-50 border-b border-gray-200">
               <tr>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Sr. No.</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Assignment</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Class Details</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Due Date</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Submissions</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
@@ -417,16 +430,17 @@ export default function AssignmentTable() {
                   </td>
                 </tr>
               ) : (
-                assignments.map((assignment) => {
+                assignments.map((assignment,index) => {
                   const details = getAssignmentDetails(assignment);
                   const status = getSubmissionStatus(assignment);
 
                   return (
-                    <tr 
-                      key={assignment.id} 
+                    <tr
+                      key={assignment.id}
                       className="hover:bg-gray-50 transition-colors duration-150 cursor-pointer"
                       onClick={() => handleViewDetails(assignment)}
                     >
+                      <td className="px-6 py-4 text-sm text-gray-900">{index + 1}</td>
                       <td className="px-6 py-4">
                         <div>
                           <p className="font-semibold text-gray-900">
@@ -439,13 +453,6 @@ export default function AssignmentTable() {
                               ? assignment.description.slice(0, 50) + "..."
                               : assignment.description}
                           </p>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4">
-                        <div>
-                          <p className="text-sm font-medium text-gray-900">{details.courseName}</p>
-                          <p className="text-sm text-gray-500">Batch: {details.batchName}</p>
-                          <p className="text-xs text-gray-400">Teacher: {details.teacherName}</p>
                         </div>
                       </td>
                       <td className="px-6 py-4">
@@ -670,7 +677,6 @@ export default function AssignmentTable() {
         </div>
       )}
 
-      {/* Assignment Details Modal */}
       {showDetailsModal && selectedAssignment && (
         <div className="fixed inset-0 flex justify-center items-center p-4 z-50 bg-black bg-opacity-50">
           <div className="bg-white rounded-lg p-6 w-full max-w-4xl max-h-[90vh] overflow-y-auto shadow-xl">
@@ -872,6 +878,71 @@ export default function AssignmentTable() {
                 </div>
               </div>
 
+              {/* Student Submissions Section */}
+              <div className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm">
+                <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                  <svg className="w-5 h-5 mr-2 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
+                  </svg>
+                  Student Submissions
+                  <span className="ml-2 bg-indigo-100 text-indigo-800 text-sm font-medium px-2.5 py-0.5 rounded-full">
+                    {selectedAssignment.submissions?.length || 0}
+                  </span>
+                </h3>
+
+                {selectedAssignment.submissions && selectedAssignment.submissions.length > 0 ? (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {selectedAssignment.submissions.map((submission) => (
+                      <div key={submission.id} className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow duration-200">
+                        <div className="flex items-center space-x-3 mb-3">
+                          <img
+                            src={submission.student.photo_url || '/default-avatar.png'}
+                            alt={submission.student.full_name}
+                            className="w-10 h-10 rounded-full object-cover border border-gray-300"
+                          />
+                          <div className="flex-1 min-w-0">
+                            <h4 className="font-medium text-gray-900 truncate">{submission.student.full_name}</h4>
+                            <p className="text-sm text-gray-500 truncate">Admission: {submission.student.admission_number}</p>
+                          </div>
+                        </div>
+
+                        <div className="flex justify-between items-center">
+                          <div className="flex flex-col">
+                            <span className="text-xs text-gray-500">Status</span>
+                            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${submission.status === 'Done'
+                                ? 'bg-green-100 text-green-800'
+                                : 'bg-yellow-100 text-yellow-800'
+                              }`}>
+                              {submission.status}
+                            </span>
+                          </div>
+
+                          <div className="flex flex-col items-end">
+                            <span className="text-xs text-gray-500">Submitted</span>
+                            <span className="text-sm text-gray-900">
+                              {formatDate(submission.updated_at)}
+                            </span>
+                          </div>
+                        </div>
+
+                        <div className="mt-3 pt-3 border-t border-gray-100">
+                          <div className="flex justify-between text-xs text-gray-500">
+                            <span>Contact: {submission.student.contact_number}</span>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-8">
+                    <svg className="w-12 h-12 mx-auto text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                    <p className="mt-2 text-gray-500">No submissions yet</p>
+                  </div>
+                )}
+              </div>
+
               {/* Action Buttons */}
               <div className="flex justify-end space-x-3 pt-4 border-t border-gray-200">
                 <button
@@ -880,7 +951,7 @@ export default function AssignmentTable() {
                 >
                   Close
                 </button>
-                <button
+                {/* <button
                   onClick={() => {
                     setShowDetailsModal(false);
                     handleReviewClick(selectedAssignment);
@@ -891,7 +962,7 @@ export default function AssignmentTable() {
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path>
                   </svg>
                   Review Submissions
-                </button>
+                </button> */}
               </div>
             </div>
           </div>
@@ -959,14 +1030,12 @@ export default function AssignmentTable() {
                             </td>
                             <td className="px-4 py-3">
                               <select
-                                value={studentStatuses[submission.student_id] || "pending"}
+                                value={studentStatuses[submission.student_id] || "Pending"}
                                 onChange={(e) => handleStatusChange(submission.student_id, e.target.value)}
                                 className="border border-gray-300 rounded px-3 py-1 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors duration-200"
                               >
-                                <option value="pending">Pending</option>
+                                <option value="Pending">Pending</option>
                                 <option value="Done">Done</option>
-                                <option value="In Progress">In Progress</option>
-                                <option value="Not Submitted">Not Submitted</option>
                               </select>
                             </td>
                           </tr>
