@@ -169,10 +169,10 @@ function AllExpenses() {
       ));
       
       setEditModal({ isOpen: false, expense: null });
-      alert("Expense updated successfully!");
+      toast.success("Expense updated successfully!");
     } catch (error) {
       console.error("Error updating expense:", error);
-      alert("Failed to update expense");
+      toast.error("Failed to update expense");
     }
   };
 
@@ -234,6 +234,7 @@ function AllExpenses() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50 p-6">
+      <ToastContainer position="top-right" autoClose={3000} hideProgressBar newestOnTop closeOnClick rtl={false} pauseOnFocusLoss draggable pauseOnHover />
       <div className="max-w-7xl mx-auto">
         {/* Header Section */}
         <div className="bg-gradient-to-r from-purple-600 via-indigo-600 to-blue-600 p-8 rounded-3xl text-white mb-8 shadow-2xl transform transition-all duration-300 hover:shadow-3xl">
@@ -430,7 +431,7 @@ function AllExpenses() {
               </button>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-1 lg:grid-cols-2 xl:grid-cols-2 gap-6">
               {filteredExpenses.map((exp, index) => (
                 <div
                   key={exp.id}
@@ -486,11 +487,11 @@ function AllExpenses() {
                       <span className={`text-xs font-semibold px-3 py-1.5 rounded-full ${getCategoryColor(exp.category)}`}>
                         {exp.category}
                       </span>
-                      <div className="text-right">
-                        <p className="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-600 to-indigo-600">
+                      <div className="">
+                        <p className="text-2xl mr-16 font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-600 to-indigo-600">
                           ₹{parseFloat(exp.amount).toLocaleString()}
                         </p>
-                        <p className="text-xs text-gray-500 mt-1">{exp.payment_mode}</p>
+                        <p className="text-xs text-gray-500 mt-1 ml-4">{exp.payment_mode}</p>
                       </div>
                     </div>
                   </div>
@@ -529,7 +530,7 @@ function AllExpenses() {
                       </div>
                       <div>
                         <span className="text-xs font-medium text-gray-500">Date</span>
-                        <p className="text-sm font-semibold text-gray-800">{new Date(exp.expense_date).toLocaleDateString('en-IN')}</p>
+                        <p className="text-sm font-semibold text-gray-800">{new Date(exp.date).toLocaleDateString('en-IN')}</p>
                       </div>
                     </div>
 
