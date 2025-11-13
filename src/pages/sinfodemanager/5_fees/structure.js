@@ -5,6 +5,10 @@ import 'react-toastify/dist/ReactToastify.css';
 import './StudentFees.css';
 
 const StudentFees = () => {
+  // Get user data from localStorage
+  const userData = JSON.parse(localStorage.getItem("user") || "{}");
+  const userBranchId = userData.branch_id;
+
   const [studentFees, setStudentFees] = useState([]);
   const [courses, setCourses] = useState([]);
   const [students, setStudents] = useState([]);
@@ -58,6 +62,18 @@ const StudentFees = () => {
   // Active filter for stat cards
   const [activeStatFilter, setActiveStatFilter] = useState('all');
 
+  // Filter student fees by current branch
+  const getBranchStudentFees = (fees) => {
+    if (!userBranchId) return fees;
+    
+    return fees.filter(fee => {
+      if (fee.student && fee.student.branch_id) {
+        return fee.student.branch_id === userBranchId;
+      }
+      return false;
+    });
+  };
+
   // Fetch all student fees
   const fetchStudentFees = async () => {
     try {
@@ -65,8 +81,12 @@ const StudentFees = () => {
       const res = await axios.get("/studentfee", {
         headers: { Authorization: `Bearer ${token}` },
       });
+      
+      // Filter fees by branch
+      const branchFees = getBranchStudentFees(res.data || []);
+      
       // Sort by creation date (newest first) by default
-      const sortedFees = (res.data || []).sort((a, b) => 
+      const sortedFees = branchFees.sort((a, b) => 
         new Date(b.created_at) - new Date(a.created_at)
       );
       setStudentFees(sortedFees);
@@ -96,8 +116,14 @@ const StudentFees = () => {
       const res = await axios.get("/students/show", {
         headers: { Authorization: `Bearer ${token}` },
       });
-      setStudents(res.data || []);
-      setFilteredStudents(res.data || []);
+      
+      // Filter students by branch
+      const branchStudents = userBranchId 
+        ? (res.data || []).filter(student => student.branch_id === userBranchId)
+        : (res.data || []);
+      
+      setStudents(branchStudents);
+      setFilteredStudents(branchStudents);
     } catch (error) {
       console.error("Error fetching students:", error);
     }
@@ -258,7 +284,7 @@ const StudentFees = () => {
 
   // Filter and sort student fees
   const getFilteredAndSortedFees = () => {
-    let filtered = studentFees;
+    let filtered = studentFees; // Already filtered by branch
 
     // Apply filters
     if (filters.studentName) {
@@ -464,17 +490,11 @@ const StudentFees = () => {
     }
   };
 
-  // Stats calculation
+  // Stats calculation - use the already branch-filtered studentFees
   const filteredFees = getFilteredAndSortedFees();
-  const totalFees = filteredFees.reduce((sum, fee) => sum + parseFloat(fee.total_fee || 0), 0);
-  const totalPaid = filteredFees.reduce((sum, fee) => sum + parseFloat(fee.paid_amount || 0), 0);
-  const totalPending = filteredFees.reduce((sum, fee) => sum + parseFloat(fee.pending_amount || 0), 0);
-
-  // Calculate stats for all fees (without filters)
-  const allFees = studentFees;
-  const allTotalFees = allFees.reduce((sum, fee) => sum + parseFloat(fee.total_fee || 0), 0);
-  const allTotalPaid = allFees.reduce((sum, fee) => sum + parseFloat(fee.paid_amount || 0), 0);
-  const allTotalPending = allFees.reduce((sum, fee) => sum + parseFloat(fee.pending_amount || 0), 0);
+  const totalFees = studentFees.reduce((sum, fee) => sum + parseFloat(fee.total_fee || 0), 0);
+  const totalPaid = studentFees.reduce((sum, fee) => sum + parseFloat(fee.paid_amount || 0), 0);
+  const totalPending = studentFees.reduce((sum, fee) => sum + parseFloat(fee.pending_amount || 0), 0);
 
   const openModal = () => {
     setFormData({
@@ -643,6 +663,7 @@ const StudentFees = () => {
             <div className="sf-header-text">
               <h1>Student Fee Management</h1>
               <p>Manage student fees and payments</p>
+         
             </div>
           </div>
           <div className="sf-header-right">
@@ -669,8 +690,8 @@ const StudentFees = () => {
               </div>
               <div className="sf-stat-text">
                 <p>Total Fees</p>
-                <h3>₹{allTotalFees.toLocaleString()}</h3>
-                <span className="sf-stat-subtitle">{allFees.length} records</span>
+                <h3>₹{totalFees.toLocaleString()}</h3>
+                <span className="sf-stat-subtitle">{studentFees.length} records</span>
               </div>
               {activeStatFilter === 'all' && (
                 <div className="sf-stat-active-indicator">
@@ -691,9 +712,9 @@ const StudentFees = () => {
               </div>
               <div className="sf-stat-text">
                 <p>Paid Amount</p>
-                <h3>₹{allTotalPaid.toLocaleString()}</h3>
+                <h3>₹{totalPaid.toLocaleString()}</h3>
                 <span className="sf-stat-subtitle">
-                  {allTotalFees > 0 ? Math.round((allTotalPaid / allTotalFees) * 100) : 0}% collected
+                  {totalFees > 0 ? Math.round((totalPaid / totalFees) * 100) : 0}% collected
                 </span>
               </div>
               {activeStatFilter === 'paid' && (
@@ -715,9 +736,9 @@ const StudentFees = () => {
               </div>
               <div className="sf-stat-text">
                 <p>Pending Amount</p>
-                <h3>₹{allTotalPending.toLocaleString()}</h3>
+                <h3>₹{totalPending.toLocaleString()}</h3>
                 <span className="sf-stat-subtitle">
-                  {allTotalFees > 0 ? Math.round((allTotalPending / allTotalFees) * 100) : 0}% pending
+                  {totalFees > 0 ? Math.round((totalPending / totalFees) * 100) : 0}% pending
                 </span>
               </div>
               {activeStatFilter === 'pending' && (
@@ -729,6 +750,9 @@ const StudentFees = () => {
           </div>
         </div>
 
+        {/* Rest of the code remains exactly the same... */}
+        {/* The table and modals will automatically show only branch-specific data */}
+        
         {/* Active Filter Indicator */}
         {activeStatFilter !== 'all' && (
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4">
@@ -931,13 +955,21 @@ const StudentFees = () => {
                 ))}
               </tbody>
             </table>
-            {filteredFees.length === 0 && (
-              <div className="sf-empty-state">
-                <i className="fas fa-search"></i>
-                <h3>No fees found</h3>
-                <p>Try adjusting your filters or generate a new fee</p>
-              </div>
-            )}
+          {filteredFees.length === 0 && (
+  <div className="flex flex-col items-center justify-center py-10 px-4 text-center 
+                  bg-white rounded-xl border border-gray-200 shadow-sm">
+    <div className="flex items-center justify-center w-14 h-14 rounded-full 
+                    bg-blue-100 text-blue-600 mb-4">
+      <i className="fas fa-search text-2xl"></i>
+    </div>
+
+    <h3 className="text-lg font-semibold text-gray-800">No fees found</h3>
+    <p className="text-sm text-gray-500 mt-1">
+      Try adjusting your filters or generate a new fee
+    </p>
+  </div>
+)}
+
           </div>
         </div>
       </main>
@@ -975,7 +1007,7 @@ const StudentFees = () => {
                             onClick={() => handleStudentSelect(student)}
                           >
                             <div className="sf-dropdown-student-name">{student.full_name}</div>
-                            <div className="sf-dropdown-admission">Admission: {student.admission_number}</div>
+                            {/* <div className="sf-dropdown-admission">Admission: {student.admission_number}</div> */}
                             <div className="sf-dropdown-courses">
                               {student.courses && student.courses.length > 0 
                                 ? `${student.courses.length} course(s) enrolled`
