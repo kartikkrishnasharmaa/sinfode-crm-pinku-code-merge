@@ -231,7 +231,7 @@ const Collection = () => {
       // Revert optimistic update on error
       await fetchAllData();
       if (selectedFeeRecord) {
-      const token = localStorage.getItem("token");
+        const token = localStorage.getItem("token");
 
         const updatedRecords = await axios.get("/studentfee", {
           headers: { Authorization: `Bearer ${token}` },
@@ -247,153 +247,162 @@ const Collection = () => {
     }
   };
 
-const generateReceipt = (payment, feeRecord) => {
-  const formatDate = (d) => d ? new Date(d).toLocaleDateString() : '';
-  const formatAmount = (a) => {
-    const n = Number(a || 0);
-    return Number.isInteger(n) ? n.toString() : n.toFixed(2).replace(/\.00$/, '');
+  // FINAL UPDATED RECEIPT (EXACT SAME DESIGN)
+  const generateReceipt = (payment, feeRecord) => {
+    const doc = new jsPDF("p", "mm", "a4");
+
+    const formatDate = (d) => d ? new Date(d).toLocaleDateString() : '';
+    const formatAmount = (a) => Number(a || 0).toString();
+    const numberToWords = (num) => {
+      if (num === 0) return "Zero";
+
+      const a = [
+        "", "One", "Two", "Three", "Four", "Five", "Six",
+        "Seven", "Eight", "Nine", "Ten", "Eleven", "Twelve",
+        "Thirteen", "Fourteen", "Fifteen", "Sixteen", "Seventeen",
+        "Eighteen", "Nineteen"
+      ];
+
+      const b = [
+        "", "", "Twenty", "Thirty", "Forty", "Fifty",
+        "Sixty", "Seventy", "Eighty", "Ninety"
+      ];
+
+      const inWords = (n) => {
+        if (n < 20) return a[n];
+        if (n < 100) return b[Math.floor(n / 10)] + (n % 10 ? " " + a[n % 10] : "");
+        if (n < 1000) return a[Math.floor(n / 100)] + " Hundred" + (n % 100 ? " " + inWords(n % 100) : "");
+        if (n < 100000) return inWords(Math.floor(n / 1000)) + " Thousand" + (n % 1000 ? " " + inWords(n % 1000) : "");
+        if (n < 10000000) return inWords(Math.floor(n / 100000)) + " Lakh" + (n % 100000 ? " " + inWords(n % 100000) : "");
+        return inWords(Math.floor(n / 10000000)) + " Crore" + (n % 10000000 ? " " + inWords(n % 10000000) : "");
+      };
+
+      return inWords(num) + " Rupees Only";
+    };
+
+
+    const logo = "https://www.sinfode.com/wp-content/uploads/2022/12/digital-marketing-institute-in-sikar.webp";
+
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const margin = 10;
+
+    // EXACT HALF A4 HEIGHT
+    const RECEIPT_HEIGHT = 148; // A4 → 297 / 2 = 148.5 (rounded)
+
+    // DRAW A RECEIPT
+    const drawReceipt = (startY) => {
+      let y = startY;
+
+      // TOP BORDER
+      doc.line(0, y, pageWidth, y);
+      y += 10;
+
+      // HEADER
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(20);
+      doc.text("FEE RECEIPT", margin, y);
+
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(12);
+      doc.text("Receipt No.: ____________________", pageWidth - 90, y);
+      y += 8;
+      doc.text("Date: ____________________", pageWidth - 90, y);
+
+      y += 10;
+      doc.line(margin, y, pageWidth - margin, y);
+      y += 12;
+
+      // STUDENT DETAILS
+      doc.text(`Name of Student :  ${feeRecord?.student?.full_name || ''}`, margin, y);
+      y += 7;
+      doc.text(`Guardian Name :  ${feeRecord?.student?.guardian_name || ''}`, margin, y);
+      y += 12;
+
+      doc.line(margin, y, pageWidth - margin, y);
+      y += 14;
+
+      // PAID AMOUNT
+      doc.text("Paid Amount :", margin, y);
+      doc.setFont("helvetica", "italic");
+      doc.text(numberToWords(Number(payment?.amount_paid || 0)), margin + 35, y);
+      // AMOUNT BOX
+      doc.setFillColor(0, 0, 0);
+      doc.rect(pageWidth - 70, y - 6, 60, 16, "F");
+
+      doc.setTextColor(255, 255, 255);
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(16);
+      doc.text(`Rs. _${formatAmount(payment?.amount_paid)}_`, pageWidth - 65, y + 3);
+
+      doc.setTextColor(0, 0, 0);
+      y += 18;
+
+      doc.line(margin, y, pageWidth - margin, y);
+      y += 14;
+
+      // COURSE INFO
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(12);
+      // doc.text(`Name of Course :  ${feeRecord?.course_name || ''}`, margin, y);
+      // y += 7;
+      doc.text(`Received By :  ${payment?.received_by || ''}`, margin, y);
+      doc.text(`Payment Mode :  ${payment?.payment_mode || ''}`, pageWidth - 120, y);
+
+      // SIGN SEAL BOX
+      // SIGN & SEAL BOX (tighter, shifted upward)
+      doc.rect(pageWidth - 60, y - 8, 50, 20);  // was y - 12 (shifted UP) and height 25 → 20 (less height)
+      doc.setFont("helvetica", "bold");
+      doc.text("Sign & Seal", pageWidth - 55, y + 1); // was y + 2 (moved UP)
+      y += 22; // was 28 (reduced bottom spacing)
+
+
+      // FOOTER BLACK STRIP (reduced height = 24)
+      const footerHeight = 24;
+      const blackY = startY + RECEIPT_HEIGHT - footerHeight;
+
+      doc.setFillColor(0, 0, 0);
+      doc.rect(0, blackY, pageWidth, footerHeight, "F");
+
+      // LOGO
+      // doc.addImage(logo, "PNG", margin, blackY + 3, 18, 18);
+
+      // FOOTER TEXT (tightly packed)
+      doc.setTextColor(255, 255, 255);
+
+      // Company Name
+      doc.setFontSize(14);
+      doc.text("SINFODE PRIVATE LIMITED", pageWidth / 2, blackY + 8, { align: "center" });
+
+      // Contact Row
+      doc.setFontSize(8);
+      doc.text(
+        "www.sinfode.com | info@sinfode.com | +91-9676306970",
+        pageWidth / 2,
+        blackY + 14,
+        { align: "center" }
+      );
+
+      // Address Row
+      doc.text(
+        "Opp. Sanskrit College, Near Kalyan Circle, Sikar - 332001 (Raj.)",
+        pageWidth / 2,
+        blackY + 20,
+        { align: "center" }
+      );
+
+      doc.setTextColor(0, 0, 0);
+
+    };
+
+    // FIRST RECEIPT — TOP HALF
+    drawReceipt(0);
+
+    // SECOND RECEIPT — EXACTLY BELOW FIRST
+    drawReceipt(RECEIPT_HEIGHT);
+
+    const studentNameSafe = (feeRecord?.student?.full_name || "student").replace(/\s+/g, "_");
+    doc.save(`Fee_Receipt_${studentNameSafe}_${payment?.id}.pdf`);
   };
-  const safeCalculateCurrentBalance = (f, p) => {
-    try {
-      if (typeof calculateCurrentBalance === 'function') return calculateCurrentBalance(f, p);
-    } catch {}
-    const total = Number(f?.total_fee || 0);
-    const paid = Number(p?.amount_paid || 0);
-    return total - paid;
-  };
-
-  const doc = new jsPDF();
-  const pageWidth = doc.internal.pageSize.getWidth();
-  const pageHeight = doc.internal.pageSize.getHeight();
-  const margin = 10; // Reduced margin
-  const contentWidth = pageWidth - margin * 2;
-
-  /* ---------- HEADER ---------- */
-  doc.setFillColor(63, 81, 181);
-  doc.rect(0, 0, pageWidth, 35, 'F');
-  doc.setTextColor(255, 255, 255);
-  doc.setFont(undefined, 'bold');
-  doc.setFontSize(18);
-  doc.text('SINFODE INSTITUTE', pageWidth / 2, 18, { align: 'center' });
-  doc.setFontSize(8);
-  doc.setFont(undefined, 'normal');
-  doc.text(
-    'Opp. Sanskarit College, near Kalyan Circle, Sikar, Rajasthan - 332001',
-    pageWidth / 2,
-    26,
-    { align: 'center' }
-  );
-  doc.text(
-    'Phone: 08619306970 | Email: info@sinfode.com | Website: www.sinfode.com',
-    pageWidth / 2,
-    31,
-    { align: 'center' }
-  );
-
-  /* ---------- TITLE ---------- */
-  doc.setFontSize(13);
-  doc.setTextColor(63, 81, 181);
-  doc.setFont(undefined, 'bold');
-  doc.text('FEE PAYMENT RECEIPT', pageWidth / 2, 48, { align: 'center' });
-
-  /* ---------- RECEIPT INFO ---------- */
-  let y = 56;
-  doc.setFontSize(9);
-  doc.setTextColor(60, 60, 60);
-  doc.text(`Receipt No: ${payment?.id ?? 'N/A'}`, margin, y);
-  doc.text(`Date: ${formatDate(payment?.payment_date)}`, margin, y + 5);
-  doc.text(
-    `Payment Mode: ${(payment?.payment_mode || 'N/A').toUpperCase()}`,
-    pageWidth - margin,
-    y,
-    { align: 'right' }
-  );
-  doc.text(
-    `Status: ${payment?.status ? payment.status.toUpperCase() : 'PAID'}`,
-    pageWidth - margin,
-    y + 5,
-    { align: 'right' }
-  );
-
-  /* ---------- STUDENT INFO ---------- */
-  y += 14;
-  doc.setFontSize(11);
-  doc.setTextColor(63, 81, 181);
-  doc.setFont(undefined, 'bold');
-  doc.text('STUDENT INFORMATION', margin, y);
-
-  y += 6;
-  doc.setFontSize(9);
-  doc.setFont(undefined, 'normal');
-  doc.setTextColor(50, 50, 50);
-  doc.text(`Name: ${feeRecord?.student?.full_name ?? 'N/A'}`, margin, y + 5);
-  doc.text(`Admission No: ${feeRecord?.student?.admission_number ?? 'N/A'}`, margin, y + 10);
-  doc.text(`Contact: ${feeRecord?.student?.contact_number ?? 'N/A'}`, pageWidth / 2, y + 5);
-  doc.text(`Email: ${feeRecord?.student?.email ?? 'N/A'}`, pageWidth / 2, y + 10);
-
-  /* ---------- PAYMENT DETAILS ---------- */
-  y += 22;
-  doc.setFontSize(11);
-  doc.setTextColor(63, 81, 181);
-  doc.setFont(undefined, 'bold');
-  doc.text('PAYMENT DETAILS', margin, y);
-
-  const totalFeeVal = feeRecord?.total_fee ?? 0;
-  const amountPaidVal = payment?.amount_paid ?? 0;
-  const currentBalanceVal = safeCalculateCurrentBalance(feeRecord, payment);
-
-  doc.autoTable({
-    startY: y + 5,
-    head: [['Description', 'Amount']],
-    body: [
-      ['Total Fee', formatAmount(totalFeeVal)],
-      ['Amount Paid', formatAmount(amountPaidVal)],
-      ['Remaining Fee', formatAmount(currentBalanceVal)]
-    ],
-    theme: 'grid',
-    styles: { fontSize: 9, cellPadding: 4 },
-    headStyles: { fillColor: [63, 81, 181], textColor: 255 },
-    margin: { left: margin, right: margin },
-  });
-
-  y = doc.lastAutoTable.finalY + 6;
-
-  /* ---------- NOTES ---------- */
-  if (payment?.note) {
-    doc.setFontSize(9);
-    doc.setTextColor(63, 81, 181);
-    doc.setFont(undefined, 'bold');
-    doc.text('Note:', margin, y + 5);
-
-    doc.setFont(undefined, 'normal');
-    doc.setTextColor(60, 60, 60);
-    const splitNotes = doc.splitTextToSize(payment.note, contentWidth);
-    doc.text(splitNotes, margin, y + 10);
-    y += 16 + splitNotes.length * 4;
-  }
-
-  /* ---------- FOOTER ---------- */
-  const footerY = pageHeight - 25;
-  doc.setFillColor(63, 81, 181);
-  doc.rect(0, footerY, pageWidth, 25, 'F');
-
-  doc.setFontSize(10);
-  doc.setTextColor(255, 255, 255);
-  doc.setFont(undefined, 'bold');
-  doc.text('Thank you for your payment!', pageWidth / 2, footerY + 10, { align: 'center' });
-
-  doc.setFontSize(8);
-  doc.setFont(undefined, 'normal');
-  doc.text(
-    `Generated on: ${new Date().toLocaleDateString()} ${new Date().toLocaleTimeString()}`,
-    pageWidth / 2,
-    footerY + 18,
-    { align: 'center' }
-  );
-
-  const studentNameSafe = (feeRecord?.student?.full_name || 'student').replace(/\s+/g, '_');
-  doc.save(`Fee_Receipt_${studentNameSafe}_${payment?.id ?? '0'}.pdf`);
-};
 
 
 
@@ -808,8 +817,8 @@ const generateReceipt = (payment, feeRecord) => {
                           <button
                             onClick={() => openPaymentModal(record)}
                             className={`px-3 py-1 rounded text-xs font-semibold transition-colors duration-200 ${record.pending_amount === 0
-                                ? 'bg-gray-300 text-gray-600 cursor-not-allowed'
-                                : 'bg-blue-500 text-white hover:bg-blue-600'
+                              ? 'bg-gray-300 text-gray-600 cursor-not-allowed'
+                              : 'bg-blue-500 text-white hover:bg-blue-600'
                               }`}
                             disabled={record.pending_amount === 0}
                           >
@@ -1137,9 +1146,9 @@ const generateReceipt = (payment, feeRecord) => {
                               <td className="px-4 py-3 text-sm text-gray-900">{formatCurrency(payment.amount_paid)}</td>
                               <td className="px-4 py-3">
                                 <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${payment.payment_mode === 'cash' ? 'bg-green-100 text-green-800' :
-                                    payment.payment_mode === 'online' ? 'bg-blue-100 text-blue-800' :
-                                      payment.payment_mode === 'cheque' ? 'bg-yellow-100 text-yellow-800' :
-                                        'bg-gray-100 text-gray-800'
+                                  payment.payment_mode === 'online' ? 'bg-blue-100 text-blue-800' :
+                                    payment.payment_mode === 'cheque' ? 'bg-yellow-100 text-yellow-800' :
+                                      'bg-gray-100 text-gray-800'
                                   }`}>
                                   {payment.payment_mode}
                                 </span>
