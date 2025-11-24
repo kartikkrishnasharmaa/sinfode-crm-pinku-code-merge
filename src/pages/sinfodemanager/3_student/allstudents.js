@@ -339,7 +339,7 @@ export default function Allstudents() {
             <div>
               <p className="text-sm font-semibold text-gray-500 uppercase tracking-wide">Total Courses</p>
               <p className="text-3xl font-bold text-purple-600 mt-2">{totalCourses}</p>
-     
+
             </div>
             <div className="bg-gradient-to-br from-purple-50 to-purple-100 p-4 rounded-2xl">
               <FaBook className="text-2xl text-purple-600" />
@@ -399,23 +399,22 @@ export default function Allstudents() {
           {/* Filter Toggle */}
           <button
             onClick={() => setShowFilters(!showFilters)}
-            className={`px-6 py-3.5 rounded-xl transition-all duration-300 flex items-center gap-3 font-semibold ${
-              Object.values(filters).some(filter =>
-                typeof filter === 'string' ? filter !== 'all' : Object.values(filter).some(Boolean)
-              ) 
+            className={`px-6 py-3.5 rounded-xl transition-all duration-300 flex items-center gap-3 font-semibold ${Object.values(filters).some(filter =>
+              typeof filter === 'string' ? filter !== 'all' : Object.values(filter).some(Boolean)
+            )
                 ? 'bg-gradient-to-r from-orange-500 to-red-500 text-white shadow-lg hover:shadow-xl transform hover:-translate-y-0.5'
                 : 'bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-lg hover:shadow-xl transform hover:-translate-y-0.5'
-            }`}
+              }`}
           >
             <FaFilter className="text-sm" />
             Filters
             {Object.values(filters).some(filter =>
               typeof filter === 'string' ? filter !== 'all' : Object.values(filter).some(Boolean)
             ) && (
-              <span className="bg-white text-orange-600 rounded-full w-5 h-5 flex items-center justify-center text-xs font-bold">
-                !
-              </span>
-            )}
+                <span className="bg-white text-orange-600 rounded-full w-5 h-5 flex items-center justify-center text-xs font-bold">
+                  !
+                </span>
+              )}
           </button>
         </div>
 
@@ -560,7 +559,7 @@ export default function Allstudents() {
           Showing <span className="font-bold text-blue-600">{processedStudents.length}</span> of{" "}
           <span className="font-bold text-gray-800">{students.length}</span> students
         </div>
-        
+
       </div>
 
       {/* Grid View */}
@@ -580,9 +579,8 @@ export default function Allstudents() {
                       alt={student.full_name}
                       className="w-16 h-16 rounded-2xl object-cover border-4 border-white shadow-lg group-hover:border-blue-100 transition-colors"
                     />
-                    <div className={`absolute -bottom-1 -right-1 w-5 h-5 rounded-full border-2 border-white ${
-                      student.enrollment_status === "Active" ? "bg-green-500" : "bg-red-500"
-                    }`}></div>
+                    <div className={`absolute -bottom-1 -right-1 w-5 h-5 rounded-full border-2 border-white ${student.enrollment_status === "Active" ? "bg-green-500" : "bg-red-500"
+                      }`}></div>
                   </div>
                   <div className="flex-1 min-w-0">
                     <h3 className="text-lg font-bold text-gray-800 truncate group-hover:text-blue-600 transition-colors">
@@ -593,18 +591,16 @@ export default function Allstudents() {
                       <span className="truncate">{student.email}</span>
                     </p>
                     <div className="flex items-center gap-2 mt-3">
-                      <span className={`px-3 py-1.5 rounded-full text-xs font-bold ${
-                        student.enrollment_status === "Active"
+                      <span className={`px-3 py-1.5 rounded-full text-xs font-bold ${student.enrollment_status === "Active"
                           ? "bg-gradient-to-r from-green-500 to-green-600 text-white shadow-sm"
                           : "bg-gradient-to-r from-red-500 to-red-600 text-white shadow-sm"
-                      }`}>
+                        }`}>
                         {student.enrollment_status}
                       </span>
-                      <span className={`px-3 py-1.5 rounded-full text-xs font-bold ${
-                        student.gender === 'Male'
+                      <span className={`px-3 py-1.5 rounded-full text-xs font-bold ${student.gender === 'Male'
                           ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-sm'
                           : 'bg-gradient-to-r from-pink-500 to-pink-600 text-white shadow-sm'
-                      }`}>
+                        }`}>
                         {student.gender}
                       </span>
                     </div>
@@ -697,9 +693,8 @@ export default function Allstudents() {
                             alt={student.full_name}
                             className="w-12 h-12 rounded-xl object-cover border-2 border-white shadow-sm"
                           />
-                          <div className={`absolute -bottom-1 -right-1 w-3 h-3 rounded-full border-2 border-white ${
-                            student.enrollment_status === "Active" ? "bg-green-500" : "bg-red-500"
-                          }`}></div>
+                          <div className={`absolute -bottom-1 -right-1 w-3 h-3 rounded-full border-2 border-white ${student.enrollment_status === "Active" ? "bg-green-500" : "bg-red-500"
+                            }`}></div>
                         </div>
                         <div>
                           <div className="font-bold text-gray-900">{student.full_name}</div>
@@ -741,18 +736,16 @@ export default function Allstudents() {
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex flex-col gap-2">
-                        <span className={`inline-flex px-3 py-1.5 text-xs font-bold rounded-full ${
-                          student.enrollment_status === "Active"
+                        <span className={`inline-flex px-3 py-1.5 text-xs font-bold rounded-full ${student.enrollment_status === "Active"
                             ? "bg-gradient-to-r from-green-500 to-green-600 text-white shadow-sm"
                             : "bg-gradient-to-r from-red-500 to-red-600 text-white shadow-sm"
-                        }`}>
+                          }`}>
                           {student.enrollment_status}
                         </span>
-                        <span className={`inline-flex px-3 py-1.5 text-xs font-bold rounded-full ${
-                          student.gender === 'Male'
+                        <span className={`inline-flex px-3 py-1.5 text-xs font-bold rounded-full ${student.gender === 'Male'
                             ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-sm'
                             : 'bg-gradient-to-r from-pink-500 to-pink-600 text-white shadow-sm'
-                        }`}>
+                          }`}>
                           {student.gender}
                         </span>
                       </div>
@@ -809,23 +802,18 @@ export default function Allstudents() {
                       className="w-32 h-32 rounded-2xl object-cover border-4 border-white shadow-lg mx-auto mb-4"
                     />
                     <h3 className="text-xl font-bold text-gray-800 mb-2">{selectedStudent.full_name}</h3>
-                    <p className="text-gray-600 mb-4 flex items-center justify-center gap-2">
-                      <FaEnvelope className="text-gray-400" />
-                      {selectedStudent.email}
-                    </p>
+
                     <div className="space-y-2">
-                      <span className={`inline-block px-4 py-2 rounded-full text-sm font-bold ${
-                        selectedStudent.enrollment_status === "Active"
+                      <span className={`inline-block px-4 py-2 rounded-full text-sm font-bold ${selectedStudent.enrollment_status === "Active"
                           ? "bg-gradient-to-r from-green-500 to-green-600 text-white shadow-md"
                           : "bg-gradient-to-r from-red-500 to-red-600 text-white shadow-md"
-                      }`}>
+                        }`}>
                         {selectedStudent.enrollment_status}
                       </span>
-                      <span className={`inline-block px-4 py-2 rounded-full text-sm font-bold ${
-                        selectedStudent.gender === 'Male'
+                      <span className={`inline-block px-4 py-2 rounded-full text-sm font-bold ${selectedStudent.gender === 'Male'
                           ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-md'
                           : 'bg-gradient-to-r from-pink-500 to-pink-600 text-white shadow-md'
-                      }`}>
+                        }`}>
                         {selectedStudent.gender}
                       </span>
                     </div>
@@ -887,6 +875,11 @@ export default function Allstudents() {
                           <span className="text-gray-600 font-medium">Address:</span>
                           <span className="font-bold text-gray-800 text-right max-w-xs">{selectedStudent.address || 'N/A'}</span>
                         </div>
+                        <div className="flex justify-between items-center py-2 border-b border-gray-100">
+                          <div className="text-gray-600 font-medium">Email:</div>
+                          {selectedStudent.email}
+                        </div>
+
                       </div>
                     </div>
 
@@ -932,12 +925,12 @@ export default function Allstudents() {
                             {selectedStudent.courses?.length || 0}
                           </span>
                         </div>
-             
+
                       </div>
                     </div>
 
                     {/* Quick Actions */}
-   
+
                   </div>
                 </div>
               </div>
@@ -950,7 +943,7 @@ export default function Allstudents() {
               >
                 Close
               </button>
-     
+
             </div>
           </div>
         </div>

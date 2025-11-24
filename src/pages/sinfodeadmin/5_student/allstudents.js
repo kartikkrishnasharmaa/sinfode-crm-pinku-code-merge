@@ -16,6 +16,8 @@ import {
   FaVenusMars,
   FaIdCard,
   FaSchool,
+  FaCheckCircle,
+  FaTimesCircle,
   FaClock,
   FaChalkboardTeacher,
   FaFileExport,
@@ -1122,20 +1124,31 @@ export default function Allstudents() {
                       <FaCalendarAlt className="mr-2 text-blue-500" />
                       <span>Admission: {formatDate(selectedStudent.admission_date)}</span>
                     </div>
-                    <div className="flex items-center text-gray-700">
+                    <div className="flex items-center text-gray-700 col-span-1 md:col-span-2">
                       <FaEnvelope className="mr-2 text-blue-500" />
-                      <span>{selectedStudent.email}</span>
+                      <span className="break-all">{selectedStudent.email}</span>
                     </div>
-                    <div className="flex items-center text-gray-700">
+
+                    {/* PHONE BELOW EMAIL */}
+                    <div className="flex items-center text-gray-700 col-span-1 md:col-span-2">
                       <FaPhone className="mr-2 text-blue-500" />
                       <span>{selectedStudent.contact_number}</span>
                     </div>
-                    <div className="flex items-center text-gray-700">
-                      <span>Status: </span>
+                    <div className="flex items-center text-gray-700 col-span-1 md:col-span-2">
+
+                      {/* Status Icon */}
+                      {selectedStudent.enrollment_status === "Active" ? (
+                        <FaCheckCircle className="mr-2 text-green-500" />
+                      ) : (
+                        <FaTimesCircle className="mr-2 text-red-500" />
+                      )}
+
+                      <span>Status:</span>
+
                       <span
                         className={`ml-2 px-2 py-1 rounded-full text-white text-sm ${selectedStudent.enrollment_status === "Active"
-                          ? "bg-green-500"
-                          : "bg-red-500"
+                            ? "bg-green-500"
+                            : "bg-red-500"
                           }`}
                       >
                         {selectedStudent.enrollment_status}
