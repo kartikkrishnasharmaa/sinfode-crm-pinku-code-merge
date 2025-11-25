@@ -343,6 +343,25 @@ const StudentFees = () => {
     }
   };
 
+  const getStudentCourses = (studentId) => {
+    const student = studentsMap[studentId];
+
+    if (!student) return [];
+
+    // Multiple courses case
+    if (student.courses && student.courses.length > 0) {
+      return student.courses;
+    }
+
+    // Single course old structure
+    if (student.course_id) {
+      const course = coursesMap[student.course_id];
+      return course ? [course] : [];
+    }
+
+    return [];
+  };
+
   // NEW: Check if both discount fields are filled
   const checkBothDiscountsFilled = (percent, amount) => {
     return percent && amount && percent > 0 && amount > 0;
@@ -895,9 +914,9 @@ const StudentFees = () => {
       </header>
 
       {/* Main Content */}
-      <main className="sf-main">
+      <main className="mt-6 mb-4">
         {/* Stats Cards - Made Clickable */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
+        <div className="grid grid-cols-1 mt-3 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
           {/* Total Fees Card */}
           <div
             className={`bg-gradient-to-br from-blue-90 to-white rounded-2xl shadow-sm border border-blue-100 p-6 cursor-pointer transition-all hover:shadow-md ${feeStatusFilter === 'all' ? 'ring-2 ring-blue-400' : ''
@@ -958,7 +977,7 @@ const StudentFees = () => {
 
         {/* Active Filter Indicator */}
         {feeStatusFilter !== 'all' && (
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4">
+          <div className="bg-blue-50 mt-3 border border-blue-200 rounded-lg p-3 mb-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <i className="fas fa-filter text-blue-600"></i>
@@ -977,7 +996,7 @@ const StudentFees = () => {
         )}
 
         {/* Filters */}
-        <div className="flex flex-wrap items-center gap-3 mb-4 bg-white p-4 rounded-xl shadow-sm border border-gray-200">
+        <div className="flex flex-wrap mt-3 items-center gap-3 mb-4 bg-white p-4 rounded-xl shadow-sm border border-gray-200">
           <select
             value={sortField}
             onChange={e => setSortField(e.target.value)}
@@ -1037,7 +1056,7 @@ const StudentFees = () => {
             </div>
           </div>
           <div className="sf-table-wrapper">
-            <table className="sf-table">
+            <table className="sf-table w-full">
               <thead>
                 <tr>
                   <th>Student</th>
@@ -1049,60 +1068,103 @@ const StudentFees = () => {
                   <th>Actions</th>
                 </tr>
               </thead>
+
               <tbody>
-                {currentFees.map(fee => (
-                  <tr key={fee.id}>
+                {currentFees.map((fee) => (
+                  <tr key={fee.id} className="align-top">
+
+                    {/* --- STUDENT COLUMN --- */}
                     <td>
-                      <div className="sf-student-info">
-                        <div className="sf-student-icon">
-                          <i className="fas fa-user"></i>
+                      <div className="flex items-center gap-3">
+                        <div className="w-9 h-9 rounded-full bg-blue-100 flex items-center justify-center">
+                          <i className="fas fa-user text-blue-600"></i>
                         </div>
                         <div>
-                          <div className="sf-student-name">{getStudentName(fee.student_id)}</div>
-                          <div className="sf-student-details">
-                            Admission No: {getStudentAdmissionNumber(fee.student_id)}
+                          <div className="font-semibold text-gray-800">
+                            {getStudentName(fee.student_id)}
                           </div>
                         </div>
                       </div>
                     </td>
-                    <td>
-                      <div className="sf-course-info">
-                        <div>
-                          <div className="sf-course-name">{getCourseName(fee.course_id)}</div>
-                        </div>
-                      </div>
+
+                    {/* --- COURSE COLUMN (UPDATED & FINAL) --- */}
+                    <td className="align-top">
+                      {(() => {
+                        const courses = getStudentCourses(fee.student_id);
+
+                        // 🔵 If only ONE course → Blue Badge
+                        if (courses.length === 1) {
+                          const c = courses[0];
+                          return (
+                            <span className="px-3 py-1 bg-blue-50 border border-blue-200 rounded-md text-blue-700 font-semibold text-sm inline-block">
+                              {c.course_name}
+                            </span>
+                          );
+                        }
+
+                        // 🟢 If MULTIPLE courses → compact stacked list (no scroll)
+                        return (
+                          <div className="border border-gray-200 rounded-md px-3 py-1 bg-blue-50 text-blue-700">
+                            {courses.map((course) => (
+                              <div
+                                key={course.id}
+                                className="flex justify-between items-center text-[11px] py-[2px]"
+                              >
+                                <span className="font-medium text-gray-700 truncate">
+                                  {course.course_name}
+                                </span>
+
+                              </div>
+                            ))}
+                          </div>
+                        );
+                      })()}
                     </td>
-                    <td className="sf-amount">
+
+                    {/* --- TOTAL FEE --- */}
+                    <td className="font-semibold text-gray-800">
                       ₹{parseFloat(fee.total_fee || 0).toLocaleString()}
                     </td>
-                    <td className="sf-amount">
+
+                    {/* --- PAID --- */}
+                    <td className="text-green-600 font-semibold">
                       ₹{parseFloat(fee.paid_amount || 0).toLocaleString()}
                     </td>
-                    <td className="sf-amount">
+
+                    {/* --- PENDING --- */}
+                    <td className="text-red-600 font-semibold">
                       ₹{parseFloat(fee.pending_amount || 0).toLocaleString()}
                     </td>
+
+                    {/* --- STATUS BADGE --- */}
                     <td>
                       <span
-                        className={`px-3 py-1 rounded-full text-white text-sm font-medium ${fee.status === 'paid'
-                            ? 'bg-green-500'
-                            : fee.status === 'unpaid'
-                              ? 'bg-red-500'
-                              : 'bg-yellow-500'
+                        className={`px-3 py-1 rounded-full text-white text-sm font-medium ${fee.status === "paid"
+                            ? "bg-green-500"
+                            : fee.status === "unpaid"
+                              ? "bg-red-500"
+                              : "bg-yellow-500"
                           }`}
                       >
                         {fee.status
                           ? fee.status.charAt(0).toUpperCase() + fee.status.slice(1)
-                          : 'N/A'}
+                          : "N/A"}
                       </span>
                     </td>
+
+                    {/* --- ACTIONS --- */}
                     <td>
-                      <div className="sf-actions">
-                        <button onClick={() => handleView(fee.id)} className="sf-action-btn text-blue">
+                      <div className="flex gap-3">
+                        <button
+                          onClick={() => handleView(fee.id)}
+                          className="text-blue-600 hover:text-blue-800"
+                        >
                           <i className="fas fa-eye"></i>
                         </button>
+
                         <button
                           onClick={() => openDeleteModal(fee)}
-                          className="sf-action-btn text-red"
+                          className="text-red-600 hover:text-red-800"
                           title="Delete Fee"
                         >
                           <i className="fas fa-trash"></i>
@@ -1111,16 +1173,21 @@ const StudentFees = () => {
                     </td>
                   </tr>
                 ))}
+
+                {/* --- NO DATA --- */}
                 {currentFees.length === 0 && (
                   <tr>
-                    <td colSpan="7" className="sf-no-data">
-                      <i className="fas fa-info-circle"></i>
-                      {tableSearch || feeStatusFilter !== 'all' ? 'No matching records found' : 'No fee records available'}
+                    <td colSpan="7" className="text-center py-10 text-gray-600">
+                      <i className="fas fa-info-circle mr-2"></i>
+                      {tableSearch || feeStatusFilter !== "all"
+                        ? "No matching records found"
+                        : "No fee records available"}
                     </td>
                   </tr>
                 )}
               </tbody>
             </table>
+
           </div>
 
           {/* Pagination */}
@@ -1685,7 +1752,7 @@ const StudentFees = () => {
                   </div>
                 </div>
               )}
-                    <p className='text-xl mb-6'><strong>Pending Fees Amount:</strong> ₹{parseFloat(viewFee.pending_amount || 0).toLocaleString()}</p>
+              <p className='text-xl mb-6'><strong>Pending Fees Amount:</strong> ₹{parseFloat(viewFee.pending_amount || 0).toLocaleString()}</p>
 
               {/* Payment History */}
               {viewFee.payments && viewFee.payments.length > 0 && (
