@@ -177,6 +177,38 @@ const Collection = () => {
 
     return filtered;
   };
+// const getCourseName = (courseId) => {
+//   const course = courses.find(c => c.id === Number(courseId));
+//   return course ? course.course_name : "N/A";
+// };
+const getCourseNamesFromRecord = (feeRecord) => {
+  if (!feeRecord) return "N/A";
+
+  // CASE 1: If backend sends courses array
+  if (Array.isArray(feeRecord.courses) && feeRecord.courses.length > 0) {
+    return feeRecord.courses.map(c => c.course_name).join(", ");
+  }
+
+  // CASE 2: If backend sends multiple course IDs
+  if (Array.isArray(feeRecord.course_ids) && feeRecord.course_ids.length > 0) {
+    return feeRecord.course_ids
+      .map(id => {
+        const course = courses.find(c => c.id === Number(id));
+        return course ? course.course_name : null;
+      })
+      .filter(Boolean)
+      .join(", ");
+  }
+
+  // CASE 3: Single course_id
+  if (feeRecord.course_id) {
+    const course = courses.find(c => c.id === Number(feeRecord.course_id));
+    return course ? course.course_name : "N/A";
+  }
+
+  return "N/A";
+};
+
 
   // Delete Payment Function
   // Delete Payment Function - OPTIMIZED VERSION
@@ -317,7 +349,9 @@ const Collection = () => {
       y += 7;
       doc.text(`Guardian Name :  ${feeRecord?.student?.guardian_name || ''}`, margin, y);
       y += 12;
+     doc.text(`Name of Course :  ${getCourseNamesFromRecord(feeRecord)}`, margin, y);
 
+      y += 7;
       doc.line(margin, y, pageWidth - margin, y);
       y += 14;
 
@@ -343,8 +377,7 @@ const Collection = () => {
       // COURSE INFO
       doc.setFont("helvetica", "normal");
       doc.setFontSize(12);
-      // doc.text(`Name of Course :  ${feeRecord?.course_name || ''}`, margin, y);
-      // y += 7;
+ 
       doc.text(`Received By :  ${payment?.received_by || ''}`, margin, y);
       doc.text(`Payment Mode :  ${payment?.payment_mode || ''}`, pageWidth - 120, y);
 
