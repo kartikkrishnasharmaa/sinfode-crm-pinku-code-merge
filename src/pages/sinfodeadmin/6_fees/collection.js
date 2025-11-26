@@ -336,9 +336,9 @@ const getCourseNamesFromRecord = (feeRecord) => {
 
       doc.setFont("helvetica", "normal");
       doc.setFontSize(12);
-      doc.text("Receipt No.: ____________________", pageWidth - 90, y);
+      doc.text(`Admission No.: __${feeRecord?.student?.admission_number || ''}___`, pageWidth - 90, y);
       y += 8;
-      doc.text("Date: ____________________", pageWidth - 90, y);
+      doc.text(`Date: __${formatDate(payment?.payment_date)}__`, pageWidth - 90, y);
 
       y += 10;
       doc.line(margin, y, pageWidth - margin, y);

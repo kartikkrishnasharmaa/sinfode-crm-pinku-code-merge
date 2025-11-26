@@ -443,7 +443,7 @@ export default function Branch() {
                       onClick={() => handleDiscountClick(branch)}
                       className="bg-[#3F8CFF] hover:bg-blue-700 text-white px-4 py-2 rounded-3xl flex items-center gap-2"
                     >
-                      <FaPercent className="mr-1" /> Discount
+                      <FaPercent className="mr-1" />Request Discount Limit
                     </button>
                     <button
                       onClick={() => toggleBranchExpand(branch.id)}
@@ -456,73 +456,96 @@ export default function Branch() {
 
                 {/* Expanded Details */}
                 {expandedBranchId === branch.id && (
-                  <div className="border-t border-gray-200 px-5 py-4">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div>
-                        <h4 className="text-sm font-medium text-gray-500 mb-2">BRANCH INFORMATION</h4>
-                        <div className="space-y-3">
-                          <div className="flex items-start">
-                            <HiLocationMarker className="h-5 w-5 text-gray-400 mr-2 mt-0.5" />
+                  <div className="border-t border-gray-200 px-5 py-6">
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+                      {/* COLUMN 1 */}
+                      <div className="p-5 rounded-xl bg-white shadow-sm hover:shadow-md transition-all duration-300 border border-gray-100 animate-fadeIn">
+                        <div className="space-y-5">
+
+                          {/* Address */}
+                          <div className="flex items-start group hover:translate-x-1 transition-transform duration-300">
+                            <HiLocationMarker className="h-6 w-6 text-blue-500 mr-3 mt-1 transition-all group-hover:scale-110" />
                             <div>
-                              <p className="text-sm mb-3 font-medium text-gray-700">Address</p>
-                              <p className="text-sm mb-3 text-gray-600">
+                              <p className="text-base font-medium text-gray-700">Address</p>
+                              <p className="text-base text-gray-600 mt-1">
                                 {branch.address || "N/A"} {branch.pin_code ? `- ${branch.pin_code}` : ""}
                               </p>
                             </div>
                           </div>
 
-                          <div className="flex items-center">
-                            <HiPhone className="h-5 w-5 text-gray-400 mr-2" />
+                          {/* Phone */}
+                          <div className="flex items-start group hover:translate-x-1 transition-transform duration-300">
+                            <HiPhone className="h-6 w-6 text-green-500 mr-3 transition-all group-hover:scale-110" />
                             <div>
-                              <p className="text-sm mb-2  font-medium text-gray-700">Contact</p>
-                              <p className="text-sm  mb-2  text-gray-600">{branch.contact_number || "N/A"}</p>
+                              <p className="text-base font-medium text-gray-700">Contact</p>
+                              <p className="text-base text-gray-600 mt-1">{branch.contact_number || "N/A"}</p>
                             </div>
                           </div>
 
-                          <div className="flex items-center">
-                            <HiMail className="h-5 w-5 text-gray-400 mr-2" />
+                          {/* Email */}
+                          <div className="flex items-start group hover:translate-x-1 transition-transform duration-300">
+                            <HiMail className="h-6 w-6 text-red-500 mr-3 transition-all group-hover:scale-110" />
                             <div>
-                              <p className="text-sm mb-2 font-medium text-gray-700">Email</p>
-                              <p className="text-sm  mb-2  text-gray-600">{branch.email || "N/A"}</p>
+                              <p className="text-base font-medium text-gray-700">Email</p>
+                              <p className="text-base text-gray-600 mt-1">{branch.email || "N/A"}</p>
                             </div>
                           </div>
 
-                          <div className="flex items-center">
-                            <HiCalendar className="h-5 w-5 text-gray-400 mr-2" />
+                        </div>
+                      </div>
+
+                      {/* COLUMN 2 */}
+                      <div className="p-5 rounded-xl bg-white shadow-sm hover:shadow-md transition-all duration-300 border border-gray-100 animate-fadeIn delay-150">
+                        <div className="space-y-5">
+
+                          {/* Opening Date */}
+                          <div className="flex items-start group hover:translate-x-1 transition-transform duration-300">
+                            <HiCalendar className="h-6 w-6 text-purple-500 mr-3 transition-all group-hover:scale-110" />
                             <div>
-                              <p className="text-sm mb-2 font-medium text-gray-700">Opening Date</p>
-                              <p className="text-sm mb-2 text-gray-600">{formatDate(branch.opening_date)}</p>
+                              <p className="text-base font-medium text-gray-700">Opening Date</p>
+                              <p className="text-base text-gray-600 mt-1">{formatDate(branch.opening_date)}</p>
                             </div>
                           </div>
 
+                          {/* Discount */}
                           {(branch.discount_range || branch.discount_amount) && (
-                            <div className="flex items-start">
-                              <div className="h-5 w-5 text-gray-400 mr-2 flex items-center justify-center mt-0.5">
-                                <FaPercent className="h-4 w-4" />
-                              </div>
+                            <div className="flex items-start group hover:translate-x-1 transition-transform duration-300">
+                              <FaPercent className="h-6 w-6 text-orange-500 mr-3 transition-all group-hover:scale-110" />
                               <div>
-                                <p className="text-sm mb-2 font-medium text-gray-700">Discount Settings</p>
+                                <p className="text-base font-medium text-gray-700">
+                                  Maximum Discount of this Branch
+                                </p>
+
                                 {branch.discount_range && (
-                                  <p className="text-sm mb-1 text-gray-600">Percentage: {branch.discount_range}%</p>
+                                  <p className="text-base text-gray-600 mt-1">
+                                    Percentage: {branch.discount_range}%
+                                  </p>
                                 )}
+
                                 {branch.discount_amount && (
-                                  <p className="text-sm mb-2 text-gray-600">Amount: {formatCurrency(branch.discount_amount)}</p>
+                                  <p className="text-base text-gray-600 mt-1">
+                                    Amount: {formatCurrency(branch.discount_amount)}
+                                  </p>
                                 )}
                               </div>
                             </div>
                           )}
+
                         </div>
                       </div>
 
-              
                     </div>
 
-                    <div className="mt-4 pt-4 border-t border-gray-200">
-                      <p className="text-xs text-gray-500">
+                    {/* Created & Updated */}
+                    <div className="mt-6 pt-4 border-t border-gray-200 text-center">
+                      <p className="text-sm text-gray-500">
                         Created: {formatDate(branch.created_at)} | Last Updated: {formatDate(branch.updated_at)}
                       </p>
                     </div>
                   </div>
+
                 )}
               </div>
             ))

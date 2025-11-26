@@ -189,7 +189,7 @@ export default function Dashboard() {
       },
       title: {
         display: true,
-        text: `Monthly Revenue Analysis - ${selectedYear}`,
+        text: `Monthly Revenue Analysis of Year - ${selectedYear}`,
         color: '#374151',
         font: {
           size: 16,
@@ -251,13 +251,12 @@ export default function Dashboard() {
 
   return (
     <SAAdminLayout>
-      <div className="p-6 bg-[#F4F9FD] min-h-screen">
+      <div className="p-4 bg-[#F4F9FD] min-h-screen">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6">
           <div>
-            <p className="text-gray-500">Welcome Back,</p>
-            <h1 className="text-[30px] mb-2 font-nunito">Dashboard</h1>
+            <p className="text-gray-500">Welcome Back, <span className="font-bold">Branch Manager</span></p>
           </div>
-          
+
           <div className="flex items-center bg-gray-100 rounded-lg px-3 py-2 mt-4 md:mt-0">
             <FaFilter className="text-gray-500 mr-2" />
             <select
@@ -317,7 +316,7 @@ export default function Dashboard() {
         </div>
 
         {/* Revenue Summary Card */}
-        <div className="bg-gradient-to-r from-blue-500 to-purple-600 rounded-xl shadow-lg p-6 mb-6 text-white">
+        <div className="bg-gradient-to-r from-blue-500 to-purple-600 rounded-xl shadow-lg p-4 mb-6 text-white">
           <div className="flex justify-between items-center">
             <div>
               <h2 className="text-xl font-semibold font-nunito">Revenue Summary</h2>
@@ -327,11 +326,35 @@ export default function Dashboard() {
               <p className="text-3xl font-bold flex items-center justify-end">
                 <FaRupeeSign className="mr-1" /> {totalRevenue.toLocaleString('en-IN', { maximumFractionDigits: 2 })}
               </p>
-              <p className="text-sm opacity-90">{userBranchName}</p>
             </div>
           </div>
         </div>
+        <div className="grid grid-cols-1 gap-6">
+          {/* Left column - Full width for revenue chart */}
+          <div className="lg:col-span-2 space-y-6">
+            {/* Revenue Chart Section */}
+            <div className="bg-white rounded-xl shadow-lg p-6">
+              {/* Chart Display */}
+              {loading ? (
+                <div className="flex justify-center items-center h-80">
+                  <div className="animate-pulse flex flex-col items-center">
+                    <div className="rounded-full bg-gray-200 h-12 w-12 mb-4"></div>
+                    <div className="h-4 bg-gray-200 rounded w-32"></div>
+                  </div>
+                </div>
+              ) : revenueData ? (
+                <div className="h-80">
+                  <Bar data={chartData} options={chartOptions} />
+                </div>
+              ) : (
+                <div className="flex justify-center items-center h-80 text-gray-500">
+                  <p>Loading revenue data for {userBranchName}...</p>
+                </div>
+              )}
+            </div>
 
+          </div>
+        </div>
         {/* Leads Summary Section */}
         <div className="bg-white rounded-xl shadow-lg p-6 mb-6">
           <div className="flex justify-between items-center mb-4">
@@ -384,44 +407,7 @@ export default function Dashboard() {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 gap-6">
-          {/* Left column - Full width for revenue chart */}
-          <div className="lg:col-span-2 space-y-6">
-            {/* Revenue Chart Section */}
-            <div className="bg-white rounded-xl shadow-lg p-6">
-              <div className="flex flex-col md:flex-row md:justify-between md:items-center mb-6">
-                <h2 className="font-semibold text-xl font-nunito text-gray-800 mb-4 md:mb-0">Revenue Analytics</h2>
 
-                {/* Year Selector */}
-
-              </div>
-
-              {/* Display current branch info */}
-              <div className="mb-4 text-sm text-gray-600">
-                Showing data for: <span className="font-semibold">{userBranchName}</span>
-              </div>
-
-              {/* Chart Display */}
-              {loading ? (
-                <div className="flex justify-center items-center h-80">
-                  <div className="animate-pulse flex flex-col items-center">
-                    <div className="rounded-full bg-gray-200 h-12 w-12 mb-4"></div>
-                    <div className="h-4 bg-gray-200 rounded w-32"></div>
-                  </div>
-                </div>
-              ) : revenueData ? (
-                <div className="h-80">
-                  <Bar data={chartData} options={chartOptions} />
-                </div>
-              ) : (
-                <div className="flex justify-center items-center h-80 text-gray-500">
-                  <p>Loading revenue data for {userBranchName}...</p>
-                </div>
-              )}
-            </div>
-
-          </div>
-        </div>
       </div>
     </SAAdminLayout>
   );
