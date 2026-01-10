@@ -62,6 +62,11 @@ const Adminsidebar = ({ isSidebarOpen, toggleSidebar, isMobile }) => {
       link: "/sinfodeadmin/students",
     },
     {
+      name: "Certificate",
+      icon: <FaFileAlt className="flex-shrink-0" />,
+      link: "/sinfodeadmin/certificate",
+    },
+    {
       name: "Courses",
       icon: <FaLayerGroup className="flex-shrink-0" />,
       link: "/sinfodeadmin/courses",

@@ -196,6 +196,33 @@ const Collection = () => {
     setSortConfig({ key, direction });
   };
 
+   const getCourseNamesFromRecord = (feeRecord) => {
+    if (!feeRecord) return "N/A";
+
+    // CASE 1: If backend sends courses array
+    if (Array.isArray(feeRecord.courses) && feeRecord.courses.length > 0) {
+      return feeRecord.courses.map(c => c.course_name).join(", ");
+    }
+
+    // CASE 2: If backend sends multiple course IDs
+    if (Array.isArray(feeRecord.course_ids) && feeRecord.course_ids.length > 0) {
+      return feeRecord.course_ids
+        .map(id => {
+          const course = courses.find(c => c.id === Number(id));
+          return course ? course.course_name : null;
+        })
+        .filter(Boolean)
+        .join(", ");
+    }
+
+    // CASE 3: Single course_id
+    if (feeRecord.course_id) {
+      const course = courses.find(c => c.id === Number(feeRecord.course_id));
+      return course ? course.course_name : "N/A";
+    }
+
+    return "N/A";
+  };
 
  const generateReceipt = (payment, feeRecord) => {
     const doc = new jsPDF("p", "mm", "a4");
@@ -230,10 +257,11 @@ const Collection = () => {
     };
 
 
-    const logo = "https://www.sinfode.com/wp-content/uploads/2022/12/digital-marketing-institute-in-sikar.webp";
+    const logo = "https://i.postimg.cc/c4S3VP48/sinfode-seal.png";
 
     const pageWidth = doc.internal.pageSize.getWidth();
     const margin = 10;
+
 
     // EXACT HALF A4 HEIGHT
     const RECEIPT_HEIGHT = 148; // A4 → 297 / 2 = 148.5 (rounded)
@@ -245,45 +273,76 @@ const Collection = () => {
       // TOP BORDER
       doc.line(0, y, pageWidth, y);
       y += 10;
-
       // HEADER
+      y += 3;   // halka sa top margin
       doc.setFont("helvetica", "bold");
       doc.setFontSize(20);
       doc.text("FEE RECEIPT", margin, y);
 
+      // ----- RIGHT SIDE TEXT -----
       doc.setFont("helvetica", "normal");
       doc.setFontSize(12);
-      doc.text("Receipt No.: ____________________", pageWidth - 90, y);
+      doc.text(`Admission No.: ${feeRecord?.student?.admission_number || ''}`, pageWidth - 90, y);
       y += 8;
-      doc.text("Date: ____________________", pageWidth - 90, y);
+      doc.text(`Date: ${formatDate(payment?.payment_date)}`, pageWidth - 90, y);
 
       y += 10;
+
+      // ------ Horizontal line below header ------
       doc.line(margin, y, pageWidth - margin, y);
       y += 12;
 
+      // --------- CENTER VERTICAL LINE ---------
+      const centerX = pageWidth / 2;
+      doc.line(centerX, y - 40, centerX, y - 12);
+      // adjust Y range as needed
+
+
       // STUDENT DETAILS
-      doc.text(`Name of Student :  ${feeRecord?.student?.full_name || ''}`, margin, y);
+      // Name of Student
+      doc.setFont("helvetica", "bold");
+      doc.text("Name of Student :", margin, y);
+
+      doc.setFont("helvetica", "normal");
+      doc.text(`${feeRecord?.student?.full_name || ''}`, margin + 40, y);
+
       y += 7;
-      doc.text(`Guardian Name :  ${feeRecord?.student?.guardian_name || ''}`, margin, y);
-      y += 12;
+
+      // Guardian Name
+      doc.setFont("helvetica", "bold");
+      doc.text("Guardian Name :", margin, y);
+
+      doc.setFont("helvetica", "normal");
+      doc.text(`${feeRecord?.student?.guardian_name || ''}`, margin + 40, y);
+
+      y += 7;
+
+      // Name of Course
+      doc.setFont("helvetica", "bold");
+      doc.text("Name of Course :", margin, y);
+
+      doc.setFont("helvetica", "normal");
+      doc.text(`${getCourseNamesFromRecord(feeRecord)}`, margin + 40, y);
+
+      y += 7;
+
 
       doc.line(margin, y, pageWidth - margin, y);
       y += 14;
 
       // PAID AMOUNT
+      doc.setFont("helvetica", "bold");
       doc.text("Paid Amount :", margin, y);
       doc.setFont("helvetica", "italic");
       doc.text(numberToWords(Number(payment?.amount_paid || 0)), margin + 35, y);
-      // AMOUNT BOX
-      doc.setFillColor(0, 0, 0);
-      doc.rect(pageWidth - 70, y - 6, 60, 16, "F");
 
-      doc.setTextColor(255, 255, 255);
+      // AMOUNT BOX (Border Only)
+      doc.rect(pageWidth - 70, y - 6, 60, 16, "S"); // <-- "F" removed, replaced by "S"
+
       doc.setFont("helvetica", "bold");
       doc.setFontSize(16);
-      doc.text(`Rs. _${formatAmount(payment?.amount_paid)}_`, pageWidth - 65, y + 3);
+      doc.text(`Rs. ${formatAmount(payment?.amount_paid)}`, pageWidth - 65, y + 3);
 
-      doc.setTextColor(0, 0, 0);
       y += 18;
 
       doc.line(margin, y, pageWidth - margin, y);
@@ -292,9 +351,8 @@ const Collection = () => {
       // COURSE INFO
       doc.setFont("helvetica", "normal");
       doc.setFontSize(12);
-      // doc.text(`Name of Course :  ${feeRecord?.course_name || ''}`, margin, y);
-      // y += 7;
-      doc.text(`Received By :  ${payment?.received_by || ''}`, margin, y);
+
+      doc.text(`Student Sign :  ${payment?.received_by || ''}`, margin, y);
       doc.text(`Payment Mode :  ${payment?.payment_mode || ''}`, pageWidth - 120, y);
 
       // SIGN SEAL BOX
@@ -313,7 +371,7 @@ const Collection = () => {
       doc.rect(0, blackY, pageWidth, footerHeight, "F");
 
       // LOGO
-      // doc.addImage(logo, "PNG", margin, blackY + 3, 18, 18);
+      doc.addImage(logo, "PNG", margin, blackY + 3, 18, 18);
 
       // FOOTER TEXT (tightly packed)
       doc.setTextColor(255, 255, 255);

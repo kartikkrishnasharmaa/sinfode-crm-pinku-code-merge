@@ -283,163 +283,220 @@ const Collection = () => {
       direction: 'asc'
     });
   };
+ const getCourseNamesFromRecord = (feeRecord) => {
+    if (!feeRecord) return "N/A";
 
- 
- const generateReceipt = (payment, feeRecord) => {
-    const doc = new jsPDF("p", "mm", "a4");
+    // CASE 1: If backend sends courses array
+    if (Array.isArray(feeRecord.courses) && feeRecord.courses.length > 0) {
+      return feeRecord.courses.map(c => c.course_name).join(", ");
+    }
 
-    const formatDate = (d) => d ? new Date(d).toLocaleDateString() : '';
-    const formatAmount = (a) => Number(a || 0).toString();
-    const numberToWords = (num) => {
-      if (num === 0) return "Zero";
+    // CASE 2: If backend sends multiple course IDs
+    if (Array.isArray(feeRecord.course_ids) && feeRecord.course_ids.length > 0) {
+      return feeRecord.course_ids
+        .map(id => {
+          const course = courses.find(c => c.id === Number(id));
+          return course ? course.course_name : null;
+        })
+        .filter(Boolean)
+        .join(", ");
+    }
 
-      const a = [
-        "", "One", "Two", "Three", "Four", "Five", "Six",
-        "Seven", "Eight", "Nine", "Ten", "Eleven", "Twelve",
-        "Thirteen", "Fourteen", "Fifteen", "Sixteen", "Seventeen",
-        "Eighteen", "Nineteen"
-      ];
+    // CASE 3: Single course_id
+    if (feeRecord.course_id) {
+      const course = courses.find(c => c.id === Number(feeRecord.course_id));
+      return course ? course.course_name : "N/A";
+    }
 
-      const b = [
-        "", "", "Twenty", "Thirty", "Forty", "Fifty",
-        "Sixty", "Seventy", "Eighty", "Ninety"
-      ];
-
-      const inWords = (n) => {
-        if (n < 20) return a[n];
-        if (n < 100) return b[Math.floor(n / 10)] + (n % 10 ? " " + a[n % 10] : "");
-        if (n < 1000) return a[Math.floor(n / 100)] + " Hundred" + (n % 100 ? " " + inWords(n % 100) : "");
-        if (n < 100000) return inWords(Math.floor(n / 1000)) + " Thousand" + (n % 1000 ? " " + inWords(n % 1000) : "");
-        if (n < 10000000) return inWords(Math.floor(n / 100000)) + " Lakh" + (n % 100000 ? " " + inWords(n % 100000) : "");
-        return inWords(Math.floor(n / 10000000)) + " Crore" + (n % 10000000 ? " " + inWords(n % 10000000) : "");
-      };
-
-      return inWords(num) + " Rupees Only";
-    };
-
-
-    const logo = "https://www.sinfode.com/wp-content/uploads/2022/12/digital-marketing-institute-in-sikar.webp";
-
-    const pageWidth = doc.internal.pageSize.getWidth();
-    const margin = 10;
-
-    // EXACT HALF A4 HEIGHT
-    const RECEIPT_HEIGHT = 148; // A4 → 297 / 2 = 148.5 (rounded)
-
-    // DRAW A RECEIPT
-    const drawReceipt = (startY) => {
-      let y = startY;
-
-      // TOP BORDER
-      doc.line(0, y, pageWidth, y);
-      y += 10;
-
-      // HEADER
-      doc.setFont("helvetica", "bold");
-      doc.setFontSize(20);
-      doc.text("FEE RECEIPT", margin, y);
-
-      doc.setFont("helvetica", "normal");
-      doc.setFontSize(12);
-      doc.text("Receipt No.: ____________________", pageWidth - 90, y);
-      y += 8;
-      doc.text("Date: ____________________", pageWidth - 90, y);
-
-      y += 10;
-      doc.line(margin, y, pageWidth - margin, y);
-      y += 12;
-
-      // STUDENT DETAILS
-      doc.text(`Name of Student :  ${feeRecord?.student?.full_name || ''}`, margin, y);
-      y += 7;
-      doc.text(`Guardian Name :  ${feeRecord?.student?.guardian_name || ''}`, margin, y);
-      y += 12;
-
-      doc.line(margin, y, pageWidth - margin, y);
-      y += 14;
-
-      // PAID AMOUNT
-      doc.text("Paid Amount :", margin, y);
-      doc.setFont("helvetica", "italic");
-      doc.text(numberToWords(Number(payment?.amount_paid || 0)), margin + 35, y);
-      // AMOUNT BOX
-      doc.setFillColor(0, 0, 0);
-      doc.rect(pageWidth - 70, y - 6, 60, 16, "F");
-
-      doc.setTextColor(255, 255, 255);
-      doc.setFont("helvetica", "bold");
-      doc.setFontSize(16);
-      doc.text(`Rs. _${formatAmount(payment?.amount_paid)}_`, pageWidth - 65, y + 3);
-
-      doc.setTextColor(0, 0, 0);
-      y += 18;
-
-      doc.line(margin, y, pageWidth - margin, y);
-      y += 14;
-
-      // COURSE INFO
-      doc.setFont("helvetica", "normal");
-      doc.setFontSize(12);
-      // doc.text(`Name of Course :  ${feeRecord?.course_name || ''}`, margin, y);
-      // y += 7;
-      doc.text(`Received By :  ${payment?.received_by || ''}`, margin, y);
-      doc.text(`Payment Mode :  ${payment?.payment_mode || ''}`, pageWidth - 120, y);
-
-      // SIGN SEAL BOX
-      // SIGN & SEAL BOX (tighter, shifted upward)
-      doc.rect(pageWidth - 60, y - 8, 50, 20);  // was y - 12 (shifted UP) and height 25 → 20 (less height)
-      doc.setFont("helvetica", "bold");
-      doc.text("Sign & Seal", pageWidth - 55, y + 1); // was y + 2 (moved UP)
-      y += 22; // was 28 (reduced bottom spacing)
-
-
-      // FOOTER BLACK STRIP (reduced height = 24)
-      const footerHeight = 24;
-      const blackY = startY + RECEIPT_HEIGHT - footerHeight;
-
-      doc.setFillColor(0, 0, 0);
-      doc.rect(0, blackY, pageWidth, footerHeight, "F");
-
-      // LOGO
-      // doc.addImage(logo, "PNG", margin, blackY + 3, 18, 18);
-
-      // FOOTER TEXT (tightly packed)
-      doc.setTextColor(255, 255, 255);
-
-      // Company Name
-      doc.setFontSize(14);
-      doc.text("SINFODE PRIVATE LIMITED", pageWidth / 2, blackY + 8, { align: "center" });
-
-      // Contact Row
-      doc.setFontSize(8);
-      doc.text(
-        "www.sinfode.com | info@sinfode.com | +91-9676306970",
-        pageWidth / 2,
-        blackY + 14,
-        { align: "center" }
-      );
-
-      // Address Row
-      doc.text(
-        "Opp. Sanskrit College, Near Kalyan Circle, Sikar - 332001 (Raj.)",
-        pageWidth / 2,
-        blackY + 20,
-        { align: "center" }
-      );
-
-      doc.setTextColor(0, 0, 0);
-
-    };
-
-    // FIRST RECEIPT — TOP HALF
-    drawReceipt(0);
-
-    // SECOND RECEIPT — EXACTLY BELOW FIRST
-    drawReceipt(RECEIPT_HEIGHT);
-
-    const studentNameSafe = (feeRecord?.student?.full_name || "student").replace(/\s+/g, "_");
-    doc.save(`Fee_Receipt_${studentNameSafe}_${payment?.id}.pdf`);
+    return "N/A";
   };
+ 
+  const generateReceipt = (payment, feeRecord) => {
+     const doc = new jsPDF("p", "mm", "a4");
+ 
+     const formatDate = (d) => d ? new Date(d).toLocaleDateString() : '';
+     const formatAmount = (a) => Number(a || 0).toString();
+     const numberToWords = (num) => {
+       if (num === 0) return "Zero";
+ 
+       const a = [
+         "", "One", "Two", "Three", "Four", "Five", "Six",
+         "Seven", "Eight", "Nine", "Ten", "Eleven", "Twelve",
+         "Thirteen", "Fourteen", "Fifteen", "Sixteen", "Seventeen",
+         "Eighteen", "Nineteen"
+       ];
+ 
+       const b = [
+         "", "", "Twenty", "Thirty", "Forty", "Fifty",
+         "Sixty", "Seventy", "Eighty", "Ninety"
+       ];
+ 
+       const inWords = (n) => {
+         if (n < 20) return a[n];
+         if (n < 100) return b[Math.floor(n / 10)] + (n % 10 ? " " + a[n % 10] : "");
+         if (n < 1000) return a[Math.floor(n / 100)] + " Hundred" + (n % 100 ? " " + inWords(n % 100) : "");
+         if (n < 100000) return inWords(Math.floor(n / 1000)) + " Thousand" + (n % 1000 ? " " + inWords(n % 1000) : "");
+         if (n < 10000000) return inWords(Math.floor(n / 100000)) + " Lakh" + (n % 100000 ? " " + inWords(n % 100000) : "");
+         return inWords(Math.floor(n / 10000000)) + " Crore" + (n % 10000000 ? " " + inWords(n % 10000000) : "");
+       };
+ 
+       return inWords(num) + " Rupees Only";
+     };
+ 
+ 
+     const logo = "https://i.postimg.cc/c4S3VP48/sinfode-seal.png";
+ 
+     const pageWidth = doc.internal.pageSize.getWidth();
+     const margin = 10;
+ 
+ 
+     // EXACT HALF A4 HEIGHT
+     const RECEIPT_HEIGHT = 148; // A4 → 297 / 2 = 148.5 (rounded)
+ 
+     // DRAW A RECEIPT
+     const drawReceipt = (startY) => {
+       let y = startY;
+ 
+       // TOP BORDER
+       doc.line(0, y, pageWidth, y);
+       y += 10;
+       // HEADER
+       y += 3;   // halka sa top margin
+       doc.setFont("helvetica", "bold");
+       doc.setFontSize(20);
+       doc.text("FEE RECEIPT", margin, y);
+ 
+       // ----- RIGHT SIDE TEXT -----
+       doc.setFont("helvetica", "normal");
+       doc.setFontSize(12);
+       doc.text(`Admission No.: ${feeRecord?.student?.admission_number || ''}`, pageWidth - 90, y);
+       y += 8;
+       doc.text(`Date: ${formatDate(payment?.payment_date)}`, pageWidth - 90, y);
+ 
+       y += 10;
+ 
+       // ------ Horizontal line below header ------
+       doc.line(margin, y, pageWidth - margin, y);
+       y += 12;
+ 
+       // --------- CENTER VERTICAL LINE ---------
+       const centerX = pageWidth / 2;
+       doc.line(centerX, y - 40, centerX, y - 12);
+       // adjust Y range as needed
+ 
+ 
+       // STUDENT DETAILS
+       // Name of Student
+       doc.setFont("helvetica", "bold");
+       doc.text("Name of Student :", margin, y);
+ 
+       doc.setFont("helvetica", "normal");
+       doc.text(`${feeRecord?.student?.full_name || ''}`, margin + 40, y);
+ 
+       y += 7;
+ 
+       // Guardian Name
+       doc.setFont("helvetica", "bold");
+       doc.text("Guardian Name :", margin, y);
+ 
+       doc.setFont("helvetica", "normal");
+       doc.text(`${feeRecord?.student?.guardian_name || ''}`, margin + 40, y);
+ 
+       y += 7;
+ 
+       // Name of Course
+       doc.setFont("helvetica", "bold");
+       doc.text("Name of Course :", margin, y);
+ 
+       doc.setFont("helvetica", "normal");
+       doc.text(`${getCourseNamesFromRecord(feeRecord)}`, margin + 40, y);
+ 
+       y += 7;
+ 
+ 
+       doc.line(margin, y, pageWidth - margin, y);
+       y += 14;
+ 
+       // PAID AMOUNT
+       doc.setFont("helvetica", "bold");
+       doc.text("Paid Amount :", margin, y);
+       doc.setFont("helvetica", "italic");
+       doc.text(numberToWords(Number(payment?.amount_paid || 0)), margin + 35, y);
+ 
+       // AMOUNT BOX (Border Only)
+       doc.rect(pageWidth - 70, y - 6, 60, 16, "S"); // <-- "F" removed, replaced by "S"
+ 
+       doc.setFont("helvetica", "bold");
+       doc.setFontSize(16);
+       doc.text(`Rs. ${formatAmount(payment?.amount_paid)}`, pageWidth - 65, y + 3);
+ 
+       y += 18;
+ 
+       doc.line(margin, y, pageWidth - margin, y);
+       y += 14;
+ 
+       // COURSE INFO
+       doc.setFont("helvetica", "normal");
+       doc.setFontSize(12);
+ 
+       doc.text(`Student Sign :  ${payment?.received_by || ''}`, margin, y);
+       doc.text(`Payment Mode :  ${payment?.payment_mode || ''}`, pageWidth - 120, y);
+ 
+       // SIGN SEAL BOX
+       // SIGN & SEAL BOX (tighter, shifted upward)
+       doc.rect(pageWidth - 60, y - 8, 50, 20);  // was y - 12 (shifted UP) and height 25 → 20 (less height)
+       doc.setFont("helvetica", "bold");
+       doc.text("Sign & Seal", pageWidth - 55, y + 1); // was y + 2 (moved UP)
+       y += 22; // was 28 (reduced bottom spacing)
+ 
+ 
+       // FOOTER BLACK STRIP (reduced height = 24)
+       const footerHeight = 24;
+       const blackY = startY + RECEIPT_HEIGHT - footerHeight;
+ 
+       doc.setFillColor(0, 0, 0);
+       doc.rect(0, blackY, pageWidth, footerHeight, "F");
+ 
+       // LOGO
+       doc.addImage(logo, "PNG", margin, blackY + 3, 18, 18);
+ 
+       // FOOTER TEXT (tightly packed)
+       doc.setTextColor(255, 255, 255);
+ 
+       // Company Name
+       doc.setFontSize(14);
+       doc.text("SINFODE PRIVATE LIMITED", pageWidth / 2, blackY + 8, { align: "center" });
+ 
+       // Contact Row
+       doc.setFontSize(8);
+       doc.text(
+         "www.sinfode.com | info@sinfode.com | +91-9676306970",
+         pageWidth / 2,
+         blackY + 14,
+         { align: "center" }
+       );
+ 
+       // Address Row
+       doc.text(
+         "Opp. Sanskrit College, Near Kalyan Circle, Sikar - 332001 (Raj.)",
+         pageWidth / 2,
+         blackY + 20,
+         { align: "center" }
+       );
+ 
+       doc.setTextColor(0, 0, 0);
+ 
+     };
+ 
+     // FIRST RECEIPT — TOP HALF
+     drawReceipt(0);
+ 
+     // SECOND RECEIPT — EXACTLY BELOW FIRST
+     drawReceipt(RECEIPT_HEIGHT);
+ 
+     const studentNameSafe = (feeRecord?.student?.full_name || "student").replace(/\s+/g, "_");
+     doc.save(`Fee_Receipt_${studentNameSafe}_${payment?.id}.pdf`);
+   };
   // Helper function to get branch name
   const getBranchName = (branchId) => {
     const branch = branches.find(b => b.id === branchId);
