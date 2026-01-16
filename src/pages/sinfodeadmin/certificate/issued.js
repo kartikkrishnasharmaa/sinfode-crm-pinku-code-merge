@@ -3,7 +3,6 @@ import axios from "../../../api/axiosConfig";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import {
-  FaCheckCircle,
   FaSpinner,
   FaFilePdf,
 } from "react-icons/fa";
@@ -40,34 +39,6 @@ const Issued = () => {
       setLoading(false);
     }
   };
-
-  // 🔹 Issue certificate (POST)
-  const issueCertificate = async (certificateId) => {
-    try {
-      setIssuingId(certificateId);
-      const token = localStorage.getItem("token");
-
-      await axios.post(
-        `/admin/certificates/${certificateId}/issue`,
-        {},
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-
-      toast.success("Certificate issued successfully!");
-      fetchCertificates(); // refresh list
-    } catch (error) {
-      toast.error(
-        error.response?.data?.message || "Failed to issue certificate"
-      );
-    } finally {
-      setIssuingId(null);
-    }
-  };
-
   return (
     <div className="min-h-screen bg-gray-50 p-4 md:p-6 lg:p-8">
       <ToastContainer position="top-right" autoClose={3000} />
@@ -137,33 +108,6 @@ const Issued = () => {
                 </span>
               </div>
 
-              {/* Action */}
-              {/* <div className="col-span-2 flex justify-center">
-                {cert.status === "issued" ? (
-                  <span className="text-blue-600 flex items-center space-x-1">
-                    <FaCheckCircle />
-                    <span>Issue Now</span>
-                  </span>
-                ) : (
-                  <button
-                    onClick={() => issueCertificate(cert.id)}
-                    disabled={issuingId === cert.id}
-                    className="flex items-center space-x-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg disabled:opacity-50"
-                  >
-                    {issuingId === cert.id ? (
-                      <>
-                        <FaSpinner className="animate-spin" />
-                        <span>Issuing</span>
-                      </>
-                    ) : (
-                      <>
-                        <FaCheckCircle />
-                        <span>Issue</span>
-                      </>
-                    )}
-                  </button>
-                )}
-              </div> */}
             </div>
           ))
         ) : (

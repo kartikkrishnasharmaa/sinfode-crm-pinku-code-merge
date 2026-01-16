@@ -196,33 +196,17 @@ const Collection = () => {
     setSortConfig({ key, direction });
   };
 
-   const getCourseNamesFromRecord = (feeRecord) => {
-    if (!feeRecord) return "N/A";
+ const getCourseNamesFromRecord = (feeRecord) => {
+  if (!feeRecord || !feeRecord.student) return "N/A";
 
-    // CASE 1: If backend sends courses array
-    if (Array.isArray(feeRecord.courses) && feeRecord.courses.length > 0) {
-      return feeRecord.courses.map(c => c.course_name).join(", ");
-    }
+  const courses = feeRecord.student.courses;
 
-    // CASE 2: If backend sends multiple course IDs
-    if (Array.isArray(feeRecord.course_ids) && feeRecord.course_ids.length > 0) {
-      return feeRecord.course_ids
-        .map(id => {
-          const course = courses.find(c => c.id === Number(id));
-          return course ? course.course_name : null;
-        })
-        .filter(Boolean)
-        .join(", ");
-    }
+  if (Array.isArray(courses) && courses.length > 0) {
+    return courses.map(course => course.course_name).join(", ");
+  }
 
-    // CASE 3: Single course_id
-    if (feeRecord.course_id) {
-      const course = courses.find(c => c.id === Number(feeRecord.course_id));
-      return course ? course.course_name : "N/A";
-    }
-
-    return "N/A";
-  };
+  return "N/A";
+};
 
  const generateReceipt = (payment, feeRecord) => {
     const doc = new jsPDF("p", "mm", "a4");

@@ -19,6 +19,7 @@ export default function Lead() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [leadDetails, setLeadDetails] = useState(null);
   const [loadingLeadDetails, setLoadingLeadDetails] = useState(false);
+  const [editingLeadId, setEditingLeadId] = useState(null);
 
   // Form state
   const [formData, setFormData] = useState({
@@ -149,7 +150,6 @@ export default function Lead() {
       setFormData((prev) => ({ ...prev, [id]: value }));
     }
   };
-
   const saveLead = async (e) => {
     e.preventDefault();
 
@@ -157,47 +157,51 @@ export default function Lead() {
       setIsLoading(true);
       const token = localStorage.getItem("token");
 
-      // Format follow_up_datetime
       const formattedData = {
         ...formData,
         follow_up_datetime: formData.follow_up_datetime
           ? `${formData.follow_up_datetime.replace("T", " ")}:00`
-          : null
+          : null,
       };
 
-      const response = await axios.post("/leads/store", formattedData, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      let response;
+
+      // 🔥 DECISION POINT
+      if (editingLeadId) {
+        // UPDATE
+        response = await axios.put(
+          `/leads/update/${editingLeadId}`,
+          formattedData,
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+      } else {
+        // STORE
+        response = await axios.post(
+          "/leads/store",
+          formattedData,
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+      }
 
       if (response.data.success) {
-        toast.success("Lead created successfully!");
-        // Reset form
-        setFormData({
-          branch_id: "",
-          full_name: "",
-          contact_number_primary: "",
-          contact_number_alternate: "",
-          email_address: "",
-          lead_source: "",
-          lead_status: "New",
-          priority: "Medium",
-          notes: "",
-          follow_up_datetime: "",
-          assigned_to: "",
-          course_id: "",
-          budget_range: "",
-        });
-        // Refresh leads list
+        toast.success(
+          editingLeadId ? "Lead updated successfully!" : "Lead created successfully!"
+        );
+
+        clearForm();
+        setEditingLeadId(null); // reset edit mode
         fetchLeads();
         setActiveTab("leads");
       }
     } catch (error) {
-      console.error("Error creating lead:", error);
-      toast.error("Failed to create lead");
+      console.error("Error saving lead:", error);
+      toast.error("Failed to save lead");
     } finally {
       setIsLoading(false);
     }
   };
+
+
 
   const updateLead = async (id, updateData) => {
     try {
@@ -238,7 +242,6 @@ export default function Lead() {
   };
 
   const editLead = (lead) => {
-    // Format the lead data to match our form structure
     const formattedLead = {
       branch_id: lead.branch_id,
       full_name: lead.full_name,
@@ -258,6 +261,7 @@ export default function Lead() {
     };
 
     setFormData(formattedLead);
+    setEditingLeadId(lead.id); // 🔥 IMPORTANT
     setActiveTab("new-lead");
   };
 
@@ -277,7 +281,9 @@ export default function Lead() {
       course_id: "",
       budget_range: "",
     });
+    setEditingLeadId(null);
   };
+
 
   const getStatusBadge = (status) => {
     const badges = {
@@ -858,7 +864,7 @@ export default function Lead() {
                           <option value="Lost">Lost</option>
                         </select>
                       </div>
-                    
+
                       <div>
                         <label className="block text-sm font-medium text-sf-text mb-2">
                           Interested Course
@@ -877,7 +883,7 @@ export default function Lead() {
                           ))}
                         </select>
                       </div>
-                        <div>
+                      <div>
                         <label className="block text-sm font-medium text-sf-text mb-2">
                           Assigned To <span className="text-red-500">*</span>
                         </label>
@@ -979,22 +985,10 @@ export default function Lead() {
                     >
                       Clear
                     </button>
-                    <button
-                      type="submit"
-                      disabled={isLoading}
-                      className="px-8 py-3 bg-sf-blue hover:bg-sf-blue-dark text-white rounded-lg transition-colors font-medium disabled:opacity-50"
-                    >
-                      {isLoading ? (
-                        <>
-                          <i className="fas fa-spinner fa-spin mr-2"></i>
-                          Saving...
-                        </>
-                      ) : (
-                        <>
-                          <i className="fas fa-save mr-2"></i>Save Lead
-                        </>
-                      )}
+                    <button type="submit" disabled={isLoading}>
+                      {editingLeadId ? "Update Lead" : "Save Lead"}
                     </button>
+
                   </div>
                 </form>
               </div>
@@ -1120,7 +1114,7 @@ export default function Lead() {
         <div className="fixed inset-0 z-50 overflow-y-auto">
           <div className="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
             {/* Background overlay */}
-            <div 
+            <div
               className="fixed inset-0 transition-opacity bg-gray-500 bg-opacity-75"
               onClick={closeModal}
             ></div>
@@ -1264,8 +1258,8 @@ export default function Lead() {
                           <div className="flex justify-between">
                             <span className="text-sf-text-light">Follow-up Date:</span>
                             <span className="font-medium">
-                              {leadDetails.follow_up_datetime ? 
-                                new Date(leadDetails.follow_up_datetime).toLocaleString() : 
+                              {leadDetails.follow_up_datetime ?
+                                new Date(leadDetails.follow_up_datetime).toLocaleString() :
                                 'Not scheduled'
                               }
                             </span>

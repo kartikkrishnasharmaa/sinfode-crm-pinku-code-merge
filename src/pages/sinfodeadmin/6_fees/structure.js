@@ -80,6 +80,11 @@ const StudentFees = () => {
     });
     return map;
   }, [branches]);
+    // Get course name by ID
+  const getCourseName = (courseId) => {
+    const course = coursesMap[courseId];
+    return course ? course.course_name : `Course ID: ${courseId}`;
+  };
 
   // Filter and sort fees with status filter
   const filteredAndSortedFees = useMemo(() => {
@@ -518,11 +523,7 @@ const StudentFees = () => {
     return student ? student.admission_number : 'N/A';
   };
 
-  // Get course name by ID
-  const getCourseName = (courseId) => {
-    const course = coursesMap[courseId];
-    return course ? course.course_name : `Course ID: ${courseId}`;
-  };
+
 
   // Get course details by ID
   const getCourseDetails = (courseId) => {
