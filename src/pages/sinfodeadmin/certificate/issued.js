@@ -5,114 +5,169 @@ import "react-toastify/dist/ReactToastify.css";
 import {
   FaSpinner,
   FaFilePdf,
+  FaTrash,
+  FaToggleOn,
+  FaToggleOff,
 } from "react-icons/fa";
 
 const Issued = () => {
   const [certificates, setCertificates] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [issuingId, setIssuingId] = useState(null);
+  const [actionId, setActionId] = useState(null);
 
   useEffect(() => {
     fetchCertificates();
   }, []);
 
-  // 🔹 Fetch certificates (GET)
+  // 🔹 Fetch certificates
   const fetchCertificates = async () => {
     try {
       setLoading(true);
       const token = localStorage.getItem("token");
 
       const res = await axios.get("/admin/certificates/pending", {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+        headers: { Authorization: `Bearer ${token}` },
       });
 
       if (res.data?.success) {
         setCertificates(res.data.data || []);
-      } else {
-        toast.error("Invalid response from server");
       }
-    } catch (error) {
+    } catch {
       toast.error("Failed to fetch certificates");
     } finally {
       setLoading(false);
     }
   };
+
+  // 🔹 Toggle Status (issued ↔ inactive)
+  const toggleStatus = async (id) => {
+    try {
+      setActionId(id);
+      const token = localStorage.getItem("token");
+
+      const res = await axios.patch(
+        `/admin/certificates/${id}/toggle-status`,
+        {},
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+
+      toast.success(res.data.message);
+
+      // ✅ Update only that certificate locally
+      setCertificates((prev) =>
+        prev.map((c) =>
+          c.id === id ? { ...c, status: res.data.status } : c
+        )
+      );
+    } catch {
+      toast.error("Failed to update status");
+    } finally {
+      setActionId(null);
+    }
+  };
+
+  // 🔹 Delete Certificate
+  const deleteCertificate = async (id) => {
+    if (!window.confirm("This will permanently delete the certificate."))
+      return;
+
+    try {
+      setActionId(id);
+      const token = localStorage.getItem("token");
+
+      await axios.delete(`/admin/certificates/${id}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      toast.success("Certificate deleted successfully");
+      setCertificates((prev) => prev.filter((c) => c.id !== id));
+    } catch {
+      toast.error("Failed to delete certificate");
+    } finally {
+      setActionId(null);
+    }
+  };
+
   return (
-    <div className="min-h-screen bg-gray-50 p-4 md:p-6 lg:p-8">
-      <ToastContainer position="top-right" autoClose={3000} />
+    <div className="min-h-screen bg-gray-50 p-6">
+      <ToastContainer />
 
-      {/* Header */}
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-800">
-          Certificates List
-        </h1>
-        <p className="text-gray-600">
-          Total {certificates.length} certificates found
-        </p>
-      </div>
+      <h1 className="text-2xl font-bold mb-4">Certificates List</h1>
 
-      {/* Table */}
-      <div className="bg-white rounded-xl shadow overflow-hidden">
-        <div className="grid grid-cols-12 gap-4 bg-gray-100 p-4 font-semibold text-gray-700">
-          <div className="col-span-2">Certificate No</div>
-      
+      <div className="bg-white rounded shadow">
+        <div className="grid grid-cols-12 p-4 bg-gray-100 font-semibold">
+          <div className="col-span-2">Cert No</div>
           <div className="col-span-3">Student</div>
           <div className="col-span-3">Course</div>
           <div className="col-span-2">Status</div>
-          {/* <div className="col-span-2 text-center">Action</div> */}
+          <div className="col-span-2 text-center">Action</div>
         </div>
 
-        {/* Loading */}
         {loading ? (
-          <div className="py-10 text-center text-gray-500">
+          <div className="p-8 text-center">
             <FaSpinner className="animate-spin inline mr-2" />
-            Loading certificates...
+            Loading...
           </div>
-        ) : certificates.length > 0 ? (
+        ) : certificates.length ? (
           certificates.map((cert) => (
             <div
               key={cert.id}
-              className="grid grid-cols-12 gap-4 p-4 items-center border-t hover:bg-gray-50"
+              className="grid grid-cols-12 p-4 border-t items-center"
             >
-              <div className="col-span-2 text-gray-700 font-medium">
-                {cert.certificate_number || "—"}
+              <div className="col-span-2">
+                {cert.certificate_number}
               </div>
-              {/* Student */}
+
+              <div className="col-span-3 font-semibold">
+                {cert.student?.full_name}
+              </div>
+
               <div className="col-span-3">
-                <p className="font-semibold text-gray-800">
-                  {cert.student?.full_name}
-                </p>
+                {cert.course?.course_name}
               </div>
 
-              {/* Course */}
-              <div className="col-span-3">
-                <span className="px-3 py-1 bg-purple-100 text-gray-800 rounded-full text-sm">
-                  {cert.course?.course_name}
-                </span>
-              </div>
-
-              {/* Certificate Number */}
-
-
-              {/* Status */}
+              {/* STATUS */}
               <div className="col-span-2">
                 <span
-                  className={`px-3 py-1 rounded-full text-sm ${cert.status === "issued"
+                  className={`px-3 py-1 rounded-full text-sm ${
+                    cert.status === "issued"
                       ? "bg-green-100 text-green-800"
-                      : "bg-yellow-100 text-yellow-800"
-                    }`}
+                      : "bg-red-100 text-red-800"
+                  }`}
                 >
                   {cert.status}
                 </span>
               </div>
 
+              {/* ACTIONS */}
+              <div className="col-span-2 flex justify-center gap-4">
+                <button
+                  onClick={() => toggleStatus(cert.id)}
+                  disabled={actionId === cert.id}
+                  title="Activate / Deactivate"
+                >
+                  {cert.status === "issued" ? (
+                    <FaToggleOn size={22} className="text-green-600" />
+                  ) : (
+                    <FaToggleOff size={22} className="text-gray-500" />
+                  )}
+                </button>
+
+                <button
+                  onClick={() => deleteCertificate(cert.id)}
+                  disabled={actionId === cert.id}
+                  title="Delete"
+                >
+                  <FaTrash className="text-red-600" />
+                </button>
+              </div>
             </div>
           ))
         ) : (
-          <div className="py-12 text-center text-gray-500">
-            <FaFilePdf className="text-5xl mb-3 mx-auto" />
+          <div className="p-10 text-center text-gray-500">
+            <FaFilePdf size={40} className="mx-auto mb-2" />
             No certificates found
           </div>
         )}
