@@ -569,6 +569,7 @@ export default function Lead() {
                     >
                       <option value="">All Status</option>
                       <option value="New">New</option>
+                      <option value="visit">Visited</option>
                       <option value="Contacted">Contacted</option>
                       <option value="Follow-up">Follow-up</option>
                       <option value="Demo Scheduled">Demo Scheduled</option>
@@ -843,6 +844,8 @@ export default function Lead() {
                           <option value="facebook">Facebook</option>
                           <option value="website">Website</option>
                           <option value="googleAds">Google Ads</option>
+                          <option value="trainer">Trainer</option>
+                          <option value="student">Student</option>
                         </select>
                       </div>
                       <div>
@@ -857,6 +860,7 @@ export default function Lead() {
                           className="w-full px-4 py-3 border border-sf-border rounded-lg focus:ring-2 focus:ring-sf-blue focus:border-transparent"
                         >
                           <option value="New">New</option>
+                          <option value="visit">Visited</option>
                           <option value="Contacted">Contacted</option>
                           <option value="Follow-up">Follow-up</option>
                           <option value="Demo Scheduled">Demo Scheduled</option>
