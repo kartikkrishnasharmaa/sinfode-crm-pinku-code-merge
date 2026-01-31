@@ -3,21 +3,15 @@ import axios from "../../../api/axiosConfig";
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
 import {
-  FaDownload,
+  FaIdCard,
   FaTimes,
   FaSearch,
-  FaFilter,
-  FaUserGraduate,
-  FaIdCard,
   FaUsers,
+  FaUserGraduate,
   FaBook,
-  FaBuilding,
-  FaEye,
-  FaQrcode,
-  FaCalendarAlt,
-  FaPhone,
   FaEnvelope,
-  FaMapMarkerAlt,
+  FaPhone,
+  FaBuilding,
   FaFilePdf,
   FaImage
 } from "react-icons/fa";
@@ -34,41 +28,23 @@ function StudentIDCardGenerator() {
   const [searchTerm, setSearchTerm] = useState("");
   const [loading, setLoading] = useState(false);
   const [downloading, setDownloading] = useState(false);
+
   const idCardRef = useRef(null);
 
-  // Fetch all branches
+  /* ---------------- FETCH DATA ---------------- */
+
   useEffect(() => {
-    const fetchBranches = async () => {
-      try {
-        const token = localStorage.getItem("token");
-        const res = await axios.get("/branches", {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        setBranches(res.data || []);
-      } catch (error) {
-        console.error("Error fetching branches:", error);
-      }
-    };
-    fetchBranches();
+    const token = localStorage.getItem("token");
+
+    axios.get("/branches", { headers: { Authorization: `Bearer ${token}` } })
+      .then(res => setBranches(res.data || []));
+
+    axios.get("/courses/index", { headers: { Authorization: `Bearer ${token}` } })
+      .then(res => setCourses(res.data || []));
+
+    fetchStudents();
   }, []);
 
-  // Fetch all courses
-  useEffect(() => {
-    const fetchCourses = async () => {
-      try {
-        const token = localStorage.getItem("token");
-        const res = await axios.get("/courses/index", {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        setCourses(res.data || []);
-      } catch (error) {
-        console.error("Error fetching courses:", error);
-      }
-    };
-    fetchCourses();
-  }, []);
-
-  // Fetch all students
   const fetchStudents = async () => {
     try {
       setLoading(true);
@@ -78,454 +54,225 @@ function StudentIDCardGenerator() {
       });
       setStudents(res.data || []);
       setFilteredStudents(res.data || []);
-    } catch (error) {
-      console.error("Error fetching students:", error);
     } finally {
       setLoading(false);
     }
   };
 
-  useEffect(() => {
-    fetchStudents();
-  }, []);
+  /* ---------------- FILTER LOGIC ---------------- */
 
-  // Filter students based on selections
   useEffect(() => {
-    let filtered = students;
+    let data = students;
 
-    // Filter by branch
     if (selectedBranch) {
-      filtered = filtered.filter(student =>
-        student.branch_id?.toString() === selectedBranch
-      );
+      data = data.filter(s => s.branch_id?.toString() === selectedBranch);
     }
 
-    // Filter by course
     if (selectedCourse) {
-      filtered = filtered.filter(student =>
-        student.courses?.some(course => course.id.toString() === selectedCourse)
+      data = data.filter(s =>
+        s.courses?.some(c => c.id.toString() === selectedCourse)
       );
     }
 
-    // Filter by search term
     if (searchTerm) {
-      filtered = filtered.filter(student =>
-        student.full_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        student.admission_number?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        student.email?.toLowerCase().includes(searchTerm.toLowerCase())
+      data = data.filter(s =>
+        s.full_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        s.admission_number?.includes(searchTerm)
       );
     }
 
-    setFilteredStudents(filtered);
+    setFilteredStudents(data);
   }, [selectedBranch, selectedCourse, searchTerm, students]);
 
-  // Handle Generate ID Card
+  /* ---------------- ACTIONS ---------------- */
+
   const handleGenerateIDCard = (student) => {
     setSelectedStudent(student);
     setShowModal(true);
   };
 
- // Handle Download as PDF
-const handleDownloadPDF = async () => {
-  if (!idCardRef.current) return;
-
-  setDownloading(true);
-  try {
-    const canvas = await html2canvas(idCardRef.current, {
-      scale: 3,
-      useCORS: true,
-      logging: false,
-      backgroundColor: null
-    });
-
-    const imgData = canvas.toDataURL('image/png', 1.0);
-    
-    // CR80 standard ID card size: 3.375" x 2.125" converted to mm
-    const pdf = new jsPDF({
-      orientation: 'landscape',
-      unit: 'mm',
-      format: [85.6, 54] // Width: 85.6mm, Height: 54mm (CR80 standard)
-    });
-
-    const pdfWidth = pdf.internal.pageSize.getWidth();
-    const pdfHeight = pdf.internal.pageSize.getHeight();
-
-    // Add image to fill entire PDF page
-    pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
-    pdf.save(`ID_Card_${selectedStudent.admission_number}_${selectedStudent.full_name.replace(/\s+/g, '_')}.pdf`);
-  } catch (error) {
-    console.error('Error generating PDF:', error);
-    alert('Error downloading PDF. Please try again.');
-  } finally {
-    setDownloading(false);
-  }
-};
-
-// Handle Download as Image
-const handleDownloadImage = async () => {
-  if (!idCardRef.current) return;
-
-  setDownloading(true);
-  try {
-    const canvas = await html2canvas(idCardRef.current, {
-      scale: 3,
-      useCORS: true,
-      logging: false,
-      backgroundColor: null
-    });
-
-    const link = document.createElement('a');
-    link.download = `ID_Card_${selectedStudent.admission_number}_${selectedStudent.full_name.replace(/\s+/g, '_')}.png`;
-    link.href = canvas.toDataURL('image/png', 1.0);
-    link.click();
-  } catch (error) {
-    console.error('Error generating image:', error);
-    alert('Error downloading image. Please try again.');
-  } finally {
-    setDownloading(false);
-  }
-};
-
-  // Handle Download as Image
-  // const handleDownloadImage = async () => {
-  //   if (!idCardRef.current) return;
-
-  //   setDownloading(true);
-  //   try {
-  //     const canvas = await html2canvas(idCardRef.current, {
-  //       scale: 3, // Higher scale for better quality
-  //       useCORS: true,
-  //       logging: false,
-  //       backgroundColor: null
-  //     });
-
-  //     const link = document.createElement('a');
-  //     link.download = `ID_Card_${selectedStudent.admission_number}_${selectedStudent.full_name.replace(/\s+/g, '_')}.png`;
-  //     link.href = canvas.toDataURL('image/png', 1.0);
-  //     link.click();
-  //   } catch (error) {
-  //     console.error('Error generating image:', error);
-  //     alert('Error downloading image. Please try again.');
-  //   } finally {
-  //     setDownloading(false);
-  //   }
-  // };
-
-  // Close modal
   const closeModal = () => {
     setShowModal(false);
     setSelectedStudent(null);
+  };
+
+  const handleDownloadPDF = async () => {
+    if (!idCardRef.current) return;
+    setDownloading(true);
+
+    const canvas = await html2canvas(idCardRef.current, { scale: 3, useCORS: true });
+    const imgData = canvas.toDataURL("image/png");
+
+    const pdf = new jsPDF("landscape", "mm", [85.6, 54]);
+    pdf.addImage(imgData, "PNG", 0, 0, 85.6, 54);
+    pdf.save(`ID_${selectedStudent.admission_number}.pdf`);
+
     setDownloading(false);
   };
 
-  // Format date
-  const formatDate = (dateString) => {
-    if (!dateString) return 'N/A';
-    return new Date(dateString).toLocaleDateString('en-IN', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric'
-    });
+  const handleDownloadImage = async () => {
+    if (!idCardRef.current) return;
+    setDownloading(true);
+
+    const canvas = await html2canvas(idCardRef.current, { scale: 3, useCORS: true });
+    const link = document.createElement("a");
+    link.download = `ID_${selectedStudent.admission_number}.png`;
+    link.href = canvas.toDataURL("image/png");
+    link.click();
+
+    setDownloading(false);
   };
 
-  // Reset filters
-  const resetFilters = () => {
-    setSelectedBranch("");
-    setSelectedCourse("");
-    setSearchTerm("");
-  };
+  /* ---------------- UI ---------------- */
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-6">
-      {/* Header */}
-      <div className="max-w-7xl mx-auto">
-        <div className="flex items-center gap-4 mb-8">
-          <div className="bg-white p-4 rounded-2xl shadow-lg">
-            <FaIdCard className="text-3xl text-blue-600" />
-          </div>
-          <div>
-            <h1 className="text-3xl font-bold text-gray-800 bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-              Student ID Card Generator
-            </h1>
-            <p className="text-gray-600 mt-2">Generate professional ID cards for your students</p>
-          </div>
-        </div>
+    <div className="p-6 bg-gray-100 min-h-screen">
+      <h1 className="text-2xl font-bold mb-6">Student ID Card Generator</h1>
 
-        {/* Filters Section */}
-        <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-6 mb-8">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-            {/* Search */}
-            <div className="md:col-span-2">
-              <label className="block text-sm font-semibold text-gray-700 mb-2">Search Students</label>
-              <div className="relative">
-                <FaSearch className="absolute left-3 top-3 text-gray-400" />
-                <input
-                  type="text"
-                  placeholder="Search by name, admission number, or email..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-300"
+      {/* SEARCH */}
+      <input
+        type="text"
+        placeholder="Search student..."
+        value={searchTerm}
+        onChange={(e) => setSearchTerm(e.target.value)}
+        className="mb-6 p-3 w-full border rounded"
+      />
+
+      {/* STUDENT LIST */}
+      {loading ? (
+        <div className="text-center py-10 text-lg font-semibold text-gray-600">
+          Loading students...
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+          {filteredStudents.map((student) => (
+            <div
+              key={student.id}
+              className="bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 overflow-hidden group"
+            >
+              {/* TOP BANNER */}
+              <div className="relative bg-gradient-to-r from-blue-600 to-purple-600 h-24">
+                <img
+                  src={
+                    student.photo_url ||
+                    "https://cdn-icons-png.flaticon.com/512/149/149071.png"
+                  }
+                  alt={student.full_name}
+                  className="w-20 h-20 rounded-xl object-cover border-4 border-white absolute left-4 -bottom-10 shadow-lg bg-white"
                 />
-              </div>
-            </div>
 
-            {/* Branch Dropdown */}
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">Select Branch</label>
-              <select
-                value={selectedBranch}
-                onChange={(e) => setSelectedBranch(e.target.value)}
-                className="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white transition-all duration-300 appearance-none"
-              >
-                <option value="">All Branches</option>
-                {branches.map((branch) => (
-                  <option key={branch.id} value={branch.id}>
-                    {branch.branch_name}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            {/* Course Dropdown */}
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">Select Course</label>
-              <select
-                value={selectedCourse}
-                onChange={(e) => setSelectedCourse(e.target.value)}
-                className="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white transition-all duration-300 appearance-none"
-              >
-                <option value="">All Courses</option>
-                {courses.map((course) => (
-                  <option key={course.id} value={course.id}>
-                    {course.course_name}
-                  </option>
-                ))}
-              </select>
-            </div>
-          </div>
-
-          {/* Quick Stats and Actions */}
-          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-4 flex-1">
-              <div className="bg-blue-50 rounded-xl p-3 border border-blue-200">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-blue-600">Total Students</p>
-                    <p className="text-xl font-bold text-gray-800">{filteredStudents.length}</p>
-                  </div>
-                  <FaUsers className="text-blue-500" />
-                </div>
-              </div>
-              <div className="bg-green-50 rounded-xl p-3 border border-green-200">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-green-600">Active Students</p>
-                    <p className="text-xl font-bold text-gray-800">
-                      {filteredStudents.filter(s => s.enrollment_status === 'Active').length}
-                    </p>
-                  </div>
-                  <FaUserGraduate className="text-green-500" />
-                </div>
-              </div>
-              <div className="bg-purple-50 rounded-xl p-3 border border-purple-200">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-purple-600">Available Courses</p>
-                    <p className="text-xl font-bold text-gray-800">{courses.length}</p>
-                  </div>
-                  <FaBook className="text-purple-500" />
-                </div>
-              </div>
-            </div>
-
-            <div className="flex gap-3">
-              <button
-                onClick={resetFilters}
-                className="px-4 py-2 bg-blue-500 text-white rounded-xl hover:bg-gray-400 transition-colors font-medium"
-              >
-                Reset Filters
-              </button>
-            </div>
-          </div>
-        </div>
-
-        {/* Student List */}
-        {loading ? (
-          <div className="flex justify-center items-center h-64">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-          </div>
-        ) : filteredStudents.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 gap-6">
-            {filteredStudents.map((student, index) => (
-              <div
-                key={student.id}
-                className="bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-500 border border-gray-200 overflow-hidden group transform hover:-translate-y-2 animate-fade-in"
-                style={{ animationDelay: `${index * 100}ms` }}
-              >
-                {/* Student Header */}
-                <div className="bg-gradient-to-r from-blue-600 to-purple-600 p-6 text-white">
-                  <div className="flex items-center space-x-4">
-                    <div className="relative">
-                      <img
-                        src={student.photo_url || "https://cdn-icons-png.flaticon.com/512/149/149071.png"}
-                        alt={student.full_name}
-                        className="w-16 h-16 rounded-2xl object-cover border-4 border-white shadow-lg"
-                      />
-                      <div className={`absolute -bottom-1 -right-1 w-4 h-4 rounded-full border-2 border-white ${student.enrollment_status === "Active" ? "bg-green-500" : "bg-red-500"
-                        }`}></div>
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <h3 className="font-bold text-lg truncate">{student.full_name}</h3>
-                      <p className="text-blue-100 text-sm truncate">#{student.admission_number}</p>
-                      <div className="flex items-center gap-2 mt-1">
-
-                        <span className={`px-2 py-1 rounded-full text-xs font-bold ${student.enrollment_status === "Active"
-                          ? "bg-green-500 text-white"
-                          : "bg-red-500 text-white"
-                          }`}>
-                          {student.enrollment_status}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Student Details */}
-                <div className="p-6">
-                  <div className="space-y-3">
-                    <div className="flex items-center gap-3 text-sm text-gray-600">
-                      <FaEnvelope className="text-gray-400" />
-                      <span className="truncate">{student.email}</span>
-                    </div>
-                    <div className="flex items-center gap-3 text-sm text-gray-600">
-                      <FaPhone className="text-gray-400" />
-                      <span>{student.contact_number}</span>
-                    </div>
-                    <div className="flex items-center gap-3 text-sm text-gray-600">
-                      <FaBuilding className="text-gray-400" />
-                      <span>{student.branch?.branch_name}</span>
-                    </div>
-                  </div>
-
-
-                </div>
-
-                {/* Action Button */}
-                <div className="px-6 py-4 bg-gray-50 border-t border-gray-200">
-                  <button
-                    onClick={() => handleGenerateIDCard(student)}
-                    className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white py-3 rounded-xl font-semibold transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl flex items-center justify-center gap-2"
-                  >
-                    <FaIdCard className="text-sm" />
-                    Generate ID Card
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-12 text-center">
-            <div className="max-w-md mx-auto">
-              <div className="bg-blue-50 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4">
-                <FaUserGraduate className="text-3xl text-blue-600" />
-              </div>
-              <h3 className="text-xl font-bold text-gray-800 mb-2">No Students Found</h3>
-              <p className="text-gray-600 mb-6">
-                {searchTerm || selectedCourse || selectedBranch
-                  ? "Try adjusting your search criteria or filters"
-                  : "No students available for ID card generation"
-                }
-              </p>
-              {(searchTerm || selectedCourse || selectedBranch) && (
-                <button
-                  onClick={resetFilters}
-                  className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-xl font-semibold transition-colors"
+                {/* STATUS BADGE */}
+                <span
+                  className={`absolute top-3 right-3 px-3 py-1 text-xs font-bold rounded-full ${student.enrollment_status === "Active"
+                    ? "bg-green-500 text-white"
+                    : "bg-red-500 text-white"
+                    }`}
                 >
-                  Clear Filters
+                  {student.enrollment_status}
+                </span>
+              </div>
+
+              {/* CONTENT */}
+              <div className="pt-14 px-5 pb-6">
+                <h3 className="text-lg font-bold text-gray-800 truncate">
+                  {student.full_name}
+                </h3>
+
+                <p className="text-sm text-gray-500 mb-3">
+                  Admission ID: <span className="font-semibold">{student.admission_number}</span>
+                </p>
+
+                <div className="space-y-2 text-sm text-gray-600">
+                  <div className="flex justify-between">
+                    <span className="font-medium">Course</span>
+                    <span className="text-right truncate max-w-[140px]">
+                      {student.courses?.[0]?.course_name || "N/A"}
+                    </span>
+                  </div>
+
+                  <div className="flex justify-between">
+                    <span className="font-medium">Branch</span>
+                    <span>
+                      {student.branch?.branch_name || "N/A"}
+                    </span>
+                  </div>
+                </div>
+
+                {/* ACTION BUTTON */}
+                <button
+                  onClick={() => handleGenerateIDCard(student)}
+                  className="mt-5 w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white py-2.5 rounded-xl font-semibold transition-all duration-300 transform group-hover:scale-[1.02]"
+                >
+                  🎫 Generate ID Card
                 </button>
-              )}
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* ID Card Modal */}
-      {showModal && selectedStudent && (
-        <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
-          <div className="bg-white rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl border border-gray-200 transform animate-scale-in">
-            <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex justify-between items-center bg-gradient-to-r from-gray-50 to-white z-10">
-              <div className="flex items-center gap-3">
-                <div className="bg-blue-100 p-2 rounded-xl">
-                  <FaIdCard className="text-xl text-blue-600" />
-                </div>
-                <div>
-                  <h2 className="text-xl font-bold text-gray-800">Student ID Card</h2>
-                </div>
-              </div>
-              <button
-                onClick={closeModal}
-                className="text-gray-500 hover:text-gray-700 transition-colors p-2 hover:bg-gray-100 rounded-xl"
-              >
-                <FaTimes size={20} />
-              </button>
-            </div>
-
-            <div className="p-6">
-          
-              {/* Instructions */}
-              <div className="mt-6 bg-blue-50 rounded-xl p-4 border border-blue-200">
-                <h4 className="font-semibold text-blue-800 mb-2">Printing Instructions:</h4>
-                <ul className="text-sm text-blue-700 list-disc list-inside space-y-1">
-                  <li>Ensure the ID card is centered on the page</li>
-                  <li>Use high-quality photo paper for best results</li>
-                  <li>Check printer settings for correct size (CR80 - 3.375" x 2.125")</li>
-                </ul>
               </div>
             </div>
-            <div className="sticky bottom-0 bg-gradient-to-r from-gray-50 via-white to-gray-100 border-t border-gray-300 px-6 py-4 flex justify-end">
-              {/* Download Options Dropdown */}
-              {!downloading && (
-                <div className="flex gap-4">
-                  <button
-                    onClick={handleDownloadPDF}
-                    className="flex items-center gap-3 px-5 py-3 rounded-xl shadow-md bg-gradient-to-r from-red-100 to-red-50 hover:from-red-200 hover:to-red-100 text-gray-800 font-semibold transition-all duration-300 border border-red-200"
-                  >
-                    <FaFilePdf className="text-red-600 text-xl" />
-                    <span>Download PDF</span>
-                  </button>
-
-                  <button
-                    onClick={handleDownloadImage}
-                    className="flex items-center gap-3 px-5 py-3 rounded-xl shadow-md bg-gradient-to-r from-blue-100 to-blue-50 hover:from-blue-200 hover:to-blue-100 text-gray-800 font-semibold transition-all duration-300 border border-blue-200"
-                  >
-                    <FaImage className="text-blue-600 text-xl" />
-                    <span>Download Image</span>
-                  </button>
-                </div>
-              )}
-            </div>
-
-          </div>
+          ))}
         </div>
       )}
 
-      {/* Custom CSS for animations */}
-      <style jsx>{`
-        @keyframes fade-in {
-          from { opacity: 0; transform: translateY(20px); }
-          to { opacity: 1; transform: translateY(0); }
-        }
-        @keyframes scale-in {
-          from { opacity: 0; transform: scale(0.9); }
-          to { opacity: 1; transform: scale(1); }
-        }
-        .animate-fade-in {
-          animation: fade-in 0.6s ease-out forwards;
-        }
-        .animate-scale-in {
-          animation: scale-in 0.3s ease-out forwards;
-        }
-      `}</style>
+
+      {/* MODAL */}
+      {showModal && selectedStudent && (
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl w-full max-w-xl p-6 relative">
+            <button onClick={closeModal} className="absolute top-3 right-3">
+              <FaTimes />
+            </button>
+
+            {/* ID CARD */}
+            <div className="flex justify-center mb-6">
+              <div
+                ref={idCardRef}
+                className="w-[340px] h-[215px] border rounded-xl overflow-hidden bg-white shadow"
+              >
+                <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white text-sm px-4 py-2 font-bold">
+                  STUDENT ID CARD
+                </div>
+
+                <div className="flex p-3 gap-3 text-xs">
+                  <img
+                    src={selectedStudent.photo_url || "https://cdn-icons-png.flaticon.com/512/149/149071.png"}
+                    alt="student"
+                    className="w-20 h-24 object-cover border rounded"
+                  />
+
+                  <div className="space-y-1">
+                    <p><b>Name:</b> {selectedStudent.full_name}</p>
+                    <p><b>ID:</b> {selectedStudent.admission_number}</p>
+                    <p><b>Course:</b> {selectedStudent.courses?.[0]?.course_name || "N/A"}</p>
+                    <p><b>Branch:</b> {selectedStudent.branch?.branch_name || "N/A"}</p>
+                    <p><b>Phone:</b> {selectedStudent.contact_number}</p>
+                  </div>
+                </div>
+
+                <div className="text-[10px] text-center bg-gray-100 py-1">
+                  Valid for Academic Use Only
+                </div>
+              </div>
+            </div>
+
+            {/* DOWNLOAD BUTTONS */}
+            <div className="flex justify-center gap-4">
+              <button
+                onClick={handleDownloadPDF}
+                disabled={downloading}
+                className="bg-red-500 text-white px-9 py-2 rounded"
+              >
+                <FaFilePdf /> PDF
+              </button>
+
+              <button
+                onClick={handleDownloadImage}
+                disabled={downloading}
+                className="bg-blue-500 text-white px-9 py-2 rounded"
+              >
+                <FaImage /> Image
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
