@@ -30,6 +30,15 @@ import { HiDotsVertical } from "react-icons/hi";
 import { useNavigate } from "react-router-dom";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import { Doughnut } from "react-chartjs-2";
+import {
+  Chart as ChartJS,
+  ArcElement,
+  Tooltip,
+  Legend,
+} from "chart.js";
+
+ChartJS.register(ArcElement, Tooltip, Legend);
 
 export default function Allstudents() {
   const [students, setStudents] = useState([]);
@@ -139,6 +148,43 @@ export default function Allstudents() {
   useEffect(() => {
     setCurrentPage(1);
   }, [selectedBranch, search, dateFilter, sortField, sortOrder]);
+
+  // Add 6 months to admission date
+  const getSixMonthDate = (admissionDate) => {
+    if (!admissionDate) return null;
+    const date = new Date(admissionDate);
+    date.setMonth(date.getMonth() + 6);
+    return date;
+  };
+
+  // Calculate progress between admission date → 6 months
+  const getProgressPercentage = (admissionDate) => {
+    if (!admissionDate) return 0;
+
+    const start = new Date(admissionDate).getTime();
+    const end = getSixMonthDate(admissionDate).getTime();
+    const today = new Date().getTime();
+
+    if (today <= start) return 0;
+    if (today >= end) return 100;
+
+    return Math.round(((today - start) / (end - start)) * 100);
+  };
+
+  const getChartData = (percentage, isOvertime) => ({
+    labels: ["Completed", "Remaining"],
+    datasets: [
+      {
+        data: [percentage, 100 - percentage],
+        backgroundColor: isOvertime
+          ? ["#EF4444", "#FECACA"] // Red overtime
+          : ["#3B82F6", "#E5E7EB"], // Blue normal
+        borderWidth: 0,
+        cutout: "75%",
+      },
+    ],
+  });
+
 
   const fetchStudent = async (id) => {
     try {
@@ -474,6 +520,49 @@ export default function Allstudents() {
     }
 
     setIsLoading(false);
+  };
+  // Difference in days
+  const getDaysDiff = (from, to) => {
+    const diffTime = to.getTime() - from.getTime();
+    return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+  };
+
+  // Admission progress + overtime logic
+  const getAdmissionProgressInfo = (admissionDate) => {
+    if (!admissionDate) return null;
+
+    const startDate = new Date(admissionDate);
+    const endDate = new Date(admissionDate);
+    endDate.setMonth(endDate.getMonth() + 6);
+
+    const today = new Date();
+
+    const totalDays = getDaysDiff(startDate, endDate);
+    const passedDays = getDaysDiff(startDate, today);
+
+    if (today <= endDate) {
+      const percentage = Math.min(
+        Math.round((passedDays / totalDays) * 100),
+        100
+      );
+
+      return {
+        status: "ongoing",
+        percentage,
+        overtimeDays: 0,
+        endDate,
+      };
+    }
+
+    // Overtime case
+    const overtimeDays = getDaysDiff(endDate, today);
+
+    return {
+      status: "overtime",
+      percentage: 100,
+      overtimeDays,
+      endDate,
+    };
   };
 
   const handlePhotoChange = (e) => {
@@ -1147,8 +1236,8 @@ export default function Allstudents() {
 
                       <span
                         className={`ml-2 px-2 py-1 rounded-full text-white text-sm ${selectedStudent.enrollment_status === "Active"
-                            ? "bg-green-500"
-                            : "bg-red-500"
+                          ? "bg-green-500"
+                          : "bg-red-500"
                           }`}
                       >
                         {selectedStudent.enrollment_status}
@@ -1158,7 +1247,83 @@ export default function Allstudents() {
                   </div>
                 </div>
               </div>
+        {/* Admission Progress (6 Months with Overtime) */}
+                {(() => {
+                  const progressInfo = getAdmissionProgressInfo(
+                    selectedStudent.admission_date
+                  );
 
+                  if (!progressInfo) return null;
+
+                  return (
+                    <div className="bg-white shadow-xl mb-9 rounded-2xl p-6 mt-6 flex flex-row items-center gap-6 w-full min-w-0">
+
+                      {/* CHART – HARD FIXED WIDTH */}
+                      <div className="w-[180px] h-[180px] flex-shrink-0 relative">
+                        <Doughnut
+                          data={getChartData(
+                            progressInfo.percentage,
+                            progressInfo.status === "overtime"
+                          )}
+                          options={{
+                            responsive: false,   // 🔥 MOST IMPORTANT
+                            plugins: {
+                              legend: { display: false },
+                              tooltip: { enabled: false },
+                            },
+                          }}
+                          width={180}
+                          height={180}
+                        />
+
+                        {/* Center Text */}
+                        <div className="absolute inset-0 flex flex-col items-center justify-center text-center pointer-events-none">
+                          <span
+                            className={`text-2xl font-bold ${progressInfo.status === "overtime"
+                                ? "text-red-600"
+                                : "text-blue-600"
+                              }`}
+                          >
+                            {progressInfo.percentage}%
+                          </span>
+                          <span className="text-xs text-gray-500">
+                            {progressInfo.status === "overtime"
+                              ? "Course Overtime"
+                              : "Course Progress"}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* TEXT – FULL WIDTH GUARANTEED */}
+                      <div className="flex-1 min-w-0 w-full space-y-3 text-gray-700">
+                        <h3 className="text-xl font-semibold">
+                          Admission Timeline
+                        </h3>
+
+                        <p className="whitespace-normal break-words">
+                          <strong>Admission Date:</strong>{" "}
+                          {formatDate(selectedStudent.admission_date)}
+                        </p>
+
+                        <p className="whitespace-normal break-words">
+                          <strong>Course End (6 Months):</strong>{" "}
+                          {formatDate(progressInfo.endDate)}
+                        </p>
+
+                        {progressInfo.status === "ongoing" ? (
+                          <span className="inline-block mt-2 px-4 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-700">
+                            On Track ✔
+                          </span>
+                        ) : (
+                          <span className="inline-block mt-2 px-4 py-1 rounded-full text-sm font-medium bg-red-100 text-red-700">
+                            ⚠ {progressInfo.overtimeDays} Days Overtime
+                          </span>
+                        )}
+                      </div>
+
+                    </div>
+                  );
+                })()}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
                 <div className="bg-gray-50 p-4 rounded-lg">
                   <h3 className="text-lg font-semibold mb-3 flex items-center">
@@ -1224,7 +1389,11 @@ export default function Allstudents() {
                     <p className="text-gray-600">No courses enrolled</p>
                   )}
                 </div>
+
+          
+
               </div>
+            
             </div>
           </div>
         </div>
