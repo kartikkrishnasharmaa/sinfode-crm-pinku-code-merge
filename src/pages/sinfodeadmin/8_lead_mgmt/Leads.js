@@ -20,6 +20,16 @@ export default function Lead() {
   const [leadDetails, setLeadDetails] = useState(null);
   const [loadingLeadDetails, setLoadingLeadDetails] = useState(false);
   const [editingLeadId, setEditingLeadId] = useState(null);
+  const [filters, setFilters] = useState({
+    course: "",
+    branch: "",
+    assignedTo: "",
+    source: "",
+    priority: "",
+    dateFrom: "",
+    dateTo: "",
+    sortBy: "latest",
+  });
 
   // Form state
   const [formData, setFormData] = useState({
@@ -389,23 +399,45 @@ export default function Lead() {
     }
   };
 
-  // Filter leads based on search and status filter
-  const filteredLeads = leads.filter((lead) => {
-    const matchesSearch =
-      searchTerm === "" ||
-      lead.full_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      lead.email_address.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      lead.contact_number_primary.includes(searchTerm);
+  const filteredLeads = leads
+    .filter(l => {
+      if (searchTerm &&
+        !(
+          l.full_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          l.email_address.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          l.contact_number_primary.includes(searchTerm)
+        )
+      ) return false;
 
-    let matchesStatus = statusFilter === "" || lead.lead_status === statusFilter;
+      if (statusFilter && statusFilter !== "in-progress" && l.lead_status !== statusFilter) return false;
+      if (statusFilter === "in-progress" &&
+        !["Contacted", "Follow-up", "Demo Scheduled"].includes(l.lead_status)
+      ) return false;
 
-    // Special handling for in-progress filter
-    if (statusFilter === "in-progress") {
-      matchesStatus = ["Contacted", "Follow-up", "Demo Scheduled"].includes(lead.lead_status);
-    }
+      if (filters.course && l.course_id !== Number(filters.course)) return false;
+      if (filters.branch && l.branch_id !== Number(filters.branch)) return false;
+      if (filters.assignedTo && l.assigned_to?.id !== Number(filters.assignedTo)) return false;
+      if (filters.priority && l.priority !== filters.priority) return false;
 
-    return matchesSearch && matchesStatus;
-  });
+      if (filters.dateFrom &&
+        new Date(l.created_at) < new Date(filters.dateFrom)) return false;
+
+      if (filters.dateTo &&
+        new Date(l.created_at) > new Date(filters.dateTo)) return false;
+
+      return true;
+    })
+    .sort((a, b) => {
+      switch (filters.sortBy) {
+        case "az": return a.full_name.localeCompare(b.full_name);
+        case "za": return b.full_name.localeCompare(a.full_name);
+        case "oldest": return new Date(a.created_at) - new Date(b.created_at);
+        case "priority":
+          return a.priority === "High" ? -1 : 1;
+        default:
+          return new Date(b.created_at) - new Date(a.created_at);
+      }
+    });
 
   // Calculate report stats
   const totalLeads = leads.length;
@@ -531,9 +563,103 @@ export default function Lead() {
             </div>
           </div>
 
+
+
           {/* Leads List View */}
           {activeTab === "leads" && (
             <div className="space-y-6">
+              <div className="bg-white rounded-lg sf-shadow p-6 space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+
+                  {/* Course Filter */}
+                  <select
+                    className="input"
+                    value={filters.course}
+                    onChange={(e) => setFilters({ ...filters, course: e.target.value })}
+                  >
+                    <option value="">All Courses</option>
+                    {courses.map(c => (
+                      <option key={c.id} value={c.id}>{c.course_name}</option>
+                    ))}
+                  </select>
+
+                  {/* Branch Filter */}
+                  <select
+                    className="input"
+                    value={filters.branch}
+                    onChange={(e) => setFilters({ ...filters, branch: e.target.value })}
+                  >
+                    <option value="">All Branches</option>
+                    {branches.map(b => (
+                      <option key={b.id} value={b.id}>{b.branchName}</option>
+                    ))}
+                  </select>
+
+                  {/* Assigned Staff */}
+                  <select
+                    className="input"
+                    value={filters.assignedTo}
+                    onChange={(e) => setFilters({ ...filters, assignedTo: e.target.value })}
+                  >
+                    <option value="">All Staff</option>
+                    {staffList.map(s => (
+                      <option key={s.id} value={s.id}>{s.employee_name}</option>
+                    ))}
+                  </select>
+
+                  {/* Priority */}
+                  <select
+                    className="input"
+                    value={filters.priority}
+                    onChange={(e) => setFilters({ ...filters, priority: e.target.value })}
+                  >
+                    <option value="">All Priority</option>
+                    <option value="High">High</option>
+                    <option value="Medium">Medium</option>
+                    <option value="Low">Low</option>
+                  </select>
+
+                </div>
+
+                {/* Date + Sorting */}
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                  <input
+                    type="date"
+                    className="input"
+                    value={filters.dateFrom}
+                    onChange={(e) => setFilters({ ...filters, dateFrom: e.target.value })}
+                  />
+                  <input
+                    type="date"
+                    className="input"
+                    value={filters.dateTo}
+                    onChange={(e) => setFilters({ ...filters, dateTo: e.target.value })}
+                  />
+
+                  <select
+                    className="input"
+                    value={filters.sortBy}
+                    onChange={(e) => setFilters({ ...filters, sortBy: e.target.value })}
+                  >
+                    <option value="latest">Latest First</option>
+                    <option value="oldest">Oldest First</option>
+                    <option value="az">Name A–Z</option>
+                    <option value="za">Name Z–A</option>
+                    <option value="priority">High Priority</option>
+                  </select>
+
+                  <button
+                    onClick={() => setFilters({
+                      course: "", branch: "", assignedTo: "", source: "",
+                      priority: "", dateFrom: "", dateTo: "", sortBy: "latest"
+                    })}
+                    className="bg-gray-200 rounded-lg"
+                  >
+                    Clear Filters
+                  </button>
+                </div>
+              </div>
+
               {/* Action Bar */}
               <div className="bg-white rounded-lg sf-shadow p-6">
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0">
